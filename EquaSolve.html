@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.234</title>
+<title>EquaSolve V1.235</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.234</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.235</div>
       </div>
     </div>
 
@@ -639,7 +639,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         Released under the <span style="color:var(--accent);font-weight:600;">MIT License</span> &#8212; free to use, modify, and redistribute for any purpose, including educational and commercial use, provided this notice is retained.
       </p>
       <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;font-size:10px;color:var(--mute);line-height:2;">
-        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.234.<br>
+        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.235.<br>
         Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction &#8212; including without limitation the rights to use, copy, modify, merge, publish, and distribute &#8212; subject to the condition that the above copyright notice and this permission notice are included in all copies or substantial portions of the Software.<br><br>
         THE SOFTWARE IS PROVIDED &#8220;AS IS&#8221;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
       </div>
@@ -664,7 +664,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.234</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.235</span></div>
       
     </div>
   </div>
@@ -832,7 +832,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.234</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.235</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3856,8 +3856,11 @@ function evalDimNode(nd) {
     }
     const u = UNIT_DIM[nd.n];
     if (u && !(_userVarNames && _userVarNames.has(nd.n))) return {val: u.si, dim: u.dim.slice()};
-    // Unknown variable — try guessDisplayUnit to infer dimension from name
-    const g = typeof guessDisplayUnit === 'function' ? guessDisplayUnit(nd.n) : null;
+    // Unknown variable — try guessDisplayUnit ONLY for variables NOT defined by the user
+    // (prevents m1→kg/s, W_dot→kW etc. from poisoning dim-inference of user variables)
+    const g = (_userVarNames && _userVarNames.has(nd.n))
+      ? null
+      : (typeof guessDisplayUnit === 'function' ? guessDisplayUnit(nd.n) : null);
     if (g) {
       switch(g.group) {
         case 'enth':   return {val:1e3, dim:[0,2,-2,0,0,0,0]};  // J/kg
@@ -4065,19 +4068,24 @@ function buildRHSMap(txt){
 // Allows evalDimNode to propagate units through derived quantities like C_h = m_h * cp_h
 let _varDimCache = {};
 
+// Bracket display map — for input variables with explicit [unit] brackets, store the
+// ORIGINAL value and unit string so result cards show e.g. "300 K" not "26.85 K"
+let _bracketDisplayMap = {};
+
 // Best unit label: prefers name-based guess for power/work variables when
 // dim inference gives only specific energy (kJ/kg) — happens when mass flow rate
 // propagation is incomplete (e.g. m3 variable dim not resolved)
 function _bestUnitLabel(v, rhsMapEntry) {
+  // 1. RHS dimensional inference (handles computed variables from rhsMap)
   const dimUnit = rhsMapEntry ? inferUnitFromRHS(rhsMapEntry)?.unit : null;
-  const nameGuess = guessDisplayUnit(v);
-  // If name strongly suggests power and dim inference only got specific energy → use power
-  if (nameGuess?.group === 'power' && (dimUnit === 'kJ/kg' || dimUnit === 'kJ/(kg·K)' || !dimUnit)) {
-    return nameGuess.unit;
-  }
-  // If name suggests enthalpy/specific energy, but dim gives power → prefer power
   if (dimUnit) return dimUnit;
-  return nameGuess?.unit || '';
+  // 2. Direct _varDimCache lookup (populated by bracket seeding + _inferMissingVarDims)
+  if (_varDimCache && v in _varDimCache) {
+    const label = dimToLabel(_varDimCache[v]);
+    if (label) return label;
+  }
+  // 3. No label — never guess from variable name (avoids m1→kg/s, W→power etc.)
+  return '';
 }
 function buildVarDimCache(rhsMap, fullTxt, reset=true) {
   if (reset) {
@@ -4111,6 +4119,74 @@ function buildVarDimCache(rhsMap, fullTxt, reset=true) {
           const {dim} = evalDimNode(ast);
           if (dim.some(x => x !== 0)) { _varDimCache[v] = dim.slice(); added++; break; }
         } catch(e) {}
+      }
+    }
+    if (!added) break;
+  }
+}
+
+// Post-solve pass: for variables NOT yet in _varDimCache (no bracket, not in rhsMap),
+// infer their dimension by dimensional balance across each equation.
+// Handles two cases:
+//   Multiplicative: P1*V = m1*R*T1  → dim(m1) = dim(lhs) - dim(rhs_without_m1)
+//   Additive:       -W + m*h1 = m*h2 → dim(W) = dim(rhs) = dim(m*h)
+function _inferMissingVarDims(equationLines) {
+  const _zero = [0,0,0,0,0,0,0];
+  for (let pass = 0; pass < 8; pass++) {
+    let added = 0;
+    for (const rawLine of equationLines) {
+      const clean = rawLine.replace(/\/\/.*$/, '').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '').trim();
+      const idx = clean.indexOf('=');
+      if (idx < 0) continue;
+      const lhsStr = clean.slice(0, idx).trim();
+      const rhsStr = clean.slice(idx + 1).trim();
+      if (!lhsStr || !rhsStr) continue;
+
+      // Collect all identifiers in this equation
+      const allIds = [...new Set((lhsStr + ' ' + rhsStr).match(/[a-zA-Z_]\w*/g) || [])];
+      // Unknown = not yet dimensioned, not a constant/function/keyword
+      const unknownVars = allIds.filter(v =>
+        !(v in _varDimCache) && !(v in CONSTS) && !KNOWN.has(v)
+      );
+      if (unknownVars.length !== 1) continue;
+
+      const v = unknownVars[0];
+      // Temporarily mark v as dimensionless so evalDimNode does NOT fall through to
+      // guessDisplayUnit(v) — that would give wrong dims (e.g. m1 → kg/s)
+      _varDimCache[v] = _zero.slice();
+      let vDim;
+      try {
+        const lhsAst = parse(lhsStr);
+        const rhsAst = parse(rhsStr);
+        // Both sides evaluated with v = dimensionless
+        const lhsDim = evalDimNode(lhsAst).dim;
+        const rhsDim = evalDimNode(rhsAst).dim;
+
+        const diff = dimSub(lhsDim, rhsDim);
+        const vInRhs = (rhsStr.match(/[a-zA-Z_]\w*/g) || []).includes(v);
+        const vInLhs = (lhsStr.match(/[a-zA-Z_]\w*/g) || []).includes(v);
+
+        if (diff.some(x => x !== 0)) {
+          // Multiplicative case: v contributes missing dims to balance the equation
+          if (vInRhs && !vInLhs) {
+            vDim = diff;                     // dim(lhs) − dim(rhs with v=1)
+          } else if (vInLhs && !vInRhs) {
+            vDim = dimSub(rhsDim, lhsDim);   // dim(rhs) − dim(lhs with v=1)
+          }
+        } else {
+          // Additive case: both sides already balance → v must share the expression dim
+          if (lhsDim.some(x => x !== 0)) {
+            vDim = lhsDim.slice();
+          }
+        }
+      } catch(e) {}
+
+      // Either store the inferred dim or remove the temporary zero entry
+      if (vDim && vDim.some(x => x !== 0)) {
+        _varDimCache[v] = vDim;
+        added++;
+      } else {
+        delete _varDimCache[v]; // remove zero placeholder — don't cache wrong dim
       }
     }
     if (!added) break;
@@ -4228,7 +4304,31 @@ function buildCompoundTable() {
     const E  = ENERGY_TO_KJ[UNITS.energy]||1;  // kJ per display energy unit
     const M  = MASS_TO_KG[UNITS.mass]||1;       // kg per display mass unit
     const V3 = VOL_TO_M3[UNITS.volAbs]||1;      // m³ per display vol unit
+    const PW = (()=>{const p={kW:1,W:1e-3,MW:1e3,GW:1e6,hp:0.7457};return p[UNITS.power]||1;})(); // kW per display power unit
     return {
+      // ── Bare pressure [display pres unit] ─────────────────────────
+      'Pa':1/P, 'kPa':1e3/P, 'MPa':1e6/P, 'GPa':1e9/P,
+      'bar':1e5/P, 'mbar':100/P, 'atm':101325/P,
+      'psia':6894.757/P, 'psf':47.880/P, 'mmHg':133.322/P, 'torr':133.322/P,
+      // ── Bare energy [display energy unit] ─────────────────────────
+      'J':1e-3/E, 'kJ':1/E, 'MJ':1e3/E, 'GJ':1e6/E,
+      'BTU':1.055056/E, 'cal':4.1868e-3/E, 'kcal':4.1868/E,
+      'kWh':3600/E, 'Wh':3.6/E,
+      // ── Bare power [display power unit] ───────────────────────────
+      'W':1e-3/PW, 'kW':1/PW, 'MW':1e3/PW, 'GW':1e6/PW, 'hp':0.7457/PW,
+      // ── Bare mass [display mass unit] ─────────────────────────────
+      'kg':1/M, 'g':1e-3/M, 'tonne':1e3/M, 'lbm':0.453592/M, 'lb':0.453592/M,
+      // ── Bare length [display len unit] ────────────────────────────
+      'm':1/L, 'mm':1e-3/L, 'cm':0.01/L, 'km':1e3/L,
+      'ft':0.3048/L, 'inch':0.0254/L, 'yd':0.9144/L,
+      // ── Bare force [display force unit] ───────────────────────────
+      'N':1/(FORCE_TO_N[UNITS.force]||1),
+      'kN':1e3/(FORCE_TO_N[UNITS.force]||1),
+      'lbf':4.44822/(FORCE_TO_N[UNITS.force]||1),
+      // ── Bare absolute volume [display volAbs unit] ────────────────
+      'm3':1/V3, 'L':1e-3/V3, 'liter':1e-3/V3, 'mL':1e-6/V3, 'cL':1e-5/V3,
+      'cm3':1e-6/V3, 'mm3':1e-9/V3, 'ft3':0.0283168/V3,
+      'gal':3.78541e-3/V3, 'gallon':3.78541e-3/V3,
       // ── Velocity [display vel unit] ───────────────────────────────
       'm/s':1/V, 'km/h':(1/3.6)/V, 'm/h':(1/3600)/V, 'ft/s':0.3048/V,
       'ft/h':(0.3048/3600)/V, 'km/s':1000/V, 'mm/s':0.001/V, 'cm/s':0.01/V,
@@ -4252,6 +4352,8 @@ function buildCompoundTable() {
       'W/m2/C':1, 'W/m^2/C':1,
       // ── Specific heat [kJ/(kg·K)] — stored in display energy/mass ─
       'kJ/kg/K':1/E*M, 'J/kg/K':1e-3/E*M, 'kJ/kg/C':1/E*M, 'J/kg/C':1e-3/E*M,
+      'kJ/kg.K':1/E*M, 'J/kg.K':1e-3/E*M, 'kJ/kg.C':1/E*M,
+      'kJ/(kg.K)':1/E*M, 'kJ/(kg·K)':1/E*M, 'J/(kg·K)':1e-3/E*M,
       'BTU/lb/F':4.1868/E*M, 'BTU/lb/R':4.1868/E*M,
       // ── Specific energy [kJ/kg] ───────────────────────────────────
       'kJ/kg':1/E*M, 'J/kg':1e-3/E*M, 'MJ/kg':1000/E*M,
@@ -4468,9 +4570,13 @@ function _bracketConvert(val, unitStr) {
     return val * _OP_CONSTS[u];
   }
   // Compound units via buildCompoundTable (kJ/kg, W/m2/K, kg/m3, etc.)
+  // Also try normalised form (dot → slash, spaces stripped)
   try {
     const tbl = buildCompoundTable();
     if (u in tbl) return val * tbl[u];
+    // Try common normalizations before giving up
+    const uNorm = u.replace(/\./g, '/').replace(/\s+/g,'').replace(/·/g,'/');
+    if (uNorm !== u && uNorm in tbl) return val * tbl[uNorm];
   } catch(e) {}
   return null; // unknown unit — leave value unchanged
 }
@@ -4537,7 +4643,18 @@ function tryExplicit(la,ra,vname,scope){if(la.t==='V'&&la.n===vname)return evalN
 function newtonND(residuals,vars,x0){const n=vars.length,x=x0.slice(),h=1e-7;const maxIter=SOLVER_CFG.nrMaxIter||400;const tol=SOLVER_CFG.nrTol||1e-10;for(let it=0;it<maxIter;it++){const sc={};vars.forEach((v,i)=>sc[v]=x[i]);const F=residuals.map(r=>r(sc));const norm=M.sqrt(F.reduce((s,v)=>s+v*v,0));if(norm<tol)return{x,iter:it+1,res:norm};const J=Array.from({length:n},()=>new Array(n).fill(0));for(let j=0;j<n;j++){const s2={...sc};s2[vars[j]]+=h;const Fh=residuals.map(r=>r(s2));for(let i=0;i<n;i++)J[i][j]=(Fh[i]-F[i])/h;}const A=J.map((row,i)=>[...row,-F[i]]);for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(M.abs(A[r][c])>M.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];if(M.abs(A[c][c])<1e-14)continue;for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<=n;k++)A[r][k]-=f*A[c][k];}}for(let i=0;i<n;i++)if(M.abs(A[i][i])>1e-14)x[i]+=A[i][n]/A[i][i];}const sc={};vars.forEach((v,i)=>sc[v]=x[i]);const norm=M.sqrt(residuals.map(r=>r(sc)).reduce((s,v)=>s+v*v,0));if(norm<1e-5)return{x,iter:maxIter,res:norm};throw new Error('Newton–Raphson did not converge (res='+norm.toExponential(2)+')');}
 // Apply [unit] bracket conversion to all lines before solving
 // Converts e.g. "P1 = 4.5 [MPa]" → "P1 = 4500" when display unit is kPa
+function _normDisplayUnit(u) {
+  return u.replace(/\bm3\b/g,'m³').replace(/\bm2\b/g,'m²')
+           .replace(/m\^3/g,'m³').replace(/m\^2/g,'m²')
+           .replace(/\bdegC\b/gi,'°C').replace(/\bdegF\b/gi,'°F').replace(/\bdegR\b/gi,'°R')
+           .replace(/W\/m2/g,'W/m²').replace(/kW\/m2/g,'kW/m²')
+           .replace(/[./]K\b/g,'/K').replace(/\bkg\.K\b/g,'kg·K')
+           .replace(/\bkJ\/kg[./]K\b/g,'kJ/(kg·K)').replace(/\bkJ\/kg\.K\b/g,'kJ/(kg·K)')
+           .replace(/\bJ\/kg[./]K\b/g,'J/(kg·K)').replace(/\bW\/m[./]K\b/g,'W/(m·K)');
+}
+
 function preprocessBrackets(txt) {
+  _bracketDisplayMap = {}; // reset for each new solve
   return txt.split('\n').map(line => {
     const clean = line.replace(/\/\/.*$/, '');
     const idx = clean.indexOf('=');
@@ -4575,6 +4692,8 @@ function preprocessBrackets(txt) {
         if (isFinite(numVal)) {
           const cv = _bracketConvert(numVal, unitStr);
           if (cv !== null && isFinite(cv)) {
+            // Record original value & unit for result display (e.g. 300 K, not 26.85 °C)
+            _bracketDisplayMap[lhs] = { val: numVal, unit: _normDisplayUnit(unitStr) };
             // Preserve trailing comment if any
             const comment = line.slice(line.indexOf(clean) + clean.length);
             return lhs + ' = ' + cv + comment;
@@ -5568,6 +5687,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         })();
         // Re-run dim cache propagation now that bracket seeds are in place (reset=false preserves seeds)
         buildVarDimCache(rhsMap, null, false);
+        // Equation-balance dim inference: fills in dims for variables not in rhsMap
+        // (e.g. m1 from "P1*V = m1*R*T1" gets dim=kg, W_min from energy balance gets dim=kJ)
+        try {
+          const _eqLines = txt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
+          _inferMissingVarDims(_eqLines);
+        } catch(e) {}
 
         _hlErrorLine = -1; _hlErrToken = null; renderHighlight();
         $pn.className='res-panel ok';$lb.className='res-lbl ok';
@@ -5586,15 +5711,23 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         };
         const cards=r.allVars.filter(v=>!sliderNames.has(v)).sort((a,b)=>a.localeCompare(b)).map((v,i)=>{
           const raw=r.scope[v];
-          // Priority: 1) explicit [unit]/>> override  2) RHS unit inference  3) name-based guess
-          const inferredUnit = _bestUnitLabel(v, rhsMap[v]);
-          const targetUnit   = varUnitOverrides[v] || '';
-          const unitLabel    = targetUnit || inferredUnit;
-          // If a [unit] tag was explicitly given, try to convert the value
-          let dispVal = raw;
-          if (targetUnit && targetUnit !== inferredUnit && isFinite(raw)) {
-            const cvt = _tryUnitConvert(raw, inferredUnit, targetUnit);
-            if (cvt.converted) dispVal = cvt.val;
+          let dispVal, unitLabel;
+
+          if (_bracketDisplayMap[v]) {
+            // Input variable with explicit [unit] bracket: show original value and bracket unit
+            dispVal  = _bracketDisplayMap[v].val;
+            unitLabel = _bracketDisplayMap[v].unit;
+          } else {
+            // Computed or un-bracketed variable: use dim inference only (no name guessing)
+            unitLabel = _bestUnitLabel(v, rhsMap[v]);
+            // If varUnitOverrides has a tag (e.g. output label like [kW]), honour it as label
+            const tagUnit = varUnitOverrides[v] || '';
+            if (tagUnit && tagUnit !== unitLabel) {
+              const cvt = _tryUnitConvert(raw, unitLabel, tagUnit);
+              if (cvt.converted) { dispVal = cvt.val; unitLabel = tagUnit; }
+              else { unitLabel = tagUnit; }
+            }
+            dispVal = dispVal !== undefined ? dispVal : raw;
           }
 
           return`<div class="var-card" style="animation-delay:${i*.04}s"><div><span class="var-name">${v}</span>${unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}</div><span class="var-val">${fmt(dispVal)}</span></div>`;
@@ -6290,13 +6423,19 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     vars.forEach(v => {
       const raw = snap.scope[v];
       if (!isFinite(raw)) return;
+      // Use bracket display map if available (same priority as live result cards)
+      if (_bracketDisplayMap[v]) {
+        scope[v] = _bracketDisplayMap[v].val;
+        units[v] = _bracketDisplayMap[v].unit;
+        return;
+      }
       const inferredUnit = _bestUnitLabel(v, snap.rhsMap[v]);
-      const targetUnit   = snap.varUnitOverrides[v] || '';
-      const unitLabel    = targetUnit || inferredUnit;
-      let dispVal = raw;
-      if (targetUnit && targetUnit !== inferredUnit) {
-        const cvt = _tryUnitConvert(raw, inferredUnit, targetUnit);
-        if (cvt.converted) dispVal = cvt.val;
+      const tagUnit = snap.varUnitOverrides[v] || '';
+      let unitLabel = inferredUnit, dispVal = raw;
+      if (tagUnit && tagUnit !== inferredUnit) {
+        const cvt = _tryUnitConvert(raw, inferredUnit, tagUnit);
+        if (cvt.converted) { dispVal = cvt.val; unitLabel = tagUnit; }
+        else { unitLabel = tagUnit; }
       }
       scope[v] = dispVal;
       units[v] = unitLabel;
