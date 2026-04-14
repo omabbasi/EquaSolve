@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.235</title>
+<title>EquaSolve V1.238</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.235</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.238</div>
       </div>
     </div>
 
@@ -639,7 +639,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         Released under the <span style="color:var(--accent);font-weight:600;">MIT License</span> &#8212; free to use, modify, and redistribute for any purpose, including educational and commercial use, provided this notice is retained.
       </p>
       <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;font-size:10px;color:var(--mute);line-height:2;">
-        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.235.<br>
+        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.238.<br>
         Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction &#8212; including without limitation the rights to use, copy, modify, merge, publish, and distribute &#8212; subject to the condition that the above copyright notice and this permission notice are included in all copies or substantial portions of the Software.<br><br>
         THE SOFTWARE IS PROVIDED &#8220;AS IS&#8221;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
       </div>
@@ -664,7 +664,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.235</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.238</span></div>
       
     </div>
   </div>
@@ -832,7 +832,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.235</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.238</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4654,7 +4654,10 @@ function _normDisplayUnit(u) {
 }
 
 function preprocessBrackets(txt) {
-  _bracketDisplayMap = {}; // reset for each new solve
+  // Only reset _bracketDisplayMap on the outer (real) call that actually has brackets.
+  // The inner call from solveSystem receives already-preprocessed text (no brackets) and
+  // must NOT wipe the map that the outer call already populated correctly.
+  if (/\[[^\]]+\]/.test(txt)) _bracketDisplayMap = {};
   return txt.split('\n').map(line => {
     const clean = line.replace(/\/\/.*$/, '');
     const idx = clean.indexOf('=');
@@ -4754,11 +4757,14 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     const _tm = _rl.match(/^T0\s*=\s*([\d.eE+\-]+)(?:\s*\[([^\]]+)\]|\s*([a-zA-Z_°]+))?\s*$/);
     if (_tm) {
       let _v = parseFloat(_tm[1]);
-      const _u = ((_tm[2]||_tm[3]||'').trim()).toLowerCase().replace('°','deg').replace(/\s/g,'');
-      if (_u==='degc'||_u==='') { /* already display °C */ }
-      else if (_u==='k') _v = fromK(_v);
-      else if (_u==='degf') _v = fromK((_v-32)*5/9+273.15);
-      else if (_u==='degr') _v = fromK(_v*5/9);
+      const _uRaw = ((_tm[2]||_tm[3]||'').trim());
+      const _u = _uRaw.toLowerCase().replace('°','deg').replace(/\s/g,'');
+      // Use _bracketConvert so the tempIn override is honoured (e.g. tempIn='K' → no subtract)
+      if (_u === 'k')    _v = _bracketConvert(_v, 'K')    ?? _v;
+      else if (_u === 'degc') _v = _bracketConvert(_v, 'degC') ?? _v;
+      else if (_u === 'degf') _v = _bracketConvert(_v, 'degF') ?? _v;
+      else if (_u === 'degr') _v = _bracketConvert(_v, 'degR') ?? _v;
+      // else: no unit or display unit already — keep _v as-is
       if (isFinite(_v)) _exergyDeadState.T0 = _v;
     }
     // P0 — match "P0 = value [unit]" or "P0 = value unit" or "P0 = value"
@@ -5268,7 +5274,7 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
   let pendingParamSelection = null;
   let sliderRerunTimer = null;
 
-  function fmtSliderVal(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(Math.abs(n)>=1e9||(Math.abs(n)<1e-4&&n!==0))return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
+  function fmtSliderVal(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(n!==0&&Math.abs(n)<5e-4)return n.toExponential(dp);if(Math.abs(n)>=1e9)return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
 
   function defaultSliderSpec(name, center){
     let c=Number(center); if(!isFinite(c))c=1;
@@ -5596,6 +5602,11 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   function runAlgSolver(txt, _isSliderRerun=false) {
     txt = joinContinuationLines(txt);
     const _origTxt = txt; // preserve original text (with [unit] brackets) for advisory
+    // If any [K] or [°R] absolute-temperature brackets are present, temporarily set
+    // tempIn to 'K' so the solver uses absolute temperature throughout. This ensures
+    // P*V=m*R*T (needs T in K) and thermo functions (toK identity for K) are consistent.
+    const _savedTempIn = UNITS.tempIn;
+    if (/\[\s*(K|°R|degR)\s*\]/i.test(_origTxt)) UNITS.tempIn = 'K';
     txt = preprocessBrackets(txt); // convert [unit] brackets to display-unit values
     $bt.disabled=true; $bt.innerHTML='<span class="spin">◌</span> Solving…';
     $stat.style.color='var(--mute)'; $stat.textContent='';
@@ -5633,6 +5644,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
         const _t0 = performance.now();
         const r=solveSystem(txt,guessOverrides,fixedScope);
+        UNITS.tempIn = _savedTempIn;
         const _solveMs = performance.now() - _t0;
         if(sliderDefs.length)renderSliderZone(sliderDefs); // keep sliders visible after re-solve
 
@@ -5663,14 +5675,68 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         // Seed _varDimCache from [unit] bracket overrides — gives dim to Q [kW], m [kg/s] etc.
         (function _seedBracketDims() {
           const bracketDimMap = {
-            kW:[1,2,-3,0,0,0,0], W:[1,2,-3,0,0,0,0], MW:[1,2,-3,0,0,0,0],
-            'kg/s':[1,0,-1,0,0,0,0], 'kg/h':[1,0,-1,0,0,0,0],
-            kJ:[1,2,-2,0,0,0,0], kJ_kg:[0,2,-2,0,0,0,0],
-            kPa:[1,-1,-2,0,0,0,0], MPa:[1,-1,-2,0,0,0,0], Pa:[1,-1,-2,0,0,0,0], bar:[1,-1,-2,0,0,0,0],
-            m:[0,1,0,0,0,0,0], mm:[0,1,0,0,0,0,0], km:[0,1,0,0,0,0,0],
-            kg:[1,0,0,0,0,0,0], g:[1,0,0,0,0,0,0],
+            // ── Temperature (K dim regardless of input unit) ──────────
+            K:[0,0,0,0,1,0,0], degC:[0,0,0,0,1,0,0], '°C':[0,0,0,0,1,0,0],
+            degF:[0,0,0,0,1,0,0], '°F':[0,0,0,0,1,0,0],
+            degR:[0,0,0,0,1,0,0], '°R':[0,0,0,0,1,0,0],
+            // ── Mass ─────────────────────────────────────────────────
+            kg:[1,0,0,0,0,0,0], g:[1,0,0,0,0,0,0], tonne:[1,0,0,0,0,0,0],
+            lbm:[1,0,0,0,0,0,0], lb:[1,0,0,0,0,0,0], slug:[1,0,0,0,0,0,0],
+            // ── Length ───────────────────────────────────────────────
+            m:[0,1,0,0,0,0,0], mm:[0,1,0,0,0,0,0], cm:[0,1,0,0,0,0,0],
+            km:[0,1,0,0,0,0,0], ft:[0,1,0,0,0,0,0], inch:[0,1,0,0,0,0,0],
+            // ── Time ─────────────────────────────────────────────────
+            s:[0,0,1,0,0,0,0], ms:[0,0,1,0,0,0,0],
+            min:[0,0,1,0,0,0,0], h:[0,0,1,0,0,0,0],
+            // ── Absolute volume ───────────────────────────────────────
+            m3:[0,3,0,0,0,0,0], L:[0,3,0,0,0,0,0], liter:[0,3,0,0,0,0,0],
+            cm3:[0,3,0,0,0,0,0], ft3:[0,3,0,0,0,0,0], gallon:[0,3,0,0,0,0,0],
+            // ── Pressure ─────────────────────────────────────────────
+            Pa:[1,-1,-2,0,0,0,0], kPa:[1,-1,-2,0,0,0,0], MPa:[1,-1,-2,0,0,0,0],
+            GPa:[1,-1,-2,0,0,0,0], bar:[1,-1,-2,0,0,0,0], mbar:[1,-1,-2,0,0,0,0],
+            atm:[1,-1,-2,0,0,0,0], psia:[1,-1,-2,0,0,0,0], mmHg:[1,-1,-2,0,0,0,0],
+            // ── Energy ───────────────────────────────────────────────
+            J:[1,2,-2,0,0,0,0], kJ:[1,2,-2,0,0,0,0], MJ:[1,2,-2,0,0,0,0],
+            GJ:[1,2,-2,0,0,0,0], BTU:[1,2,-2,0,0,0,0], kWh:[1,2,-2,0,0,0,0],
+            cal:[1,2,-2,0,0,0,0], kcal:[1,2,-2,0,0,0,0],
+            // ── Power ────────────────────────────────────────────────
+            W:[1,2,-3,0,0,0,0], kW:[1,2,-3,0,0,0,0], MW:[1,2,-3,0,0,0,0],
+            GW:[1,2,-3,0,0,0,0], hp:[1,2,-3,0,0,0,0],
+            // ── Force ────────────────────────────────────────────────
+            N:[1,1,-2,0,0,0,0], kN:[1,1,-2,0,0,0,0], MN:[1,1,-2,0,0,0,0],
+            lbf:[1,1,-2,0,0,0,0],
+            // ── Velocity ─────────────────────────────────────────────
+            'm/s':[0,1,-1,0,0,0,0], 'km/h':[0,1,-1,0,0,0,0],
+            'ft/s':[0,1,-1,0,0,0,0], 'mph':[0,1,-1,0,0,0,0],
+            // ── Mass flow rate ────────────────────────────────────────
+            'kg/s':[1,0,-1,0,0,0,0], 'kg/min':[1,0,-1,0,0,0,0],
+            'kg/h':[1,0,-1,0,0,0,0], 'g/s':[1,0,-1,0,0,0,0],
+            // ── Volume flow rate ──────────────────────────────────────
+            'm3/s':[0,3,-1,0,0,0,0], 'L/s':[0,3,-1,0,0,0,0],
+            'm3/h':[0,3,-1,0,0,0,0], 'L/min':[0,3,-1,0,0,0,0],
+            // ── Specific energy [kJ/kg] ───────────────────────────────
+            'kJ/kg':[0,2,-2,0,0,0,0], 'J/kg':[0,2,-2,0,0,0,0],
+            'MJ/kg':[0,2,-2,0,0,0,0], 'BTU/lb':[0,2,-2,0,0,0,0],
+            // ── Specific heat / entropy [kJ/(kg·K)] ──────────────────
+            'kJ/kg.K':[0,2,-2,0,-1,0,0], 'kJ/kg/K':[0,2,-2,0,-1,0,0],
+            'kJ/(kg.K)':[0,2,-2,0,-1,0,0], 'kJ/(kg·K)':[0,2,-2,0,-1,0,0],
+            'J/kg.K':[0,2,-2,0,-1,0,0], 'J/kg/K':[0,2,-2,0,-1,0,0],
+            'J/(kg·K)':[0,2,-2,0,-1,0,0], 'BTU/lb/F':[0,2,-2,0,-1,0,0],
+            // ── Density [kg/m³] ──────────────────────────────────────
+            'kg/m3':[1,-3,0,0,0,0,0], 'kg/m^3':[1,-3,0,0,0,0,0],
+            'g/cm3':[1,-3,0,0,0,0,0], 'g/L':[1,-3,0,0,0,0,0],
+            // ── Thermal conductivity [W/(m·K)] ────────────────────────
+            'W/m/K':[1,1,-3,0,-1,0,0], 'W/m.K':[1,1,-3,0,-1,0,0],
+            'W/(m·K)':[1,1,-3,0,-1,0,0],
+            // ── Heat transfer coefficient [W/(m²·K)] ─────────────────
+            'W/m2/K':[1,0,-3,0,-1,0,0], 'W/m^2/K':[1,0,-3,0,-1,0,0],
+            'W/(m2·K)':[1,0,-3,0,-1,0,0], 'kW/m2/K':[1,0,-3,0,-1,0,0],
+            // ── Dynamic viscosity [Pa·s] ──────────────────────────────
+            'Pa.s':[1,-1,-1,0,0,0,0], 'Pa*s':[1,-1,-1,0,0,0,0],
+            'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
           };
-          txt.split('\n').forEach(line => {
+          // Use _origTxt (pre-preprocessing, brackets intact) not txt (already stripped)
+          _origTxt.split('\n').forEach(line => {
             const clean = line.replace(/\/\/.*$/, '').trim();
             const eqIdx = clean.indexOf('=');
             if (eqIdx < 0) return;
@@ -5679,9 +5745,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
             const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
             if (!bm) return;
             const u = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
-            const uCase = u; // keep for display
-            // Case-insensitive lookup: kw→kW, kj→kJ etc.
-            const uNorm = Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase()) || u;
+            // Try direct, case-insensitive, then dot→slash normalised
+            const uNorm = bracketDimMap[u]
+              ? u
+              : (Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase())
+                 || Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.replace(/\./g,'/').toLowerCase())
+                 || u);
             if (bracketDimMap[uNorm]) _varDimCache[lhs] = bracketDimMap[uNorm].slice();
           });
         })();
@@ -5690,7 +5759,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         // Equation-balance dim inference: fills in dims for variables not in rhsMap
         // (e.g. m1 from "P1*V = m1*R*T1" gets dim=kg, W_min from energy balance gets dim=kJ)
         try {
-          const _eqLines = txt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
+          const _eqLines = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
           _inferMissingVarDims(_eqLines);
         } catch(e) {}
 
@@ -5714,13 +5783,26 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           let dispVal, unitLabel;
 
           if (_bracketDisplayMap[v]) {
-            // Input variable with explicit [unit] bracket: show original value and bracket unit
-            dispVal  = _bracketDisplayMap[v].val;
-            unitLabel = _bracketDisplayMap[v].unit;
+            const bde = _bracketDisplayMap[v];
+            const ou = bde.unit;
+            // Temperature brackets: always show in the active display temperature unit
+            const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
+            if (_tempSet[ou]) {
+              let T_K;
+              if      (ou==='K')             T_K = bde.val;
+              else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
+              else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
+              else                             T_K = bde.val * 5/9; // °R
+              dispVal   = fromK(T_K);   // K → active display unit
+              unitLabel = UNITS.temp;
+            } else {
+              // Non-temperature: show original value and bracket unit label
+              dispVal   = bde.val;
+              unitLabel = bde.unit;
+            }
           } else {
-            // Computed or un-bracketed variable: use dim inference only (no name guessing)
+            // Computed or un-bracketed variable: use dim inference only
             unitLabel = _bestUnitLabel(v, rhsMap[v]);
-            // If varUnitOverrides has a tag (e.g. output label like [kW]), honour it as label
             const tagUnit = varUnitOverrides[v] || '';
             if (tagUnit && tagUnit !== unitLabel) {
               const cvt = _tryUnitConvert(raw, unitLabel, tagUnit);
@@ -5938,7 +6020,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 1500); }
   };
 
-  function fmt(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(M.abs(n)<1e-10&&n!==0)return n.toExponential(dp);if(M.abs(n)>=1e9||(M.abs(n)<1e-4&&n!==0))return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
+  function fmt(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(n!==0&&M.abs(n)<5e-4)return n.toExponential(dp);if(M.abs(n)>=1e9)return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
   window.fmt = fmt;
 
   // ── Load example helpers ─────────────────────────────────────────
@@ -6423,10 +6505,22 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     vars.forEach(v => {
       const raw = snap.scope[v];
       if (!isFinite(raw)) return;
-      // Use bracket display map if available (same priority as live result cards)
       if (_bracketDisplayMap[v]) {
-        scope[v] = _bracketDisplayMap[v].val;
-        units[v] = _bracketDisplayMap[v].unit;
+        const bde = _bracketDisplayMap[v];
+        const ou = bde.unit;
+        const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
+        if (_tempSet[ou]) {
+          let T_K;
+          if      (ou==='K')             T_K = bde.val;
+          else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
+          else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
+          else                             T_K = bde.val * 5/9;
+          scope[v] = fromK(T_K);
+          units[v] = UNITS.temp;
+        } else {
+          scope[v] = bde.val;
+          units[v] = bde.unit;
+        }
         return;
       }
       const inferredUnit = _bestUnitLabel(v, snap.rhsMap[v]);
