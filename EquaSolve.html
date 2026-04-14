@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.240</title>
+<title>EquaSolve V1.241</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.240</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.241</div>
       </div>
     </div>
 
@@ -639,7 +639,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         Released under the <span style="color:var(--accent);font-weight:600;">MIT License</span> &#8212; free to use, modify, and redistribute for any purpose, including educational and commercial use, provided this notice is retained.
       </p>
       <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;font-size:10px;color:var(--mute);line-height:2;">
-        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.240.<br>
+        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.241.<br>
         Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction &#8212; including without limitation the rights to use, copy, modify, merge, publish, and distribute &#8212; subject to the condition that the above copyright notice and this permission notice are included in all copies or substantial portions of the Software.<br><br>
         THE SOFTWARE IS PROVIDED &#8220;AS IS&#8221;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
       </div>
@@ -664,7 +664,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.240</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.241</span></div>
       
     </div>
   </div>
@@ -832,7 +832,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.240</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.241</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4130,6 +4130,88 @@ function buildVarDimCache(rhsMap, fullTxt, reset=true) {
 // Handles two cases:
 //   Multiplicative: P1*V = m1*R*T1  → dim(m1) = dim(lhs) - dim(rhs_without_m1)
 //   Additive:       -W + m*h1 = m*h2 → dim(W) = dim(rhs) = dim(m*h)
+function _seedBracketDimsFromText(rawTxt) {
+  const bracketDimMap = {
+    // ── Temperature (K dim regardless of input unit) ──────────
+    K:[0,0,0,0,1,0,0], degC:[0,0,0,0,1,0,0], '°C':[0,0,0,0,1,0,0],
+    degF:[0,0,0,0,1,0,0], '°F':[0,0,0,0,1,0,0],
+    degR:[0,0,0,0,1,0,0], '°R':[0,0,0,0,1,0,0],
+    // ── Mass ─────────────────────────────────────────────────
+    kg:[1,0,0,0,0,0,0], g:[1,0,0,0,0,0,0], tonne:[1,0,0,0,0,0,0],
+    lbm:[1,0,0,0,0,0,0], lb:[1,0,0,0,0,0,0], slug:[1,0,0,0,0,0,0],
+    // ── Length ───────────────────────────────────────────────
+    m:[0,1,0,0,0,0,0], mm:[0,1,0,0,0,0,0], cm:[0,1,0,0,0,0,0],
+    km:[0,1,0,0,0,0,0], ft:[0,1,0,0,0,0,0], inch:[0,1,0,0,0,0,0],
+    // ── Time ─────────────────────────────────────────────────
+    s:[0,0,1,0,0,0,0], ms:[0,0,1,0,0,0,0],
+    min:[0,0,1,0,0,0,0], h:[0,0,1,0,0,0,0],
+    // ── Absolute volume ───────────────────────────────────────
+    m3:[0,3,0,0,0,0,0], L:[0,3,0,0,0,0,0], liter:[0,3,0,0,0,0,0],
+    cm3:[0,3,0,0,0,0,0], ft3:[0,3,0,0,0,0,0], gallon:[0,3,0,0,0,0,0],
+    // ── Pressure ─────────────────────────────────────────────
+    Pa:[1,-1,-2,0,0,0,0], kPa:[1,-1,-2,0,0,0,0], MPa:[1,-1,-2,0,0,0,0],
+    GPa:[1,-1,-2,0,0,0,0], bar:[1,-1,-2,0,0,0,0], mbar:[1,-1,-2,0,0,0,0],
+    atm:[1,-1,-2,0,0,0,0], psia:[1,-1,-2,0,0,0,0], mmHg:[1,-1,-2,0,0,0,0],
+    // ── Energy ───────────────────────────────────────────────
+    J:[1,2,-2,0,0,0,0], kJ:[1,2,-2,0,0,0,0], MJ:[1,2,-2,0,0,0,0],
+    GJ:[1,2,-2,0,0,0,0], BTU:[1,2,-2,0,0,0,0], kWh:[1,2,-2,0,0,0,0],
+    cal:[1,2,-2,0,0,0,0], kcal:[1,2,-2,0,0,0,0],
+    // ── Power ────────────────────────────────────────────────
+    W:[1,2,-3,0,0,0,0], kW:[1,2,-3,0,0,0,0], MW:[1,2,-3,0,0,0,0],
+    GW:[1,2,-3,0,0,0,0], hp:[1,2,-3,0,0,0,0],
+    // ── Force ────────────────────────────────────────────────
+    N:[1,1,-2,0,0,0,0], kN:[1,1,-2,0,0,0,0], MN:[1,1,-2,0,0,0,0],
+    lbf:[1,1,-2,0,0,0,0],
+    // ── Velocity ─────────────────────────────────────────────
+    'm/s':[0,1,-1,0,0,0,0], 'km/h':[0,1,-1,0,0,0,0],
+    'ft/s':[0,1,-1,0,0,0,0], 'mph':[0,1,-1,0,0,0,0],
+    // ── Mass flow rate ────────────────────────────────────────
+    'kg/s':[1,0,-1,0,0,0,0], 'kg/min':[1,0,-1,0,0,0,0],
+    'kg/h':[1,0,-1,0,0,0,0], 'g/s':[1,0,-1,0,0,0,0],
+    // ── Volume flow rate ──────────────────────────────────────
+    'm3/s':[0,3,-1,0,0,0,0], 'L/s':[0,3,-1,0,0,0,0],
+    'm3/h':[0,3,-1,0,0,0,0], 'L/min':[0,3,-1,0,0,0,0],
+    // ── Specific energy [kJ/kg] ───────────────────────────────
+    'kJ/kg':[0,2,-2,0,0,0,0], 'J/kg':[0,2,-2,0,0,0,0],
+    'MJ/kg':[0,2,-2,0,0,0,0], 'BTU/lb':[0,2,-2,0,0,0,0],
+    // ── Specific heat / entropy [kJ/(kg·K)] ──────────────────
+    'kJ/kg.K':[0,2,-2,0,-1,0,0], 'kJ/kg/K':[0,2,-2,0,-1,0,0],
+    'kJ/(kg.K)':[0,2,-2,0,-1,0,0], 'kJ/(kg·K)':[0,2,-2,0,-1,0,0],
+    'J/kg.K':[0,2,-2,0,-1,0,0], 'J/kg/K':[0,2,-2,0,-1,0,0],
+    'J/(kg·K)':[0,2,-2,0,-1,0,0], 'BTU/lb/F':[0,2,-2,0,-1,0,0],
+    // ── Density [kg/m³] ──────────────────────────────────────
+    'kg/m3':[1,-3,0,0,0,0,0], 'kg/m^3':[1,-3,0,0,0,0,0],
+    'g/cm3':[1,-3,0,0,0,0,0], 'g/L':[1,-3,0,0,0,0,0],
+    // ── Thermal conductivity [W/(m·K)] ────────────────────────
+    'W/m/K':[1,1,-3,0,-1,0,0], 'W/m.K':[1,1,-3,0,-1,0,0],
+    'W/(m·K)':[1,1,-3,0,-1,0,0],
+    // ── Heat transfer coefficient [W/(m²·K)] ─────────────────
+    'W/m2/K':[1,0,-3,0,-1,0,0], 'W/m^2/K':[1,0,-3,0,-1,0,0],
+    'W/(m2·K)':[1,0,-3,0,-1,0,0], 'kW/m2/K':[1,0,-3,0,-1,0,0],
+    // ── Dynamic viscosity [Pa·s] ──────────────────────────────
+    'Pa.s':[1,-1,-1,0,0,0,0], 'Pa*s':[1,-1,-1,0,0,0,0],
+    'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
+  };
+  // Use _origTxt (pre-preprocessing, brackets intact) not txt (already stripped)
+  rawTxt.split('\n').forEach(line => {
+    const clean = line.replace(/\/\/.*$/, '').trim();
+    const eqIdx = clean.indexOf('=');
+    if (eqIdx < 0) return;
+    const lhs = clean.slice(0, eqIdx).trim();
+    if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+    const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
+    if (!bm) return;
+    const u = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
+    // Try direct, case-insensitive, then dot→slash normalised
+    const uNorm = bracketDimMap[u]
+      ? u
+      : (Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase())
+         || Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.replace(/\./g,'/').toLowerCase())
+         || u);
+    if (bracketDimMap[uNorm]) _varDimCache[lhs] = bracketDimMap[uNorm].slice();
+  });
+}
+
 function _inferMissingVarDims(equationLines) {
   const _zero = [0,0,0,0,0,0,0];
   for (let pass = 0; pass < 8; pass++) {
@@ -5678,87 +5760,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const rhsMap = buildRHSMap(txt);
         buildVarDimCache(rhsMap, txt);
         // Seed _varDimCache from [unit] bracket overrides — gives dim to Q [kW], m [kg/s] etc.
-        (function _seedBracketDims() {
-          const bracketDimMap = {
-            // ── Temperature (K dim regardless of input unit) ──────────
-            K:[0,0,0,0,1,0,0], degC:[0,0,0,0,1,0,0], '°C':[0,0,0,0,1,0,0],
-            degF:[0,0,0,0,1,0,0], '°F':[0,0,0,0,1,0,0],
-            degR:[0,0,0,0,1,0,0], '°R':[0,0,0,0,1,0,0],
-            // ── Mass ─────────────────────────────────────────────────
-            kg:[1,0,0,0,0,0,0], g:[1,0,0,0,0,0,0], tonne:[1,0,0,0,0,0,0],
-            lbm:[1,0,0,0,0,0,0], lb:[1,0,0,0,0,0,0], slug:[1,0,0,0,0,0,0],
-            // ── Length ───────────────────────────────────────────────
-            m:[0,1,0,0,0,0,0], mm:[0,1,0,0,0,0,0], cm:[0,1,0,0,0,0,0],
-            km:[0,1,0,0,0,0,0], ft:[0,1,0,0,0,0,0], inch:[0,1,0,0,0,0,0],
-            // ── Time ─────────────────────────────────────────────────
-            s:[0,0,1,0,0,0,0], ms:[0,0,1,0,0,0,0],
-            min:[0,0,1,0,0,0,0], h:[0,0,1,0,0,0,0],
-            // ── Absolute volume ───────────────────────────────────────
-            m3:[0,3,0,0,0,0,0], L:[0,3,0,0,0,0,0], liter:[0,3,0,0,0,0,0],
-            cm3:[0,3,0,0,0,0,0], ft3:[0,3,0,0,0,0,0], gallon:[0,3,0,0,0,0,0],
-            // ── Pressure ─────────────────────────────────────────────
-            Pa:[1,-1,-2,0,0,0,0], kPa:[1,-1,-2,0,0,0,0], MPa:[1,-1,-2,0,0,0,0],
-            GPa:[1,-1,-2,0,0,0,0], bar:[1,-1,-2,0,0,0,0], mbar:[1,-1,-2,0,0,0,0],
-            atm:[1,-1,-2,0,0,0,0], psia:[1,-1,-2,0,0,0,0], mmHg:[1,-1,-2,0,0,0,0],
-            // ── Energy ───────────────────────────────────────────────
-            J:[1,2,-2,0,0,0,0], kJ:[1,2,-2,0,0,0,0], MJ:[1,2,-2,0,0,0,0],
-            GJ:[1,2,-2,0,0,0,0], BTU:[1,2,-2,0,0,0,0], kWh:[1,2,-2,0,0,0,0],
-            cal:[1,2,-2,0,0,0,0], kcal:[1,2,-2,0,0,0,0],
-            // ── Power ────────────────────────────────────────────────
-            W:[1,2,-3,0,0,0,0], kW:[1,2,-3,0,0,0,0], MW:[1,2,-3,0,0,0,0],
-            GW:[1,2,-3,0,0,0,0], hp:[1,2,-3,0,0,0,0],
-            // ── Force ────────────────────────────────────────────────
-            N:[1,1,-2,0,0,0,0], kN:[1,1,-2,0,0,0,0], MN:[1,1,-2,0,0,0,0],
-            lbf:[1,1,-2,0,0,0,0],
-            // ── Velocity ─────────────────────────────────────────────
-            'm/s':[0,1,-1,0,0,0,0], 'km/h':[0,1,-1,0,0,0,0],
-            'ft/s':[0,1,-1,0,0,0,0], 'mph':[0,1,-1,0,0,0,0],
-            // ── Mass flow rate ────────────────────────────────────────
-            'kg/s':[1,0,-1,0,0,0,0], 'kg/min':[1,0,-1,0,0,0,0],
-            'kg/h':[1,0,-1,0,0,0,0], 'g/s':[1,0,-1,0,0,0,0],
-            // ── Volume flow rate ──────────────────────────────────────
-            'm3/s':[0,3,-1,0,0,0,0], 'L/s':[0,3,-1,0,0,0,0],
-            'm3/h':[0,3,-1,0,0,0,0], 'L/min':[0,3,-1,0,0,0,0],
-            // ── Specific energy [kJ/kg] ───────────────────────────────
-            'kJ/kg':[0,2,-2,0,0,0,0], 'J/kg':[0,2,-2,0,0,0,0],
-            'MJ/kg':[0,2,-2,0,0,0,0], 'BTU/lb':[0,2,-2,0,0,0,0],
-            // ── Specific heat / entropy [kJ/(kg·K)] ──────────────────
-            'kJ/kg.K':[0,2,-2,0,-1,0,0], 'kJ/kg/K':[0,2,-2,0,-1,0,0],
-            'kJ/(kg.K)':[0,2,-2,0,-1,0,0], 'kJ/(kg·K)':[0,2,-2,0,-1,0,0],
-            'J/kg.K':[0,2,-2,0,-1,0,0], 'J/kg/K':[0,2,-2,0,-1,0,0],
-            'J/(kg·K)':[0,2,-2,0,-1,0,0], 'BTU/lb/F':[0,2,-2,0,-1,0,0],
-            // ── Density [kg/m³] ──────────────────────────────────────
-            'kg/m3':[1,-3,0,0,0,0,0], 'kg/m^3':[1,-3,0,0,0,0,0],
-            'g/cm3':[1,-3,0,0,0,0,0], 'g/L':[1,-3,0,0,0,0,0],
-            // ── Thermal conductivity [W/(m·K)] ────────────────────────
-            'W/m/K':[1,1,-3,0,-1,0,0], 'W/m.K':[1,1,-3,0,-1,0,0],
-            'W/(m·K)':[1,1,-3,0,-1,0,0],
-            // ── Heat transfer coefficient [W/(m²·K)] ─────────────────
-            'W/m2/K':[1,0,-3,0,-1,0,0], 'W/m^2/K':[1,0,-3,0,-1,0,0],
-            'W/(m2·K)':[1,0,-3,0,-1,0,0], 'kW/m2/K':[1,0,-3,0,-1,0,0],
-            // ── Dynamic viscosity [Pa·s] ──────────────────────────────
-            'Pa.s':[1,-1,-1,0,0,0,0], 'Pa*s':[1,-1,-1,0,0,0,0],
-            'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
-          };
-          // Use _origTxt (pre-preprocessing, brackets intact) not txt (already stripped)
-          _origTxt.split('\n').forEach(line => {
-            const clean = line.replace(/\/\/.*$/, '').trim();
-            const eqIdx = clean.indexOf('=');
-            if (eqIdx < 0) return;
-            const lhs = clean.slice(0, eqIdx).trim();
-            if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
-            const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
-            if (!bm) return;
-            const u = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
-            // Try direct, case-insensitive, then dot→slash normalised
-            const uNorm = bracketDimMap[u]
-              ? u
-              : (Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase())
-                 || Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.replace(/\./g,'/').toLowerCase())
-                 || u);
-            if (bracketDimMap[uNorm]) _varDimCache[lhs] = bracketDimMap[uNorm].slice();
-          });
-        })();
+        _seedBracketDimsFromText(_origTxt);
+
         // Re-run dim cache propagation now that bracket seeds are in place (reset=false preserves seeds)
         buildVarDimCache(rhsMap, null, false);
         // Equation-balance dim inference: fills in dims for variables not in rhsMap
@@ -6049,12 +6052,17 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const fluidKey = alias.toLowerCase() === 'water' ? null : (FLUID_ALIASES[_aliasKey] || _aliasKey);
         ACTIVE_FLUID_KEY = fluidKey || null;
         setActiveFunctions();
+        const _savedTempIn2 = UNITS.tempIn;
         try {
-          // Re-register exergy functions for new active fluid
-          const _r = solveSystem(filteredTxt, {}, {});
+          // Apply tempIn='K' override exactly as runAlgSolver does
+          if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
+          const _processedTxt = preprocessBrackets(filteredTxt);
+          const _r = solveSystem(_processedTxt, {}, {});
           results.push({ alias, fluidKey, scope: _r.scope, allVars: _r.allVars, error: null });
         } catch(e) {
           results.push({ alias, fluidKey, scope: null, allVars: [], error: e.message });
+        } finally {
+          UNITS.tempIn = _savedTempIn2;
         }
         done++;
         runNext();
@@ -6085,9 +6093,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       valid.forEach(r => r.allVars.forEach(v => allVarSet.add(v)));
       const allVars = Array.from(allVarSet).sort();
 
-      // Build unit labels from first successful run's context
+      // Build unit labels — seed from bracket tags then infer missing dims
       const rhsMap = buildRHSMap(filteredTxt);
       buildVarDimCache(rhsMap, filteredTxt);
+      _seedBracketDimsFromText(filteredTxt);
+      buildVarDimCache(rhsMap, null, false); // re-propagate with seeds
+      try { _inferMissingVarDims(filteredTxt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(Boolean)); } catch(e) {}
 
       // Helper: format a single cell value
       function cellFmt(v, scope) {
