@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.238</title>
+<title>EquaSolve V1.239</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.238</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.239</div>
       </div>
     </div>
 
@@ -639,7 +639,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         Released under the <span style="color:var(--accent);font-weight:600;">MIT License</span> &#8212; free to use, modify, and redistribute for any purpose, including educational and commercial use, provided this notice is retained.
       </p>
       <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:12px 14px;font-size:10px;color:var(--mute);line-height:2;">
-        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.238.<br>
+        Copyright &copy; 2025 Dr. Omar Al-Abbasi, University of Bahrain. EquaSolve V1.239.<br>
         Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction &#8212; including without limitation the rights to use, copy, modify, merge, publish, and distribute &#8212; subject to the condition that the above copyright notice and this permission notice are included in all copies or substantial portions of the Software.<br><br>
         THE SOFTWARE IS PROVIDED &#8220;AS IS&#8221;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
       </div>
@@ -664,7 +664,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.238</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.239</span></div>
       
     </div>
   </div>
@@ -832,7 +832,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.238</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.239</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -5227,6 +5227,10 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
     const lines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(l=>l);
     // Regression/curve fitting: has a fit(...) call
     if (lines.some(l => /^fit\s*\(/.test(l))) return 'fit';
+    // Fluid sweep: fluid = choice(...) without minimize/maximize
+    const _hasFluidChoice = lines.some(l => /^fluid\s*=\s*choice\s*\(/i.test(l));
+    const _hasOptKw = lines.some(l => /^(minimize|maximize)\s+\S/.test(l));
+    if (_hasFluidChoice && !_hasOptKw) return 'fluidchoice';
     // Sensitivity: has at least one 'sens' line
     if (lines.some(l => /^sens\s+\w+\s*=/.test(l))) return 'sens';
     // Uncertainty: has at least one 'unc' line
@@ -5263,6 +5267,7 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
     else if (t==='opt') { badge.textContent='⊛ Optimize'; badge.className='type-badge badge-opt'; }
     else if (t==='pareto'){badge.textContent='⋈ Pareto';   badge.className='type-badge badge-pareto'; }
     else if (t==='fit')  { badge.textContent='⌇ Regression'; badge.className='type-badge badge-unc'; }
+    else if (t==='fluidchoice') { badge.textContent='⊛ Fluid Sweep'; badge.className='type-badge badge-opt'; }
     else if (t==='sens') { badge.textContent='⊡ Sensitivity'; badge.className='type-badge badge-sens'; }
     else if (t==='unc')  { badge.textContent='± Uncertainty'; badge.className='type-badge badge-unc'; }
     else                { badge.textContent='⟨/⟩ Algebraic'; badge.className='type-badge badge-alg'; }
@@ -5988,6 +5993,173 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     },60);
   }
 
+
+  // ═══════════════════════════════════════════════════════════════════
+  // runFluidSweep — algebraic solver with fluid = choice(A, B, C)
+  // Solves the equation set once per fluid, renders comparison table
+  // ═══════════════════════════════════════════════════════════════════
+  function runFluidSweep(rawTxt) {
+    const $bt   = document.getElementById('solve-btn');
+    const $stat = document.getElementById('solve-status');
+    const $pn   = document.getElementById('res-panel');
+    const $lb   = document.getElementById('res-lbl');
+    const $bd   = document.getElementById('res-body');
+    const $algZone = document.getElementById('alg-result-zone');
+
+    // ── Parse fluid = choice(...) line ──────────────────────────────
+    const rawLines = rawTxt.split('\n');
+    let fluidChoices = [];
+    const choiceLineIdxs = new Set();
+    rawLines.forEach((l, idx) => {
+      const noComment = l.replace(/\/\/.*$/, '').trim();
+      const m = noComment.match(/^fluid\s*=\s*choice\s*\(([^)]+)\)\s*$/i);
+      if (m) {
+        fluidChoices = m[1].split(',').map(s => s.trim()).filter(Boolean);
+        choiceLineIdxs.add(idx);
+      }
+    });
+    if (!fluidChoices.length) { runAlgSolver(rawTxt); return; }
+
+    // Strip fluid=choice(...) line from equations
+    const filteredTxt = rawLines.filter((_, idx) => !choiceLineIdxs.has(idx)).join('\n');
+
+    $bt.disabled = true;
+    $bt.innerHTML = `<span class="spin">◌</span> Fluid Sweep 0/${fluidChoices.length}…`;
+    $stat.style.color = 'var(--mute)'; $stat.textContent = '';
+    sliderState = {}; sliderDefs = []; pendingParamSelection = null;
+    renderSliderZone([]);
+
+    const savedFluidKey = ACTIVE_FLUID_KEY;
+    const results = [];
+    let done = 0;
+    const _t0 = performance.now();
+
+    function runNext() {
+      if (done >= fluidChoices.length) {
+        ACTIVE_FLUID_KEY = savedFluidKey;
+        setActiveFunctions();
+        renderSweepResults();
+        return;
+      }
+      const alias = fluidChoices[done];
+      $bt.innerHTML = `<span class="spin">◌</span> ${alias} (${done+1}/${fluidChoices.length})…`;
+      setTimeout(() => {
+        const fluidKey = alias.toLowerCase() === 'water' ? null : (FLUID_ALIASES[alias] || alias);
+        ACTIVE_FLUID_KEY = fluidKey;
+        setActiveFunctions();
+        try {
+          // Re-register exergy functions for new active fluid
+          const _r = solveSystem(filteredTxt, {}, {});
+          results.push({ alias, fluidKey, scope: _r.scope, allVars: _r.allVars, error: null });
+        } catch(e) {
+          results.push({ alias, fluidKey, scope: null, allVars: [], error: e.message });
+        }
+        done++;
+        runNext();
+      }, 10);
+    }
+
+    function renderSweepResults() {
+      const elapsed = performance.now() - _t0;
+      const elapsedStr = elapsed < 1000 ? elapsed.toFixed(1)+' ms' : (elapsed/1000).toFixed(2)+' s';
+      const valid   = results.filter(r => r.scope !== null);
+      const failed  = results.filter(r => r.scope === null);
+
+      $pn.className = valid.length ? 'res-panel ok' : 'res-panel err';
+      $lb.className = valid.length ? 'res-lbl ok'   : 'res-lbl err';
+      $lb.innerHTML = `⊛ Fluid Sweep Results · <span style="font-weight:400;color:var(--mute);font-size:9px">${elapsedStr}</span>` +
+        `<span class="method-badge" style="background:rgba(194,130,255,.15);color:var(--purple)">${valid.length}/${fluidChoices.length} fluids · ${valid[0]?.allVars?.length||0} vars</span>`;
+
+      if (!valid.length) {
+        $bd.innerHTML = `<div class="err-box">All fluid runs failed.<br>${failed.map(f=>`<b>${f.alias}</b>: ${f.error}`).join('<br>')}</div>`;
+        $algZone.classList.add('visible');
+        $bt.disabled = false; $bt.innerHTML = '▶ Solve';
+        $stat.style.color = 'var(--red)'; $stat.textContent = 'Failed';
+        return;
+      }
+
+      // Collect all variable names that appear across all valid runs
+      const allVarSet = new Set();
+      valid.forEach(r => r.allVars.forEach(v => allVarSet.add(v)));
+      const allVars = Array.from(allVarSet).sort();
+
+      // Build unit labels from first successful run's context
+      const rhsMap = buildRHSMap(filteredTxt);
+      buildVarDimCache(rhsMap, filteredTxt);
+
+      // Helper: format a single cell value
+      function cellFmt(v, scope) {
+        if (!scope || !(v in scope)) return '<td style="color:var(--mute)">—</td>';
+        let val = scope[v];
+        if (!isFinite(val)) return `<td style="color:var(--red)">${val}</td>`;
+        // Apply bracket display map if available
+        if (_bracketDisplayMap[v]) {
+          const bde = _bracketDisplayMap[v];
+          const ou = bde.unit;
+          const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
+          if (_tempSet[ou]) {
+            let T_K = ou==='K' ? bde.val : ou==='°C'||ou==='degC' ? bde.val+273.15 : ou==='°F'||ou==='degF' ? (bde.val-32)*5/9+273.15 : bde.val*5/9;
+            val = fromK(T_K);
+          } else { val = bde.val; }
+        }
+        return `<td>${fmt(val)}</td>`;
+      }
+
+      // Build unit label row
+      function unitLabel(v) {
+        if (_bracketDisplayMap[v]) {
+          const bde = _bracketDisplayMap[v];
+          const ou = bde.unit;
+          const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
+          return _tempSet[ou] ? UNITS.temp : ou;
+        }
+        return _bestUnitLabel(v, rhsMap[v]) || '';
+      }
+
+      // CSS for the table
+      const tableStyle = `width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;`;
+      const thStyle = `background:var(--surface2);color:var(--mute);font-weight:600;padding:5px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:10px;white-space:nowrap;`;
+      const tdStyle = `padding:4px 8px;border-bottom:1px solid var(--border2);`;
+      const varColStyle = `font-weight:600;color:var(--hi);font-family:monospace;font-size:11px;`;
+      const unitColStyle = `color:var(--mute);font-size:9px;padding:4px 6px;border-bottom:1px solid var(--border2);`;
+
+      // Header row: Variable | Unit | fluid1 | fluid2 | ...
+      const headerCols = `<th style="${thStyle}">Variable</th><th style="${thStyle}">Unit</th>` +
+        valid.map(r => {
+          const displayName = r.fluidKey ? (FLUID_DB_RAW[r.fluidKey]?.name || r.alias) : 'Water';
+          return `<th style="${thStyle};text-align:center">${displayName}</th>`;
+        }).join('');
+
+      // Data rows
+      const dataRows = allVars.map(v => {
+        const ul = unitLabel(v);
+        const cells = valid.map(r => cellFmt(v, r.scope)).join('');
+        return `<tr><td style="${tdStyle}${varColStyle}">${v}</td><td style="${unitColStyle}">${ul}</td>${cells}</tr>`;
+      }).join('');
+
+      const table = `<div style="overflow-x:auto"><table style="${tableStyle}"><thead><tr>${headerCols}</tr></thead><tbody>${dataRows}</tbody></table></div>`;
+
+      // Error notes for failed fluids
+      const errorNotes = failed.length
+        ? `<div style="margin-top:6px;font-size:10px;color:var(--red)">${failed.map(f=>`⚠ ${f.alias}: ${f.error}`).join('<br>')}</div>`
+        : '';
+
+      $bd.innerHTML = table + errorNotes;
+      $algZone.classList.add('visible');
+
+      // Store for print
+      window._lastFluidSweepHTML = table + errorNotes;
+      window._lastFluidSweepFluids = valid.map(r => r.alias);
+      _lastSolveText = rawTxt;
+
+      if (window.innerWidth < 900) setTimeout(() => $algZone.scrollIntoView({behavior:'smooth', block:'start'}), 80);
+      $bt.disabled = false; $bt.innerHTML = '▶ Solve';
+      $stat.style.color = 'var(--green)'; $stat.textContent = `✓ ${fluidChoices.length} fluids`;
+    }
+
+    runNext();
+  }
+
   // ── Unified solve dispatch ───────────────────────────────────────
   function handleSolve(){
     const txt=$in.value.trim(); if(!txt)return;
@@ -6000,6 +6172,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     else if(type==='sens')  runSensitivity(txt);
     else if(type==='unc')   runUncertainty(txt);
     else if(type==='fit')   runRegression(txt);
+    else if(type==='fluidchoice') runFluidSweep(txt);
     else                runAlgSolver(txt);
   }
 
@@ -6769,6 +6942,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
     // ── Results ──
     const resultsDiv = document.getElementById('pr-results');
+
+    // Fluid sweep: use stored table HTML instead of var-cards
+    if (window._lastFluidSweepHTML && detectType(txt) === 'fluidchoice') {
+      resultsDiv.innerHTML = `<div style="font-size:10px;color:#444;margin-bottom:4px">Fluid Sweep · ${(window._lastFluidSweepFluids||[]).join(', ')}</div>` + window._lastFluidSweepHTML;
+    } else {
+
     // Get current solve results from the result cards
     const cards = document.querySelectorAll('#res-body .var-card');
     if (cards.length === 0) {
@@ -6785,7 +6964,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           <div class="pr-result-val">${_esc(val)}</div>
         </div>`;
       }).join('');
-    }
+    } // end else (non-fluid-sweep)
+    } // end fluid-sweep branch
 
     // ── Footer ──
     const statsRow = document.querySelector('#res-body .stats-row');
