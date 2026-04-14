@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.242</title>
+<title>EquaSolve V1.243</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.242</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.243</div>
       </div>
     </div>
 
@@ -632,6 +632,18 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       </div>
     </div>
 
+    <!-- Attributions -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;">
+      <div style="font-size:9px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;">Attributions</div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:11px;color:var(--dim);line-height:1.7;">
+        <div>&#128208; &nbsp;<span style="color:var(--hi);">IAPWS-IF97</span> &#8212; Water/steam property standard. Wagner &amp; Kruse, <em>Properties of Water and Steam</em> (2008). Equations implemented from the public IAPWS-IF97 release.</div>
+        <div>&#128202; &nbsp;<span style="color:var(--hi);">Saturation table data</span> &#8212; Consistent with IAPWS-95; cross-referenced with Cengel &amp; Boles, <em>Thermodynamics: An Engineering Approach</em>, Tables A-4 to A-16.</div>
+        <div>&#10052;&#65039; &nbsp;<span style="color:var(--hi);">Peng-Robinson EOS</span> &#8212; Peng &amp; Robinson (1976), <em>Ind. Eng. Chem. Fundam.</em> Applied for refrigerant saturation properties (IIR/ASHRAE reference states).</div>
+        <div>&#128293; &nbsp;<span style="color:var(--hi);">Heat transfer correlations</span> &#8212; Gnielinski (1975), Churchill &amp; Bernstein (1977), Churchill &amp; Chu (1975). Standard peer-reviewed published correlations.</div>
+        <div>&#128288; &nbsp;<span style="color:var(--hi);">DM Mono typeface</span> &#8212; Colophon Foundry, distributed under the SIL Open Font License.</div>
+      </div>
+    </div>
+
     <!-- License -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;">
       <div style="font-size:9px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;">License</div>
@@ -656,18 +668,6 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       </div>
     </div>
 
-    <!-- Attributions -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;">
-      <div style="font-size:9px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;">Attributions</div>
-      <div style="display:flex;flex-direction:column;gap:9px;font-size:11px;color:var(--dim);line-height:1.7;">
-        <div>&#128208; &nbsp;<span style="color:var(--hi);">IAPWS-IF97</span> &#8212; Water/steam property standard. Wagner &amp; Kruse, <em>Properties of Water and Steam</em> (2008). Equations implemented from the public IAPWS-IF97 release.</div>
-        <div>&#128202; &nbsp;<span style="color:var(--hi);">Saturation table data</span> &#8212; Consistent with IAPWS-95; cross-referenced with Cengel &amp; Boles, <em>Thermodynamics: An Engineering Approach</em>, Tables A-4 to A-16.</div>
-        <div>&#10052;&#65039; &nbsp;<span style="color:var(--hi);">Peng-Robinson EOS</span> &#8212; Peng &amp; Robinson (1976), <em>Ind. Eng. Chem. Fundam.</em> Applied for refrigerant saturation properties (IIR/ASHRAE reference states).</div>
-        <div>&#128293; &nbsp;<span style="color:var(--hi);">Heat transfer correlations</span> &#8212; Gnielinski (1975), Churchill &amp; Bernstein (1977), Churchill &amp; Chu (1975). Standard peer-reviewed published correlations.</div>
-        <div>&#128288; &nbsp;<span style="color:var(--hi);">DM Mono typeface</span> &#8212; Colophon Foundry, distributed under the SIL Open Font License.</div>
-      </div>
-    </div>
-
   </div>
 </div>
 <header>
@@ -675,7 +675,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.242</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.243</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.242</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.243</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
