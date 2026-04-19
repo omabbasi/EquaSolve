@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.245</title>
+<title>EquaSolve V1.3</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.245</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3</div>
       </div>
     </div>
 
@@ -675,7 +675,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.245</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.245</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3348,22 +3348,8 @@ const _WFL = {
 //   - We try toK(arg): if Psat(toK(arg)) is valid and finite → arg is temperature.
 //   - Otherwise → arg is pressure (in display pressure unit).
 //   - Default (no unit given) → treat as temperature.
-// Detect if an AST node contains a pressure unit (kPa, MPa, bar, Pa, psia, atm)
-const _PRESSURE_UNITS = new Set(['kPa','MPa','Pa','bar','psia','atm']);
-function _astHasPressureUnit(nd) {
-  if (!nd) return false;
-  if (nd.t === 'B' && nd.op === '*') {
-    if (nd.R && nd.R.t === 'V' && _PRESSURE_UNITS.has(nd.R.n)) return true;
-    if (nd.L && nd.L.t === 'V' && _PRESSURE_UNITS.has(nd.L.n)) return true;
-  }
-  return false;
-}
-
-function _satAutoDetect(fl, arg, argNode) {
-  // Check global pressure flag set by evalNode F handler
-  if (window._satArgIsPressure || (argNode && _astHasPressureUnit(argNode))) {
-    return {mode:'P', P: toMPa(arg)};
-  }
+// V1.3: bare-unit syntax removed — sat auto-detect uses magnitude heuristic only.
+function _satAutoDetect(fl, arg) {
   try {
     const K = toK(arg);
     const Tmin = (fl.Tmin || 100), Tc = fl.Tc || 700;
@@ -3375,10 +3361,7 @@ function _satAutoDetect(fl, arg, argNode) {
   return {mode:'P', P: toMPa(arg)};
 }
 
-function _satAutoDetectWater(arg, argNode) {
-  if (window._satArgIsPressure || (argNode && _astHasPressureUnit(argNode))) {
-    return {mode:'P', P: toMPa(arg)};
-  }
+function _satAutoDetectWater(arg) {
   try {
     const K = toK(arg);
     if (K > 273 && K < 647) {
@@ -3505,35 +3488,28 @@ function _registerSatAutoFunctions() {
 
 // ── Unit-aware mode detection for exf ────────────────────────────────────
 // Inspects AST nodes of exf arguments to determine (T,P) vs (h,s) mode
-// Rules:
-//   - If arg nodes have explicit unit annotations (U node) check unit dimension
-//   - If arg nodes are variable references, use guessDisplayUnit on the name
-//   - No unit info → default to (T,P)
+// V1.3: variable references consult _varDimCache (seeded by [unit] brackets
+// and equation balance) — no more name-based guessing.
 function _exfDetectMode(argNodes, sc) {
+  // Dim vectors we care about
+  const _dimSpecE = [0,2,-2,0,0,0,0];    // kJ/kg
+  const _dimSpecS = [0,2,-2,0,-1,0,0];   // kJ/(kg·K)
+  const _dimPres  = [1,-1,-2,0,0,0,0];
+  const _dimTemp  = [0,0,0,0,1,0,0];
+  const _eq = (a,b) => a && b && a.every((v,i)=>v===b[i]);
+
   function getUnitHint(node) {
-    // Unit annotation node: nd.t==='U' means value >> unit
-    if (node && node.t === 'U') {
-      const uName = node.unit || '';
-      const uLow = uName.toLowerCase();
-      if (uLow.includes('kj') && uLow.includes('kg')) {
-        if (uLow.includes('/k') || uLow.includes('·k') || uLow.includes('*k')) return 'entropy';
-        return 'enthalpy';
-      }
-      if (['kpa','mpa','pa','bar','psia','atm'].some(u=>uLow===u)) return 'pressure';
-      if (['k','°c','degc','°f','degf','°r'].some(u=>uLow===u)) return 'temperature';
-    }
-    // Variable reference — use name patterns
+    // Variable reference — consult dim cache (seeded by brackets/inference)
     if (node && node.t === 'V') {
-      const g = guessDisplayUnit(node.n);
-      if (g) {
-        const u = g.unit || '';
-        if (u.includes('kJ/kg') && u.includes('K')) return 'entropy';
-        if (u.includes('kJ/kg')) return 'enthalpy';
-        if (u === '°C' || u === 'K' || u === '°F') return 'temperature';
-        if (u === 'kPa' || u === 'MPa' || u === 'bar') return 'pressure';
+      const d = _varDimCache && _varDimCache[node.n];
+      if (d) {
+        if (_eq(d, _dimSpecS)) return 'entropy';
+        if (_eq(d, _dimSpecE)) return 'enthalpy';
+        if (_eq(d, _dimTemp))  return 'temperature';
+        if (_eq(d, _dimPres))  return 'pressure';
       }
     }
-    // Function call node — infer from function name prefix
+    // Function call node — infer from function name prefix (registered dims)
     if (node && node.t === 'F') {
       const fn = node.fn.toLowerCase();
       if (/^(h_|h_pt|h_px|h_tx|h_ps|h_pv|h_pu|h_hs|h_tv|h_ts|h_vs|h_vu|enthalpy)/.test(fn) && !/^(h_conv|h_darcy|hf_darcy|h_loss|h_pipe|h_cyl|h_flat|h_sphere|h_boil|h_cond|h_rad|h_coeff)/.test(fn)) return 'enthalpy';
@@ -3691,87 +3667,33 @@ function fromPowerW(v){return v/(POWER_TO_W[UNITS.power]||1);}
 function toVolM3(v){return v*(VOL_TO_M3[UNITS.volAbsIn]||1);}
 function fromVolM3(v){return v/(VOL_TO_M3[UNITS.volAbs]||1);}
 function toDisplay(val,group){if(!isFinite(val))return val;switch(group){case'temp':return fromK(val);case'pres':return fromMPa(val);case'enth':return fromKJ(val);case'vol':return fromM3(val);default:return val;}}
-function guessDisplayUnit(name){
-  const n=name.toLowerCase();
-  // Temperature: T, T1, T_in etc — but NOT 'time', 'torque'
-  if(/^t($|[_\d]|emp|in$|out|hot|cold|high|low|sat|amb|db|wb|dp|dry|wet)/.test(n)) return{group:'temp',unit:UNITS.temp};
-  // Pressure: P, dP etc — but NOT 'power', 'pump'
-  if(/^(p|dp|delta_?p)($|[_\d]|res|in|out|high|low|sat|atm|total|abs|gauge)/.test(n)) return{group:'pres',unit:UNITS.pres};
-  // Enthalpy: h1, h_in, dh — bare 'h' alone excluded (head loss, convection coeff etc.)
-  // Also exclude h_conv, h_rad, h_loss, h_coeff (heat transfer coefficients)
-  if(/^(h\d|h_\d|dh|h_ent|hf$|hg$|hfg$|h_in$|h_out$|h_mix$|h_fg$)/.test(n) && !/h_loss|h_l$|h_head|hloss|h_conv|h_rad|h_coeff|h_nat|h_pipe|h_film/.test(n)) return{group:'enth',unit:UNITS.enth};
-  // Internal energy: u1, u_in, du — bare 'u' alone is too ambiguous (overall heat transfer coeff)
-  if(/^(u[_\d]|du|u_in$|u_out$|u_fg$)/.test(n) && !/uncertainty|unit/.test(n)) return{group:'enth',unit:UNITS.enth};
-  // Entropy: s1, s_in, ds, sf, sg, sfg — bare 's' alone too ambiguous
-  if(/^(s[_\d]|ds|sf$|sg$|sfg$|s_in$|s_out$|s_ent)/.test(n) && !/speed|spin|surf|sol|sec|str/.test(n)) return{group:'entr',unit:'kJ/kg·K'};
-  // Specific volume: v, v1, v_f, v_g, v_in etc — but NOT V_f (flow velocity), V_mix (volume), rho etc.
-  if(/^(v$|v\d|v_\d|vf$|vg$|vfg$|v_in$|v_out$|v_ol|v_known|v_mix)/.test(n) && !/vel|velocity|volt|v_f$|v_flow/.test(n)) return{group:'vol',unit:UNITS.vol};
-  // Energy/heat: Q1, Q_dot, Q_in, q_in etc — bare 'Q' alone is ambiguous
-  if(/^(q[_\d]|energy|work\b|heat\b)/.test(n)) return{group:'energy',unit:UNITS.energy};
-  // Work/power variables: W, W_dot, W_rev, Wa, w_turb etc (upper or lower)
-  if(/^w($|[_a-z\d])/.test(n) && !/^(watt|weber)/.test(n)) return{group:'power',unit:UNITS.power};
-  if(/^W($|[_\d])/.test(name) && !/^(Wb|Weber)/.test(name)) return{group:'power',unit:UNITS.power};
-  if(/^(q_in|q_out|q_net|q_boil|q_cond|q_evap|q_heat|q_cold|q_loss|q_dot|dq)/.test(n)) return{group:'enth',unit:UNITS.enth};
-  // Exergy: ex, exf, phi, psi, exergy — kJ/kg
-  if(/^(ex|exf|exflow|phi|psi|epsilon|eta_ex|exergy)($|[_\d])/.test(n)) return{group:'enth',unit:UNITS.enth};
-  // Force: F_force, thrust, drag, lift — NOT f, f1, f2 (friction factor)
-  if(/^(force|thrust|drag|lift|f_force|f_net|f_total)($|[_\d])/.test(n)) return{group:'force',unit:UNITS.force};
-  // Length: D, pipe_L, pipe_D, len, diam, radius etc — NOT L alone (liter conflict)
-  if(/^(diam|radius|height|width|depth|dist|thickness|gap|clearance|pipe_l|pipe_d|len|length)($|[_\d])/.test(n)) return{group:'len',unit:UNITS.len};
-  // Mass flow: m1, m2, m_dot, m_ref etc — m followed by digit or underscore
-  if(/^m($|[_\d])/.test(n) && !/^m(in|ax|od|ul|ean|s$)/.test(n)) return{group:'mass_flow',unit:'kg/s'};
-  // Mass: mass, weight — NOT m alone (too ambiguous)
-  if(/^(mass|weight)($|[_\d])/.test(n)) return{group:'mass',unit:UNITS.mass};
-  // Velocity: vel, velocity, speed — NOT V alone (too ambiguous)
-  if(/^(vel|velocity|speed|v_flow)($|[_\d])/.test(n)) return{group:'vel',unit:UNITS.vel};
-  return null;
-}
 
-// Map every unit constant name → {group, unit} for RHS-based inference
-const UNIT_CONST_MAP = {
-  // Pressure
-  Pa:'pres',kPa:'pres',MPa:'pres',GPa:'pres',bar:'pres',mbar:'pres',atm:'pres',
-  psia:'pres',psf:'pres',mmHg:'pres',torr:'pres',
-  // Energy
-  J:'energy',joule:'energy',kJ:'energy',MJ:'energy',GJ:'energy',
-  BTU:'energy',cal:'energy',kcal:'energy',kWh:'energy',Wh:'energy',
-  // Power
-  W:'power', kW:'power', MW:'power', GW:'power', hp:'power',
-  // Force
-  N:'force',newton:'force',kN:'force',MN:'force',lbf:'force',kip:'force',
-  // Mass
-  kg:'mass',tonne:'mass',ton_metric:'mass',g_mass:'mass',lbm:'mass',lb_mass:'mass',slug:'mass',
-  // Length
-  m:'len',mm:'len',cm:'len',km:'len',ft:'len',inch:'len',yd:'len',mi:'len',
-  // Area
-  cm2:'area',mm2:'area',km2:'area',ft2:'area',inch2:'area',
-  // Volume
-  L:'vol_abs',liter:'vol_abs',mL:'vol_abs',cL:'vol_abs',
-  m3:'vol_abs',cm3:'vol_abs',mm3:'vol_abs',ft3:'vol_abs',gallon:'vol_abs',gal:'vol_abs',
-  // Velocity
-  kmh:'vel',mph:'vel',knot:'vel',
-  // Compound velocity (after tokenizer collapses m/s → N token, these won't appear as identifiers
-  // but add as aliases for RHS text scanning)
-  'mps':'vel','fps':'vel',
-  // Temp
-  K_unit:'temp',
-};
-
-// Group → display unit label mapping
-function groupToDisplayUnit(group){
-  switch(group){
-    case'pres': return UNITS.pres;
-    case'energy': return UNITS.energy;
-    case'force': return UNITS.force;
-    case'mass': return UNITS.mass;
-    case'len': return UNITS.len;
-    case'power': return UNITS.power;
-    case'vol_abs': return ({m3:'m³',L:'L',liter:'L',cm3:'cm³',ft3:'ft³',gallon:'gal',gal:'gal'}[UNITS.volAbs])||'m³';
-    case'area': return 'm²';
-    case'vel': return UNITS.vel;
-    case'temp': return UNITS.temp;
-    default: return null;
+// ═══════════════════════════════════════════════════════════════════
+//  V1.3 UNIT SYSTEM — PURE DIMENSIONAL, NO NAME-BASED GUESSING
+// ═══════════════════════════════════════════════════════════════════
+// Every variable's unit comes from exactly ONE of three sources (in priority):
+//   1. [unit] bracket annotation  →  _bracketDisplayMap + _varDimCache (seeded)
+//   2. evalDimNode RHS propagation through registered function return dims
+//   3. Equation-balance inference in _inferMissingVarDims
+// Anything not resolvable by these → NO LABEL (never guessed by name).
+//
+// These two helpers replace every former call to guessDisplayUnit().
+// They are the ONLY sanctioned way to obtain a unit label outside the
+// [unit] bracket pipeline.
+function _dimLabelFor(v, rhsMap, bracketUnits) {
+  if (bracketUnits && bracketUnits[v]) return bracketUnits[v];
+  if (_varDimCache && _varDimCache[v]) {
+    const L = dimToLabel(_varDimCache[v]);
+    if (L) return L;
   }
+  if (rhsMap && rhsMap[v]) {
+    try { return inferUnitFromRHS(rhsMap[v])?.unit || ''; } catch(e) {}
+  }
+  return '';
+}
+function _dimLabelForExpr(expr) {
+  if (!expr) return '';
+  try { return inferUnitFromRHS(expr)?.unit || ''; } catch(e) { return ''; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3865,30 +3787,10 @@ function evalDimNode(nd) {
     if (_varDimCache && nd.n in _varDimCache) {
       return {val: 1, dim: _varDimCache[nd.n].slice()};
     }
-    const u = UNIT_DIM[nd.n];
-    if (u && !(_userVarNames && _userVarNames.has(nd.n))) return {val: u.si, dim: u.dim.slice()};
-    // Unknown variable — try guessDisplayUnit ONLY for variables NOT defined by the user
-    // (prevents m1→kg/s, W_dot→kW etc. from poisoning dim-inference of user variables)
-    const g = (_userVarNames && _userVarNames.has(nd.n))
-      ? null
-      : (typeof guessDisplayUnit === 'function' ? guessDisplayUnit(nd.n) : null);
-    if (g) {
-      switch(g.group) {
-        case 'enth':   return {val:1e3, dim:[0,2,-2,0,0,0,0]};  // J/kg
-        case 'entr':   return {val:1e3, dim:[0,2,-2,0,-1,0,0]}; // J/(kg·K)
-        case 'vol':    return {val:1,   dim:[-1,3,0,0,0,0,0]};  // m³/kg
-        case 'pres':   return {val:1e6, dim:[1,-1,-2,0,0,0,0]}; // Pa
-        case 'temp':   return {val:1,   dim:[0,0,0,0,1,0,0]};   // K
-        case 'energy': return {val:1e3, dim:[1,2,-2,0,0,0,0]};  // J
-        case 'mass':   return {val:1,   dim:[1,0,0,0,0,0,0]};   // kg
-        case 'vel':    return {val:1,   dim:[0,1,-1,0,0,0,0]};  // m/s
-        case 'len':    return {val:1,   dim:[0,1,0,0,0,0,0]};   // m
-        case 'force':  return {val:1,   dim:[1,1,-2,0,0,0,0]};  // N
-        case 'power':     return {val:1e3, dim:[1,2,-3,0,0,0,0]};  // W
-        case 'mass_flow': return {val:1,   dim:[1,0,-1,0,0,0,0]};  // kg/s
-      }
-    }
-    // Dimensionless placeholder
+    // V1.3: bare identifiers are ALWAYS user variables — never consulted against
+    // UNIT_DIM (avoids W/m/h/s/K name clashes) and never name-guessed.
+    // Dimensionless placeholder until the variable is bracket-declared or
+    // inferred from an equation that has it.
     return {val: 1, dim: _D.none.slice()};
   }
   if (nd.t === 'U') {
@@ -4605,26 +4507,9 @@ if(nd.t==='F'){
       return _exCalc(_exFl,a1,a2);
     }
   }
-  // ── Sat functions: pass pressure hint via tagged value ──────────────────
-  // e.g. hf_R134a(100 kPa) — detect pressure unit in AST before evaluation
-  const _SAT_FN_RE = /^(hf|hg|hfg|sf|sg|sfg|vf|vg|uf|ug)(_.*)?$/;
-  if (_SAT_FN_RE.test(nd.fn) && nd.args.length === 1) {
-    const argNode = nd.args[0];
-    const argVal = evalNode(argNode, sc);
-    const isPres = _astHasPressureUnit(argNode);
-    // Build a synthetic call by temporarily overriding _satAutoDetect's context
-    if (nd.fn in FUNS) {
-      // Pass a special object that encodes both value and pressure flag
-      // The FUNS wrapper calls _satAutoDetect(fl, arg, argNode) but only gets arg
-      // So we use a numeric value tagged with .__isPressure
-      const tagged = isPres ? Object.assign(Object(argVal), {valueOf(){ return argVal; }, __isPressure: true}) : argVal;
-      // Override: call with argNode as second arg via a global context flag
-      window._satArgIsPressure = isPres;
-      const result = FUNS[nd.fn](argVal);
-      window._satArgIsPressure = undefined;
-      return result;
-    }
-  }
+  // V1.3: sat functions route through magnitude heuristic in _satAutoDetect.
+  // The old bare-unit pressure-hint mechanism (window._satArgIsPressure) has
+  // been removed along with bare-unit expression syntax.
   const args=nd.args.map(a=>evalNode(a,sc));if(nd.fn in FUNS)return FUNS[nd.fn](...args);throw new Error('Unknown function: '+nd.fn);}throw new Error('Bad AST');}
 function collectVars(nd,out){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n))out.add(nd.n);if(nd.t==='B'){collectVars(nd.L,out);collectVars(nd.R,out);}if(nd.t==='U')collectVars(nd.R,out);if(nd.t==='F')nd.args.forEach(a=>collectVars(a,out));}
 function countUnknowns(nd,solved){const s=new Set();collectVars(nd,s);return[...s].filter(v=>!solved.has(v));}
@@ -4678,8 +4563,8 @@ function _bracketConvert(val, unitStr) {
 }
 
 function analyzeAlgSystem(raw){const allLines=String(raw||'').split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(l=>l);const funcDefPat=/^([a-zA-Z_]\w*)\s*\(([^)]+)\)\s*=\s*(.+)$/;const userFuncNames=new Set();const rawLines=allLines.filter(line=>{const m=line.match(funcDefPat);if(m){const params=m[2].split(',').map(s=>s.trim());if(params.every(p=>/^[a-zA-Z_]\w*$/.test(p))){userFuncNames.add(m[1]);return false;}}return true;});userFuncNames.forEach(n=>KNOWN.add(n));// Pre-process [unit] bracket expressions — convert numeric values, strip brackets
-function _isUnitNode(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS)||(nd.n in UNIT_DIM);if(nd.t==='U')return _isUnitNode(nd.R);if(nd.t==='B')return _isUnitNode(nd.L)&&_isUnitNode(nd.R);return false;}
-function _evalUnitSI(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in UNIT_DIM)return UNIT_DIM[nd.n].si;if(nd.n in CONSTS&&UNIT_DIM[nd.n])return UNIT_DIM[nd.n].si;if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return-_evalUnitSI(nd.R);if(nd.t==='B'){const l=_evalUnitSI(nd.L),r=_evalUnitSI(nd.R);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;return Math.pow(l,r);}return 1;}
+function _isUnitNode(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNode(nd.R);if(nd.t==='B')return _isUnitNode(nd.L)&&_isUnitNode(nd.R);return false;}
+function _evalUnitSI(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return-_evalUnitSI(nd.R);if(nd.t==='B'){const l=_evalUnitSI(nd.L),r=_evalUnitSI(nd.R);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;return Math.pow(l,r);}return 1;}
 const lines=rawLines.map(line=>{const idx=line.indexOf('=');if(idx<0)return line.replace(/\s*\[[^\]:]*\]\s*$/,'');const lhs=line.slice(0,idx).trim();const rhs=line.slice(idx+1).trim();if(!/^[a-zA-Z_]\w*$/.test(lhs))return line.replace(/\s*\[[^\]:]*\]\s*$/,'');// Check for [unit] bracket at end of RHS
 const bm=rhs.match(/^([\s\S]+?)\s*\[([^\]]+)\]\s*$/);if(!bm)return line;const valExpr=bm[1].trim(),unitStr=bm[2].trim();try{const ast=parse(valExpr);if(_isUnitNode(ast)){const numVal=_evalUnitSI(ast);if(isFinite(numVal)){const cv=_bracketConvert(numVal,unitStr);if(cv!==null&&isFinite(cv))return`${lhs} = ${cv}`;}}}catch(e){}return`${lhs} = ${valExpr}`;});
 const pairs=[];const varSet=new Set();lines.forEach((line,eqIndex)=>{const idx=line.indexOf('=');if(idx<0)throw new Error('Missing "=" in line: '+line);const la=parse(line.slice(0,idx).trim()),ra=parse(line.slice(idx+1).trim());pairs.push({la,ra,line,eqIndex});collectVars(la,varSet);collectVars(ra,varSet);});userFuncNames.forEach(n=>{if(!FUNS[n])KNOWN.delete(n);});const allVars=Array.from(varSet).sort();const eqCount=pairs.length,varCount=allVars.length,diff=varCount-eqCount;return{lines,pairs,allVars,eqCount,varCount,diff};}
@@ -4804,8 +4689,8 @@ function preprocessBrackets(txt) {
     return lhs + ' = ' + valExpr;
   }).join('\n');
 }
-function _isUnitNodeSimple(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS)||(nd.n in UNIT_DIM);if(nd.t==='U')return _isUnitNodeSimple(nd.R);if(nd.t==='B')return _isUnitNodeSimple(nd.L)&&_isUnitNodeSimple(nd.R);return false;}
-function _evalUnitSISimple(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in UNIT_DIM)return UNIT_DIM[nd.n].si;if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return -_evalUnitSISimple(nd.R);if(nd.t==='B'){const l=_evalUnitSISimple(nd.L),r=_evalUnitSISimple(nd.R);if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;return Math.pow(l,r);}return 1;}
+function _isUnitNodeSimple(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNodeSimple(nd.R);if(nd.t==='B')return _isUnitNodeSimple(nd.L)&&_isUnitNodeSimple(nd.R);return false;}
+function _evalUnitSISimple(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return -_evalUnitSISimple(nd.R);if(nd.t==='B'){const l=_evalUnitSISimple(nd.L),r=_evalUnitSISimple(nd.R);if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;return Math.pow(l,r);}return 1;}
 
 function solveSystem(raw,userGuesses,fixedScope={}){
   raw = preprocessBrackets(raw); // convert [unit] brackets to display-unit values
@@ -4879,99 +4764,10 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     }
   }
 
-  // ── Unit expression pre-processor ─────────────────────────────────────
-  // If a RHS contains ONLY numbers, CONSTS, and UNIT_DIM entries (no solver
-  // variables), evaluate it to a plain number in the active DISPLAY unit.
-  // e.g.  "A = 3 W * 3 s"  with energy display=kJ  →  "A = 0.009"  (0.009 kJ)
-  function isUnitExprNode(nd) {
-    if (!nd) return false;
-    if (nd.t === 'N') return true;
-    if (nd.t === 'V') return (nd.n in CONSTS) || (nd.n in UNIT_DIM);
-    if (nd.t === 'U') return isUnitExprNode(nd.R);
-    if (nd.t === 'B') return isUnitExprNode(nd.L) && isUnitExprNode(nd.R);
-    if (nd.t === 'F') return false;
-    return false;
-  }
-  // Convert SI value to display units based on dim vector
-  function siToDisplay(siVal, dim) {
-    if (dimEq(dim, _D.Pa))               return siVal / ({kPa:1e3,MPa:1e6,bar:1e5,psia:6894.757}[UNITS.pres]||1e6);
-    if (dimEq(dim, _D.J))                return siVal / (ENERGY_TO_KJ[UNITS.energy]||1) / 1000;
-    if (dimEq(dim, _D.W))                return siVal / (POWER_TO_W[UNITS.power]||1);
-    if (dimEq(dim, _D.N))                return siVal / (FORCE_TO_N[UNITS.force]||1);
-    if (dimEq(dim, _D.kg))               return siVal / (MASS_TO_KG[UNITS.mass]||1);
-    if (dimEq(dim, [0,1,0,0,0,0,0]))     return siVal / (LEN_TO_M[UNITS.len]||1);
-    if (dimEq(dim, [0,1,-1,0,0,0,0]))    return siVal / (VEL_TO_MS[UNITS.vel]||1);
-    if (dimEq(dim, [0,3,0,0,0,0,0]))     return siVal / (VOL_TO_M3[UNITS.volAbs]||1);
-    if (dimEq(dim, _D.K)) {
-      // Convert K to display temperature unit
-      const u = UNITS.tempIn || UNITS.temp;
-      if (u==='°C') return siVal - 273.15;
-      if (u==='°F') return (siVal - 273.15)*9/5 + 32;
-      if (u==='°R') return siVal * 9/5;
-      return siVal; // K
-    }
-    return siVal;
-  }
-  function evalUnitExprSI(nd) {
-    // Evaluate entirely in SI base units (Kelvin for temperature)
-    if (nd.t === 'N') return nd.v;
-    if (nd.t === 'V') {
-      if (nd.n in UNIT_DIM) return UNIT_DIM[nd.n].si;
-      if (nd.n in CONSTS) {
-        if (UNIT_DIM[nd.n]) return UNIT_DIM[nd.n].si;
-        return CONSTS[nd.n];
-      }
-    }
-    if (nd.t === 'U') {
-      // Handle -20 degC: unary minus on a number, then * degC
-      return -evalUnitExprSI(nd.R);
-    }
-    if (nd.t === 'B') {
-      // ── Temperature offset units: N * degC → N + 273.15 K ──────
-      // Pattern: number * degC  or  (unary- number) * degC
-      if (nd.op === '*') {
-        const unitNode = nd.R.t==='V' ? nd.R : (nd.L.t==='V' ? nd.L : null);
-        const numNode  = nd.R.t==='V' ? nd.L : (nd.L.t==='V' ? nd.R : null);
-        if (unitNode && numNode) {
-          if (unitNode.n === 'degC') {
-            const c = evalUnitExprSI(numNode); return isFinite(c) ? c + 273.15 : NaN;
-          }
-          if (unitNode.n === 'degF') {
-            const f = evalUnitExprSI(numNode); return isFinite(f) ? (f - 32)*5/9 + 273.15 : NaN;
-          }
-          if (unitNode.n === 'degR') {
-            const r = evalUnitExprSI(numNode); return isFinite(r) ? r * 5/9 : NaN;
-          }
-        }
-      }
-      const l = evalUnitExprSI(nd.L), r = evalUnitExprSI(nd.R);
-      if (nd.op==='+') return l+r;
-      if (nd.op==='-') return l-r;
-      if (nd.op==='*') return l*r;
-      if (nd.op==='/') return l/r;
-      return Math.pow(l,r);
-    }
-    return 1;
-  }
-  const processedLines = lines.map(line => {
-    const idx = line.indexOf('=');
-    if (idx < 0) return line;
-    const lhs = line.slice(0, idx).trim();
-    const rhs = line.slice(idx + 1).trim();
-    if (!/^[a-zA-Z_]\w*$/.test(lhs)) return line;
-    try {
-      const ast = parse(rhs);
-      if (isUnitExprNode(ast)) {
-        const siVal = evalUnitExprSI(ast);
-        if (!isFinite(siVal)) return line;
-        // Get dim vector to convert SI → display
-        const {dim} = evalDimNode(ast);
-        const displayVal = siToDisplay(siVal, dim);
-        if (isFinite(displayVal)) return `${lhs} = ${displayVal}`;
-      }
-    } catch(e) {}
-    return line;
-  });
+  // ── V1.3: bare-unit expression preprocessor REMOVED ──────────────────
+  // The old  "A = 3 W * 3 s"  syntax (identifiers as unit tokens) has been
+  // removed. Use  "A = 3*3 [W*s]"  or  "A = 9 [J]"  with [unit] brackets.
+  const processedLines = lines;
   if(!processedLines.length && _userFunNames.length) {
     return {scope:{}, allVars:[], seqCount:0, nrIter:0, nrRes:0, userFunNames:_userFunNames};
   }
@@ -5614,18 +5410,87 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   if (usesExergy && !hasT0) warnings.push('Exergy function used but <code>T0</code> (dead-state temperature) is not defined.');
   if (usesExergy && !hasP0) warnings.push('Exergy function used but <code>P0</code> (dead-state pressure) is not defined.');
 
-  // ── Check 2: Bare numeric T/P/v inputs without [unit] tag ──────────────
-  // Step A: collect every variable name passed as argument to ANY function call
-  const usedInFuncs = new Set();
-  const anyFuncPat = /\b[a-zA-Z_]\w*\s*\(([^)]+)\)/g;
+  // ── Check 2: Bare numeric T/P/h/s/v inputs without [unit] tag ─────────
+  // V1.3: uses FUNCTION-ARGUMENT-POSITION context instead of name guessing.
+  // When a variable is passed to a known thermo function, the position tells
+  // us the quantity kind — e.g. h_PT(P, T) → arg0 is pressure, arg1 is temperature.
+  //
+  // Function signature table (prefix → kinds by position). A trailing '…' means
+  // same kind continues for additional args (none currently use it).
+  const FN_SIG = {
+    // ── IAPWS / PR-EOS: 2-argument state functions ─────────────────────
+    h_PT:['pressure','temperature'], s_PT:['pressure','temperature'],
+    v_PT:['pressure','temperature'], u_PT:['pressure','temperature'],
+    cp_PT:['pressure','temperature'],
+    h_TP:['temperature','pressure'], s_TP:['temperature','pressure'],
+    v_TP:['temperature','pressure'], u_TP:['temperature','pressure'],
+    // Inversion: return T or P, arguments are properties
+    T_Ph:['pressure','enthalpy'],  T_Ps:['pressure','entropy'],
+    T_Pv:['pressure','spec. volume'],  T_Pu:['pressure','enthalpy'],
+    T_hs:['enthalpy','entropy'],   T_vs:['spec. volume','entropy'],
+    T_vu:['spec. volume','enthalpy'],
+    P_Tv:['temperature','spec. volume'], P_Tu:['temperature','enthalpy'],
+    P_Th:['temperature','enthalpy'],     P_Ts:['temperature','entropy'],
+    P_hs:['enthalpy','entropy'],         P_vs:['spec. volume','entropy'],
+    P_vu:['spec. volume','enthalpy'],
+    s_Ph:['pressure','enthalpy'],  v_Ph:['pressure','enthalpy'],
+    u_Ph:['pressure','enthalpy'],  x_Ph:['pressure','enthalpy'],
+    h_Ps:['pressure','entropy'],   v_Ps:['pressure','entropy'],
+    u_Ps:['pressure','entropy'],   x_Ps:['pressure','entropy'],
+    // Two-phase (quality) functions — quality is dimensionless
+    h_Tx:['temperature','quality'], s_Tx:['temperature','quality'],
+    v_Tx:['temperature','quality'], u_Tx:['temperature','quality'],
+    h_Px:['pressure','quality'],    s_Px:['pressure','quality'],
+    v_Px:['pressure','quality'],    T_Px:['pressure','quality'],
+    x_Pv:['pressure','spec. volume'],
+    // Saturation pressure / temperature (single arg — auto-detect)
+    Psat:['saturation'], Tsat:['saturation'],
+    // Exergy
+    exf:['temperature','pressure'], exflow:['temperature','pressure'],
+    ex: ['temperature','pressure'],
+    exfhs:['enthalpy','entropy'],
+    exheat:['power','temperature'],
+    // Psychrometrics
+    w_psy:['temperature','relative humidity'],
+    h_psy:['temperature','humidity ratio'],
+    v_psy:['temperature','humidity ratio'],
+    RH_psy:['temperature','humidity ratio'],
+    Twb_psy:['temperature','humidity ratio'],
+    Tdp_psy:['temperature','humidity ratio'],
+    w_sat:['temperature'],
+  };
+  // Strip fluid-specific suffix (h_PT_R134a → h_PT) to match signature table
+  function _fnSigKey(fnName) {
+    if (FN_SIG[fnName]) return fnName;
+    const m = fnName.match(/^([a-zA-Z][a-zA-Z0-9]*(?:_[A-Za-z]+)?)_([A-Za-z]\w*)$/);
+    // First try stripping one trailing suffix
+    if (m && FN_SIG[m[1]]) return m[1];
+    // Try _f / _water common aliases
+    const m2 = fnName.replace(/_f$|_water$|_[A-Z]\w*$|_r\w+$/i, '');
+    if (m2 !== fnName && FN_SIG[m2]) return m2;
+    return null;
+  }
+
+  // Step A: scan every function call and collect {varName → kind} from signatures
+  const inferredKind = {}; // varName → kind string
+  const anyFuncCallPat = /\b([a-zA-Z_]\w*)\s*\(([^()]+)\)/g;
   lines.forEach(l => {
     const clean = l.replace(/\/\/.*$/,'');
     let m;
-    anyFuncPat.lastIndex = 0;
-    while ((m = anyFuncPat.exec(clean)) !== null) {
-      m[1].split(',').forEach(arg => {
-        const a = arg.trim();
-        if (/^[a-zA-Z_]\w*$/.test(a)) usedInFuncs.add(a);
+    anyFuncCallPat.lastIndex = 0;
+    while ((m = anyFuncCallPat.exec(clean)) !== null) {
+      const fnName = m[1];
+      const key = _fnSigKey(fnName);
+      const sig = key ? FN_SIG[key] : null;
+      if (!sig) continue;
+      const args = m[2].split(',').map(s => s.trim());
+      args.forEach((arg, i) => {
+        if (!/^[a-zA-Z_]\w*$/.test(arg)) return;
+        const kind = sig[Math.min(i, sig.length - 1)];
+        if (kind === 'quality' || kind === 'humidity ratio' ||
+            kind === 'relative humidity' || kind === 'saturation') return;
+        // Record only the FIRST inferred kind to avoid flipping on re-use
+        if (!inferredKind[arg]) inferredKind[arg] = kind;
       });
     }
   });
@@ -5641,30 +5506,25 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     if (/^[a-zA-Z_]\w*$/.test(lhs) && /\[[^\]]+\]\s*$/.test(rhs)) bracketedVars.add(lhs);
   });
 
-  // Step C: flag bare numeric T/P/v/s/h/u assignments used in any function
-  // Variables that are derived from other variables are implicitly handled
+  // Step C: for each bare numeric assignment whose variable is used as a
+  // thermo function argument, flag a "no [unit] tag, assumed …" advisory.
   const numericPat = /^([a-zA-Z_]\w*)\s*=\s*(-?[\d.eE+\-]+)\s*$/;
-  // Name-based dimension guessing — covers common thermo + HT + psychro + Moody naming
-  function guessVarKind(name) {
-    const n = name.toLowerCase();
-    if (/^(t|t[_\d]|t_evap|t_cond|t_in|t_out|t_amb|t_hot|t_cold|t_sat|t_db|t_wb|t_dp|t_high|t_low|t_wi|t_wo|t_ci|t_co|t_h\d?|t_c\d?|t\d)/.test(n) && !/^(time|tau|theta|thick|total)/.test(n)) return 'temperature';
-    if (/^(p|p[_\d]|p_high|p_low|p_in|p_out|p_sat|p_evap|p_cond|p_atm|p_total|p\d)/.test(n) && !/^(pr|prandtl|phi|psi|pipe|pump|power)/.test(n)) return 'pressure';
-    if (/^(v$|v\d|v_\d|vf$|vg$|v_in|v_mix|v_known)/.test(n) && !/^(vel|velocity|volt|v_f$|v_flow)/.test(n)) return 'spec. volume';
-    return null;
-  }
   lines.forEach((l, i) => {
     const clean = l.replace(/\/\/.*$/,'').trim();
     const m = clean.match(numericPat);
     if (!m) return;
     const varName = m[1];
-    if (!usedInFuncs.has(varName)) return;
-    if (bracketedVars.has(varName)) return;
-    const kind = guessVarKind(varName);
+    const kind = inferredKind[varName];
     if (!kind) return;
+    if (bracketedVars.has(varName)) return;
     const dispUnit = kind === 'temperature' ? (UNITS.tempIn || UNITS.temp)
                    : kind === 'pressure'    ? (UNITS.presIn || UNITS.pres)
-                   : 'm³/kg';
-    warnings.push(`Line ${i+1}: <code>${varName} = ${m[2]}</code> — no [unit] tag, assumed ${kind} in <code>${dispUnit}</code>.`);
+                   : kind === 'enthalpy'    ? (UNITS.enth)
+                   : kind === 'entropy'     ? 'kJ/(kg·K)'
+                   : kind === 'spec. volume'? (UNITS.vol)
+                   : kind === 'power'       ? (UNITS.power)
+                   : '';
+    warnings.push(`Line ${i+1}: <code>${varName} = ${m[2]}</code> — no [unit] tag, assumed ${kind}${dispUnit?' in <code>'+dispUnit+'</code>':''}.`);
   });
 
   // ── Check 3: [unit] tag conflicts with inferred dim ──────────────────────
@@ -7554,7 +7414,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const pct = totalDest !== 0 ? (val / totalDest * 100) : 0;
         const isNeg = val < 0;
         const barW = isNeg ? 0 : Math.min(Math.abs(val) / maxVal * 100, 100);
-        const unit = guessDisplayUnit(name)?.unit || 'kJ/kg';
+        const unit = _dimLabelFor(name) || 'kJ/kg';
         const valColor = isNeg ? '#f85149' : 'var(--accent)';
         const negWarn = isNeg ? ` <span style="color:#f85149;font-size:9px">⚠ negative</span>` : '';
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;">
@@ -7597,7 +7457,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const raw = current.scope[v];
         const unitLabel = (current.unitOverrides?.[v])
           || (current.rhsMap?.[v] ? inferUnitFromRHS(current.rhsMap[v])?.unit : null)
-          || guessDisplayUnit(v)?.unit || '';
+          || '';
         let diffHtml = '';
         if (prevEntry && isFinite(raw)) {
           const prevVal = prevEntry.scope[v];
@@ -7637,7 +7497,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       const prevVal = prevEntry?.scope[v];
       const unitLabel = (entry.unitOverrides?.[v])
         || (entry.rhsMap?.[v] ? inferUnitFromRHS(entry.rhsMap[v])?.unit : null)
-        || guessDisplayUnit(v)?.unit || '';
+        || '';
       let diffHtml = '';
       if (!isFirst && isFinite(thisVal)) {
         if (prevVal === undefined) {
@@ -10429,11 +10289,11 @@ function runMultiFluidOptimizer(txt, rawLines, direction, objExpr, fluidChoices,
 
     const rows = valid.map((r, i) => {
       const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
-      const objUnit = guessDisplayUnit(objExpr)?.unit || '';
+      const objUnit = _dimLabelForExpr(objExpr);
       const objCell = `<td style="color:${i===0?'var(--green)':'var(--hi)'};font-weight:${i===0?700:400}">${fmt(r.result.objFinal)}${objUnit?' '+objUnit:''}</td>`;
       const freeCells = freeNames.map(v => {
         const val = r.result.displayVals[v];
-        const unit = guessDisplayUnit(v)?.unit || '';
+        const unit = _dimLabelFor(v, rhsMap);
         return `<td>${isFinite(val) ? fmt(val)+(unit?' '+unit:'') : '—'}</td>`;
       }).join('');
       const fluidName = FLUID_DB_RAW[r.fluidKey]?.name || r.alias;
@@ -10874,7 +10734,7 @@ function runOptimizer(txt) {
         if (!isFinite(val)) return '';
         const fv = freeVars.find(fv=>fv.name===v);
         const isFree = !!fv;
-        const unitLabel = fv?.unit || (rhsMap[v] ? inferUnitFromRHS(rhsMap[v])?.unit : null) || guessDisplayUnit(v)?.unit || '';
+        const unitLabel = fv?.unit || _dimLabelFor(v, rhsMap);
         const accent = isFree ? 'style="border-color:var(--purple)"' : '';
         const displayVal = isFree ? displayVals[v] : val;
         return `<div class="var-card" ${accent} style="animation-delay:${i*.04}s">
@@ -11048,7 +10908,7 @@ function runUncertainty(txt) {
 
       // Input summary
       const inputRows = uncParams.map(p => {
-        const unit = _bracketUnits[p.name] || guessDisplayUnit(p.name)?.unit || '';
+        const unit = _dimLabelFor(p.name, rhsMap, _bracketUnits);
         const relUnc = Math.abs(p.value) > 1e-10 ? (p.unc / Math.abs(p.value) * 100).toFixed(2) : '—';
         return `<div class="var-card">
           <div><span class="var-name">${p.name}</span>${unit?`<div class="var-unit">${unit}</div>`:''}</div>
@@ -11060,7 +10920,7 @@ function runUncertainty(txt) {
       const outRows = outputVars.map(v => {
         const base = baseScope[v];
         const du = totalUnc[v];
-        const unit = _bracketUnits[v] || (rhsMap[v] ? inferUnitFromRHS(rhsMap[v])?.unit : null) || guessDisplayUnit(v)?.unit || '';
+        const unit = _dimLabelFor(v, rhsMap, _bracketUnits);
         const relUnc = Math.abs(base) > 1e-10 ? (du / Math.abs(base) * 100) : 0;
         const relStr = relUnc < 0.01 ? '<0.01%' : relUnc.toFixed(2)+'%';
 
@@ -11554,7 +11414,7 @@ function runRegression(txt) {
           const val = evalNode(parse(rhs), Object.assign({}, FUNS, finalScope));
           if (isFinite(val)) {
             finalScope[lhs] = val;
-            const unitLabel = guessDisplayUnit(lhs)?.unit || '';
+            const unitLabel = _dimLabelFor(lhs);
             extraCards.push('<div class="var-card"><div><span class="var-name">' + lhs + '</span>' +
               (unitLabel ? '<div class="var-unit">' + unitLabel + '</div>' : '') +
               '</div><span class="var-val">' + fmt2(val) + '</span></div>');
@@ -11932,13 +11792,13 @@ function runSensitivity(txt) {
       // Base values row header
       const rhsMap = buildRHSMap(txt);
       const colHeaders = sensParams.map(p => {
-        const unit = _bracketUnits[p.name] || guessDisplayUnit(p.name)?.unit || '';
+        const unit = _dimLabelFor(p.name, rhsMap, _bracketUnits);
         return `<th>${p.name}<br><span style="font-weight:400;color:var(--mute)">${fmt(p.value)}${unit?' '+unit:''}</span></th>`;
       }).join('');
 
       const rows = outputVars.map(v => {
         const baseVal = baseScope[v];
-        const unit = _bracketUnits[v] || (rhsMap[v] ? inferUnitFromRHS(rhsMap[v])?.unit : null) || guessDisplayUnit(v)?.unit || '';
+        const unit = _dimLabelFor(v, rhsMap, _bracketUnits);
         const cells = sensParams.map((p, pi) => {
           const s = sensMatrix[pi][v];
           if (!isFinite(s)) return `<td class="sens-zero">—</td>`;
@@ -12159,8 +12019,8 @@ function runParetoSweep(txt) {
           });
 
           // Axis labels
-          const xUnit = guessDisplayUnit(paretoExpr)?.unit || '';
-          const yUnit = guessDisplayUnit(objExpr)?.unit || '';
+          const xUnit = _dimLabelForExpr(paretoExpr);
+          const yUnit = _dimLabelForExpr(objExpr);
           ctx.fillStyle=ax; ctx.font='10px sans-serif'; ctx.textAlign='center';
           ctx.fillText(xUnit ? `${paretoExpr} [${xUnit}]` : paretoExpr, PAD.l+pw/2, H-4);
 
@@ -12197,12 +12057,12 @@ function runParetoSweep(txt) {
         // ── 7. Results table ─────────────────────────────────────
         const dp = UNITS.sigfigs ?? 3;
         const freeNames = (feasible[0]?.freeVars?.map(v=>v.name) || []).filter(n => n !== objExpr);
-        const objUnit = guessDisplayUnit(objExpr)?.unit || '';
-        const xUnit = guessDisplayUnit(paretoExpr)?.unit || '';
+        const objUnit = _dimLabelForExpr(objExpr);
+        const xUnit = _dimLabelForExpr(paretoExpr);
 
         const thdrCols = [`${paretoExpr}${xUnit?' ['+xUnit+']':''}`,
                           `${objExpr}${objUnit?' ['+objUnit+']':''}`,
-                          ...freeNames.map(v => { const u=guessDisplayUnit(v)?.unit||''; return v+(u?' ['+u+']':''); })
+                          ...freeNames.map(v => { const u=_dimLabelFor(v); return v+(u?' ['+u+']':''); })
                          ].map(c=>`<th>${c}</th>`).join('');
 
         const trows = points.map((p, i) => {
@@ -12358,11 +12218,11 @@ function run2DSweep(txt) {
       }
 
       // Build flat table — all output variables
-      const xUnit = guessDisplayUnit(xSweep.name)?.unit || '';
-      const yUnit = guessDisplayUnit(ySweep.name)?.unit || '';
+      const xUnit = _dimLabelFor(xSweep.name, rhsMap);
+      const yUnit = _dimLabelFor(ySweep.name, rhsMap);
 
       const outHeaders = outputVars.map(v => {
-        const u = (rhsMap[v] ? inferUnitFromRHS(rhsMap[v])?.unit : null) || guessDisplayUnit(v)?.unit || '';
+        const u = _dimLabelFor(v, rhsMap);
         return `<th>${v}${u?' ['+u+']':''}</th>`;
       }).join('');
 
@@ -12609,9 +12469,9 @@ function _drawSurface3D() {
     ctx.fillText(label, b.sx + (side==='left'?-6:side==='right'?6:0), b.sy + (side==='center'?14:4));
   }
 
-  const xUnit = guessDisplayUnit(xSweep.name)?.unit||'';
-  const yUnit = guessDisplayUnit(ySweep.name)?.unit||'';
-  const zUnit = (rhsMap[selVar]?inferUnitFromRHS(rhsMap[selVar])?.unit:null)||guessDisplayUnit(selVar)?.unit||'';
+  const xUnit = _dimLabelFor(xSweep.name, rhsMap);
+  const yUnit = _dimLabelFor(ySweep.name, rhsMap);
+  const zUnit = _dimLabelFor(selVar, rhsMap);
 
   drawAxis(0,0,0, axLen,0,0, xUnit?`${xSweep.name} [${xUnit}]`:xSweep.name, 'center');
   drawAxis(0,0,0, 0,axLen,0, yUnit?`${ySweep.name} [${yUnit}]`:ySweep.name, 'center');
@@ -12812,7 +12672,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     for(let i=0;i<=4;i++){const v=yMin+(yMax-yMin)*(1-i/4);ctx.fillText(parseFloat(v.toPrecision(3)),PAD.l-4,PAD.t+i*ph/4+4);}
     ctx.textAlign='center'; ctx.fillStyle=ax; ctx.font='10px sans-serif';
     // X axis label with unit
-    const xUnit = (rhsMap[sweep.name] ? inferUnitFromRHS(rhsMap[sweep.name])?.unit : null) || guessDisplayUnit(sweep.name)?.unit || '';
+    const xUnit = _dimLabelFor(sweep.name, rhsMap);
     ctx.fillText(xUnit ? `${sweep.name} [${xUnit}]` : sweep.name, PAD.l+pw/2, H-4);
 
     // Lines
@@ -12830,7 +12690,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
       // Label with unit — clamp y position to stay within plot area
       const lastR=results.filter(r=>isFinite(r.scope[v])).pop();
       if(lastR){
-        const yUnit = (rhsMap[v] ? inferUnitFromRHS(rhsMap[v])?.unit : null) || guessDisplayUnit(v)?.unit || '';
+        const yUnit = _dimLabelFor(v, rhsMap);
         const labelTxt = yUnit ? `${v} [${yUnit}]` : v;
         const rawY = toY(lastR.scope[v]);
         const clampedY = Math.max(PAD.t + 10, Math.min(PAD.t + ph - 4, rawY));
