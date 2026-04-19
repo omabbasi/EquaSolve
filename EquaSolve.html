@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3</title>
+<title>EquaSolve V1.3.1</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.1</div>
       </div>
     </div>
 
@@ -675,7 +675,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.1</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.1</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -5603,6 +5603,26 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const fixedScope={};
         sliderDefs.forEach(def=>{if(info.allVars.includes(def.name))fixedScope[def.name]=sliderState[def.name];});
 
+        // V1.3 FIX: populate _varDimCache BEFORE solveSystem so that
+        // _exfDetectMode and any other dim-aware in-solve logic can see
+        // correct variable dimensions. Without this, exf(h, s) could not
+        // distinguish (h,s) mode from (T,P) mode during evaluation because
+        // no variable dims would be available yet.
+        // Dim inference is purely structural (equation text + bracket tags),
+        // so it works fine pre-solve.
+        const rhsMap = buildRHSMap(txt);
+        buildVarDimCache(rhsMap, txt);
+        // Seed _varDimCache from [unit] bracket overrides — gives dim to Q [kW], m [kg/s] etc.
+        _seedBracketDimsFromText(_origTxt);
+        // Re-run dim cache propagation now that bracket seeds are in place
+        buildVarDimCache(rhsMap, null, false);
+        // Equation-balance dim inference: fills in dims for variables not in rhsMap
+        // (e.g. m1 from "P1*V = m1*R*T1" gets dim=kg, W_min from energy balance gets dim=kJ)
+        try {
+          const _eqLines = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
+          _inferMissingVarDims(_eqLines);
+        } catch(e) {}
+
         const _t0 = performance.now();
         const r=solveSystem(txt,guessOverrides,fixedScope);
         UNITS.tempIn = _savedTempIn;
@@ -5629,21 +5649,6 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           const bm = rhs.match(/\[([^\]]+)\]\s*$/);
           if (bm) { varUnitOverrides[lhs] = _normBracketUnit(bm[1].trim()); }
         });
-
-        // Build RHS map for unit inference
-        const rhsMap = buildRHSMap(txt);
-        buildVarDimCache(rhsMap, txt);
-        // Seed _varDimCache from [unit] bracket overrides — gives dim to Q [kW], m [kg/s] etc.
-        _seedBracketDimsFromText(_origTxt);
-
-        // Re-run dim cache propagation now that bracket seeds are in place (reset=false preserves seeds)
-        buildVarDimCache(rhsMap, null, false);
-        // Equation-balance dim inference: fills in dims for variables not in rhsMap
-        // (e.g. m1 from "P1*V = m1*R*T1" gets dim=kg, W_min from energy balance gets dim=kJ)
-        try {
-          const _eqLines = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
-          _inferMissingVarDims(_eqLines);
-        } catch(e) {}
 
         _hlErrorLine = -1; _hlErrToken = null; renderHighlight();
         $pn.className='res-panel ok';$lb.className='res-lbl ok';
@@ -5910,6 +5915,22 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     const results = [];
     let done = 0;
     const _t0 = performance.now();
+
+    // V1.3 FIX: populate _varDimCache BEFORE any solveSystem call so that
+    // _exfDetectMode (etc.) can distinguish (h,s) from (T,P) mode during
+    // evaluation. Structural inference — works pre-solve.
+    {
+      const _savedTempInSeed = UNITS.tempIn;
+      if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
+      try {
+        const _rhsMapSeed = buildRHSMap(filteredTxt);
+        buildVarDimCache(_rhsMapSeed, filteredTxt);
+        _seedBracketDimsFromText(filteredTxt);
+        buildVarDimCache(_rhsMapSeed, null, false);
+        _inferMissingVarDims(filteredTxt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(Boolean));
+      } catch(e) {}
+      UNITS.tempIn = _savedTempInSeed;
+    }
 
     function runNext() {
       if (done >= fluidChoices.length) {
