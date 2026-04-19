@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.1</title>
+<title>EquaSolve V1.3.2</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.1</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.2</div>
       </div>
     </div>
 
@@ -675,7 +675,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.1</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.2</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.1</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.2</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3813,8 +3813,8 @@ function evalDimNode(nd) {
     // Specific volume → m³/kg
     if (/^(v_|vf$|vg$|vfg$|v_f$|v_g$|v_pt|v_px|v_tx|v_ps|v_pv|v_pu|v_tp|v_ph|v_tv|v_hs|v_vs)/.test(fn)) return {val:1, dim:_specVo.slice()};
     // Psat(T) → pressure [Pa]; Tsat(P) → temperature [K]
-    if (/^psat(_f|_water|_[a-z].*)?\$/i.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]}; // kPa
-    if (/^tsat(_f|_water|_[a-z].*)?\$/i.test(fn)) return {val:1,   dim:[0,0,0,0,1,0,0]};   // K
+    if (/^psat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]}; // kPa
+    if (/^tsat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1,   dim:[0,0,0,0,1,0,0]};   // K
     // Functions don't carry units in this context
     return {val: 1, dim: _D.none.slice()};
   }
@@ -4109,6 +4109,14 @@ function _seedBracketDimsFromText(rawTxt) {
     'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
   };
   // Use _origTxt (pre-preprocessing, brackets intact) not txt (already stripped)
+  // V1.3.2: once a '/' appears, subsequent '*' or '·' are treated as denominator
+  // separators (so kJ/kg*K == kJ/kg/K == kJ/(kg·K)). Torque-like units (N*m) are
+  // left alone since they have no '/'.
+  function _normDenomSeparators(u) {
+    const slashIdx = u.indexOf('/');
+    if (slashIdx < 0) return u;
+    return u.slice(0, slashIdx) + u.slice(slashIdx).replace(/[*·]/g, '/');
+  }
   rawTxt.split('\n').forEach(line => {
     const clean = line.replace(/\/\/.*$/, '').trim();
     const eqIdx = clean.indexOf('=');
@@ -4117,8 +4125,9 @@ function _seedBracketDimsFromText(rawTxt) {
     if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
     const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
     if (!bm) return;
-    const u = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
-    // Try direct, case-insensitive, then dot→slash normalised
+    const u0 = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
+    const u = _normDenomSeparators(u0);
+    // Try direct, case-insensitive, then dot→slash normalised, then *→/ normalised
     const uNorm = bracketDimMap[u]
       ? u
       : (Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase())
@@ -4130,6 +4139,32 @@ function _seedBracketDimsFromText(rawTxt) {
 
 function _inferMissingVarDims(equationLines) {
   const _zero = [0,0,0,0,0,0,0];
+
+  // Split a top-level additive expression into signed terms, respecting parens.
+  // Returns [{sign:±1, node:AST}, ...] where each term is an ADDITIVE operand.
+  // Example: "a + b*c - d" → [{+1, a}, {+1, b*c}, {-1, d}]
+  function collectAdditiveTerms(node, sign, out) {
+    if (!node) return;
+    if (node.t === 'B' && (node.op === '+' || node.op === '-')) {
+      collectAdditiveTerms(node.L, sign, out);
+      collectAdditiveTerms(node.R, node.op === '+' ? sign : -sign, out);
+    } else if (node.t === 'U') {
+      collectAdditiveTerms(node.R, -sign, out);
+    } else {
+      out.push({ sign, node });
+    }
+  }
+
+  function vAppearsIn(node, v) {
+    if (!node) return false;
+    if (node.t === 'V') return node.n === v;
+    if (node.t === 'N') return false;
+    if (node.t === 'U') return vAppearsIn(node.R, v);
+    if (node.t === 'B') return vAppearsIn(node.L, v) || vAppearsIn(node.R, v);
+    if (node.t === 'F') return node.args.some(a => vAppearsIn(a, v));
+    return false;
+  }
+
   for (let pass = 0; pass < 8; pass++) {
     let added = 0;
     for (const rawLine of equationLines) {
@@ -4140,46 +4175,65 @@ function _inferMissingVarDims(equationLines) {
       const rhsStr = clean.slice(idx + 1).trim();
       if (!lhsStr || !rhsStr) continue;
 
-      // Collect all identifiers in this equation
+      // Collect all identifiers; find the ONE unknown
       const allIds = [...new Set((lhsStr + ' ' + rhsStr).match(/[a-zA-Z_]\w*/g) || [])];
-      // Unknown = not yet dimensioned, not a constant/function/keyword
       const unknownVars = allIds.filter(v =>
         !(v in _varDimCache) && !(v in CONSTS) && !KNOWN.has(v)
       );
       if (unknownVars.length !== 1) continue;
-
       const v = unknownVars[0];
-      // Temporarily mark v as dimensionless so evalDimNode does NOT fall through to
-      // guessDisplayUnit(v) — that would give wrong dims (e.g. m1 → kg/s)
+
+      // Temporarily mark v as dimensionless so evalDimNode won't poison propagation
       _varDimCache[v] = _zero.slice();
       let vDim;
       try {
         const lhsAst = parse(lhsStr);
         const rhsAst = parse(rhsStr);
-        // Both sides evaluated with v = dimensionless
-        const lhsDim = evalDimNode(lhsAst).dim;
-        const rhsDim = evalDimNode(rhsAst).dim;
 
-        const diff = dimSub(lhsDim, rhsDim);
-        const vInRhs = (rhsStr.match(/[a-zA-Z_]\w*/g) || []).includes(v);
-        const vInLhs = (lhsStr.match(/[a-zA-Z_]\w*/g) || []).includes(v);
+        // Per-term additive inference:
+        // move RHS to LHS (negate signs), split into additive terms,
+        // separate terms containing v from those not containing v.
+        // All non-v terms must share the same dim (the equation's dim).
+        // If exactly ONE term contains v, solve for v's dim:
+        //    vDim = termDim − partialDim
+        // where partialDim is evalDimNode(vTerm) computed with v treated as zero-dim.
+        const terms = [];
+        collectAdditiveTerms(lhsAst, +1, terms);
+        collectAdditiveTerms(rhsAst, -1, terms); // negate to move to LHS
 
-        if (diff.some(x => x !== 0)) {
-          // Multiplicative case: v contributes missing dims to balance the equation
-          if (vInRhs && !vInLhs) {
-            vDim = diff;                     // dim(lhs) − dim(rhs with v=1)
-          } else if (vInLhs && !vInRhs) {
-            vDim = dimSub(rhsDim, lhsDim);   // dim(rhs) − dim(lhs with v=1)
-          }
-        } else {
-          // Additive case: both sides already balance → v must share the expression dim
-          if (lhsDim.some(x => x !== 0)) {
-            vDim = lhsDim.slice();
-          }
+        const vTerms = terms.filter(t => vAppearsIn(t.node, v));
+        const knownTerms = terms.filter(t => !vAppearsIn(t.node, v));
+
+        if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
+
+        // Find the "reference dim" from known terms — the first non-zero one.
+        // (Zero-dim known terms are compatible with any dim.)
+        let refDim = null;
+        for (const t of knownTerms) {
+          const d = evalDimNode(t.node).dim;
+          if (d.some(x => x !== 0)) { refDim = d; break; }
         }
+
+        if (vTerms.length === 1 && refDim) {
+          // Single v-term: vDim = refDim − partialDim(vTerm with v=zero)
+          const partialDim = evalDimNode(vTerms[0].node).dim;
+          vDim = dimSub(refDim, partialDim);
+        } else if (vTerms.length === 1 && !refDim && knownTerms.length === 0) {
+          // expr = 0 form with only a v-term (e.g. "Sgen = 0"): can't infer
+          // refDim. Leave undefined.
+        } else if (vTerms.length > 1 && refDim) {
+          // Multiple v-terms, all must share same partialDim shift. Try:
+          //   each vTerm's partialDim must equal refDim when v has the right dim.
+          // Harder general case — attempt if all partialDims match AND v appears
+          // in the same multiplicative position in each term.
+          const partialDims = vTerms.map(t => evalDimNode(t.node).dim);
+          const allMatch = partialDims.every(d => d.every((x,i) => x === partialDims[0][i]));
+          if (allMatch) vDim = dimSub(refDim, partialDims[0]);
+        }
+        // If refDim is null (all knowns are dimensionless or zero) AND vTerms > 0
+        // AND the equation is balanced (diff=0), v is likely dimensionless — no dim.
       } catch(e) {}
 
-      // Either store the inferred dim or remove the temporary zero entry
       if (vDim && vDim.some(x => x !== 0)) {
         _varDimCache[v] = vDim;
         added++;
@@ -4551,13 +4605,19 @@ function _bracketConvert(val, unitStr) {
     return val * _OP_CONSTS[u];
   }
   // Compound units via buildCompoundTable (kJ/kg, W/m2/K, kg/m3, etc.)
-  // Also try normalised form (dot → slash, spaces stripped)
+  // V1.3.2: also try '*'-as-denominator-separator normalization (kJ/kg*K → kJ/kg/K)
   try {
     const tbl = buildCompoundTable();
     if (u in tbl) return val * tbl[u];
     // Try common normalizations before giving up
     const uNorm = u.replace(/\./g, '/').replace(/\s+/g,'').replace(/·/g,'/');
     if (uNorm !== u && uNorm in tbl) return val * tbl[uNorm];
+    // Denominator *-separator: once a '/' appears, subsequent '*' acts like '/'
+    const slashIdx = u.indexOf('/');
+    if (slashIdx >= 0) {
+      const uStar = u.slice(0, slashIdx) + u.slice(slashIdx).replace(/[*·]/g, '/');
+      if (uStar !== u && uStar in tbl) return val * tbl[uStar];
+    }
   } catch(e) {}
   return null; // unknown unit — leave value unchanged
 }
@@ -5605,19 +5665,25 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
         // V1.3 FIX: populate _varDimCache BEFORE solveSystem so that
         // _exfDetectMode and any other dim-aware in-solve logic can see
-        // correct variable dimensions. Without this, exf(h, s) could not
-        // distinguish (h,s) mode from (T,P) mode during evaluation because
-        // no variable dims would be available yet.
-        // Dim inference is purely structural (equation text + bracket tags),
-        // so it works fine pre-solve.
+        // correct variable dimensions.
+        // V1.3.2 FIX: ORDER matters — bracket seeding must happen BEFORE
+        // RHS propagation, otherwise implicit-equation vars (W, Wrev, Sgen,
+        // Wrev2) get cached with WRONG dim in the first pass because their
+        // multiplicative dependencies (m, Q, T0) aren't seeded yet. Once
+        // cached (even wrongly), they're never re-evaluated.
         const rhsMap = buildRHSMap(txt);
+        // Step 1: set up _userVarNames (needed by evalDimNode to protect user vars)
+        //         and reset _varDimCache. No propagation yet.
         buildVarDimCache(rhsMap, txt);
-        // Seed _varDimCache from [unit] bracket overrides — gives dim to Q [kW], m [kg/s] etc.
+        _varDimCache = {}; // clear the dims that pass populated with wrong values
+        // Step 2: seed dims from [unit] brackets — these are ground truth
         _seedBracketDimsFromText(_origTxt);
-        // Re-run dim cache propagation now that bracket seeds are in place
+        // Step 3: propagate dims from RHS (reset=false preserves bracket seeds)
+        //         Now implicit-equation vars get correct dims since their
+        //         dependencies (m, Q, T0, …) are already seeded.
         buildVarDimCache(rhsMap, null, false);
-        // Equation-balance dim inference: fills in dims for variables not in rhsMap
-        // (e.g. m1 from "P1*V = m1*R*T1" gets dim=kg, W_min from energy balance gets dim=kJ)
+        // Step 4: equation-balance dim inference for still-missing vars
+        //         (e.g. mw from mw*Cp_w*(T4-T5)+m*(h2-h3)=0)
         try {
           const _eqLines = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
           _inferMissingVarDims(_eqLines);
@@ -5918,13 +5984,14 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
     // V1.3 FIX: populate _varDimCache BEFORE any solveSystem call so that
     // _exfDetectMode (etc.) can distinguish (h,s) from (T,P) mode during
-    // evaluation. Structural inference — works pre-solve.
+    // evaluation. V1.3.2: seed brackets BEFORE RHS propagation.
     {
       const _savedTempInSeed = UNITS.tempIn;
       if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
       try {
         const _rhsMapSeed = buildRHSMap(filteredTxt);
         buildVarDimCache(_rhsMapSeed, filteredTxt);
+        _varDimCache = {}; // clear wrongly-seeded values
         _seedBracketDimsFromText(filteredTxt);
         buildVarDimCache(_rhsMapSeed, null, false);
         _inferMissingVarDims(filteredTxt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(Boolean));
