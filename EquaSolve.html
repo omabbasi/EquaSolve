@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.244</title>
+<title>EquaSolve V1.245</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -595,7 +595,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.244</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.245</div>
       </div>
     </div>
 
@@ -675,7 +675,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.244</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.245</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.244</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.245</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3910,6 +3910,9 @@ function evalDimNode(nd) {
     if (/^(s_|sf$|sg$|sfg$|s_f$|s_g$|s_pt|s_px|s_tx|s_ps|s_pv|s_pu|s_tp|s_ph|s_th|s_tv|s_hs|s_vs)/.test(fn)) return {val:1e3, dim:_specS.slice()};
     // Specific volume → m³/kg
     if (/^(v_|vf$|vg$|vfg$|v_f$|v_g$|v_pt|v_px|v_tx|v_ps|v_pv|v_pu|v_tp|v_ph|v_tv|v_hs|v_vs)/.test(fn)) return {val:1, dim:_specVo.slice()};
+    // Psat(T) → pressure [Pa]; Tsat(P) → temperature [K]
+    if (/^psat(_f|_water|_[a-z].*)?\$/i.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]}; // kPa
+    if (/^tsat(_f|_water|_[a-z].*)?\$/i.test(fn)) return {val:1,   dim:[0,0,0,0,1,0,0]};   // K
     // Functions don't carry units in this context
     return {val: 1, dim: _D.none.slice()};
   }
