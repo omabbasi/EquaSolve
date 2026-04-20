@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.2</title>
+<title>EquaSolve V1.3.8</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -285,14 +285,14 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 .pr-given-name{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#1a1a8c;}
 .pr-given-val{font-family:'DM Mono',monospace;font-size:11px;color:#333;}
 .pr-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px;}
-.pr-result-card{background:#f5f5f5;border:1px solid #ccc;border-radius:5px;padding:8px 12px;break-inside:avoid;}
-.pr-result-name{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#1a1a8c;}
-.pr-result-unit{font-size:9px;color:#666;margin-top:1px;}
-.pr-result-val{font-size:16px;font-weight:600;color:#111;margin-top:3px;}
+.pr-result-card{background:#f5f5f5;border:1px solid #ccc;border-radius:5px;padding:8px 12px;break-inside:avoid;overflow-wrap:anywhere;word-break:break-word;}
+.pr-result-name{display:block;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#1a1a8c;}
+.pr-result-unit{display:block;font-size:9px;color:#666;margin-top:1px;}
+.pr-result-val{display:block;font-size:16px;font-weight:600;color:#111;margin-top:3px;}
 .pr-footer{font-size:9px;color:#aaa;margin-top:20px;padding-top:8px;border-top:1px solid #eee;text-align:right;}
 
 @media print{
-  .copy-btn-fit{display:none !important;}
+  .copy-btn-fit,.no-print,.copy-btn-solutions{display:none !important;}
 
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   /* ── Hide everything by default ── */
@@ -325,12 +325,8 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     min-height:auto!important;padding:12px!important;font-size:11px!important;
     font-weight:500!important;white-space:pre-wrap!important;}
 
-  /* ── Algebraic results ── */
-  .alg-result-zone{display:block!important;margin-bottom:16px;}
-  .alg-result-zone:not(.visible){display:none!important;}
-  .res-panel{background:#fff!important;border:1px solid #bbb!important;
-    border-radius:4px!important;padding:10px!important;}
-  .var-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  /* ── Algebraic results — DO NOT print the on-screen zone (duplicates the structured print-report).
+     The authoritative results rendering for PDF/print is in .print-report (#pr-results). ── */
   .var-card{background:#f5f5f5!important;border:1px solid #ddd!important;
     border-radius:4px!important;padding:8px 10px!important;break-inside:avoid;}
   .var-name{color:#1a1a8c!important;font-size:13px!important;font-weight:700!important;}
@@ -595,7 +591,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.2</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.8</div>
       </div>
     </div>
 
@@ -675,7 +671,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.2</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.8</span></div>
       
     </div>
   </div>
@@ -843,7 +839,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.2</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.8</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1160,7 +1156,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     </div>
     <div class="fluid-grid" id="fluid-grid"></div>
     <div class="prop-ref" id="prop-ref" style="display:none">
-      <div class="prop-ref-header">Property Functions — <strong id="pr-title" style="color:var(--blue)"></strong></div>
+      <div class="prop-ref-header">Property Functions — <strong id="prop-ref-fluid-name" style="color:var(--blue)"></strong></div>
       <div class="prop-ref-tabs" id="pr-tabs"></div>
       <div class="prop-ref-body" id="pr-body"></div>
     </div>
@@ -3866,7 +3862,7 @@ function dimToLabel(dim) {
   if (eq([1,2,-2,0,-1,0,0]))     return 'J/K';        // entropy
   if (eq([0,2,-2,0,-1,0,0]))     return 'kJ/(kg·K)';  // specific heat
   if (eq([1,2,-2,0,0,0,0]))      return UNITS.energy; // energy (= J)
-  if (eq([1,2,-3,0,-1,0,0]))     return 'W/K';        // thermal conductance
+  if (eq([1,2,-3,0,-1,0,0]))     return UNITS.power + '/K';  // thermal conductance (power/K)
   if (eq([1,1,-3,0,-1,0,0]))     return 'W/(m·K)';    // thermal conductivity
   if (eq([1,0,-3,0,-1,0,0]))     return 'W/(m²·K)';   // heat transfer coeff
   if (eq([0,2,-2,0,0,0,0]))      return 'kJ/kg';      // specific energy
@@ -3879,6 +3875,16 @@ function dimToLabel(dim) {
   if (eq([1,-3,0,0,0,0,0]))      return 'kg/m³';      // density
   if (eq([1,-2,-2,0,0,0,0]))     return 'N/m²';       // stress (= Pa)
   // ── Fallback: build label from dim vector ──────────────────────
+  // V1.3.5: suppress garbage labels that are the product of user-equation
+  // dimensional inconsistency (e.g. mixing K and kJ/kg in the same sum).
+  // Only fall back to a raw dim vector label if the dim is "simple":
+  //   - at most 2 non-zero components (anything beyond that not in the known
+  //     compound-quantity table above is almost certainly a user error)
+  //   - no component magnitude greater than 3
+  // Otherwise return null (no label) so the UI shows the number alone.
+  const _nonZero = d.filter(v => v !== 0);
+  const _maxMag = d.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  if (_nonZero.length > 2 || _maxMag > 3) return null;
   const names = ['kg','m','s','A','K','mol','cd'];
   let num = '', den = '';
   d.forEach((v, i) => {
@@ -4972,7 +4978,7 @@ const PROP_GROUPS=[
 let activePrTab='pt';
 function renderPropRef(key){
   document.getElementById('prop-ref').style.display='block';
-  document.getElementById('pr-title').textContent=FLUID_DB_RAW[key].name;
+  document.getElementById('prop-ref-fluid-name').textContent=FLUID_DB_RAW[key].name;
   document.getElementById('pr-tabs').innerHTML=PROP_GROUPS.map(g=>`<button class="prt${g.id===activePrTab?' active':''}" data-prtab="${g.id}">${g.label}</button>`).join('');
   renderPrBody(key);
 }
@@ -5691,6 +5697,11 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
         const _t0 = performance.now();
         const r=solveSystem(txt,guessOverrides,fixedScope);
+        // V1.3.3: record whether the [K]-override was active during this solve.
+        // If so, scope's T-valued variables are in Kelvin (not display units),
+        // and diagram/state-point code must convert K → display units.
+        const _tempInWasOverridden = (UNITS.tempIn !== _savedTempIn);
+        r.scope.__tempInWasK = _tempInWasOverridden;
         UNITS.tempIn = _savedTempIn;
         const _solveMs = performance.now() - _t0;
         if(sliderDefs.length)renderSliderZone(sliderDefs); // keep sliders visible after re-solve
@@ -5756,13 +5767,23 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           } else {
             // Computed or un-bracketed variable: use dim inference only
             unitLabel = _bestUnitLabel(v, rhsMap[v]);
+            // V1.3.3: if the [K] override was active during solve, scope holds
+            // temperature-valued variables in Kelvin. Convert to display unit
+            // for cards (same correction applied in extractStatePoints for diagram).
+            const _dimK = [0,0,0,0,1,0,0];
+            const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
+            let rawShown = raw;
+            if (_tempInWasOverridden && _isTemp && isFinite(raw)) {
+              rawShown = fromK(raw);         // K → display temperature unit
+              if (!unitLabel) unitLabel = UNITS.temp;
+            }
             const tagUnit = varUnitOverrides[v] || '';
             if (tagUnit && tagUnit !== unitLabel) {
-              const cvt = _tryUnitConvert(raw, unitLabel, tagUnit);
+              const cvt = _tryUnitConvert(rawShown, unitLabel, tagUnit);
               if (cvt.converted) { dispVal = cvt.val; unitLabel = tagUnit; }
               else { unitLabel = tagUnit; }
             }
-            dispVal = dispVal !== undefined ? dispVal : raw;
+            dispVal = dispVal !== undefined ? dispVal : rawShown;
           }
 
           return`<div class="var-card" style="animation-delay:${i*.04}s"><div><span class="var-name">${v}</span>${unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}</div><span class="var-val">${fmt(dispVal)}</span></div>`;
@@ -5774,7 +5795,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         // ── Exergy destruction breakdown ──────────────────────────────
         const exergyBreakdown = _buildExergyBreakdown(displayVars, r.scope);
 
-        $bd.innerHTML=`<div class="var-grid">${cards}</div>${exergyBreakdown}<div class="stats-row">${stats}</div>`;
+        $bd.innerHTML=`<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${exergyBreakdown}<div class="stats-row">${stats}</div>`;
         $algZone.classList.add('visible');
         // Run unit consistency advisory
         try { runUnitAdvisory(_origTxt, r.scope, rhsMap, varUnitOverrides); } catch(e) {}
@@ -6020,6 +6041,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
           const _processedTxt = preprocessBrackets(filteredTxt);
           const _r = solveSystem(_processedTxt, {}, {});
+          // V1.3.3: tag scope so diagram/state-point code converts K → display
+          _r.scope.__tempInWasK = (UNITS.tempIn !== _savedTempIn2);
           results.push({ alias, fluidKey, scope: _r.scope, allVars: _r.allVars, error: null });
         } catch(e) {
           results.push({ alias, fluidKey, scope: null, allVars: [], error: e.message });
@@ -6166,6 +6189,54 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       navigator.clipboard.writeText(text).catch(() => {});
     }
     if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  };
+
+  // ── Copy full solution set as "name = value [unit]" lines ────────────────
+  // Reads from the most recent solve snapshot (stored by runAlgSolver).
+  // Skips sensitivity/uncertainty output — those have their own copy paths.
+  window._copySolutions = function(btn) {
+    const snap = window._lastSolveSnapshot;
+    if (!snap || !snap.scope) { if(btn){btn.textContent='Nothing to copy';setTimeout(()=>btn.textContent='⎘ Copy solutions',1500);} return; }
+    const lines = [];
+    for (const v of snap.vars) {
+      const raw = snap.scope[v];
+      if (!isFinite(raw)) continue;
+      // Resolve display value + unit using the same logic as the var cards:
+      //  1. bracket-input: show original value + unit
+      //  2. otherwise: raw with dim-inferred unit label
+      let dispVal, unitLabel = '';
+      if (_bracketDisplayMap[v]) {
+        const bde = _bracketDisplayMap[v];
+        dispVal = bde.val;
+        unitLabel = bde.unit || '';
+      } else {
+        unitLabel = _bestUnitLabel(v, snap.rhsMap[v]);
+        // Apply K → display conversion for computed temperature vars
+        // when the [K]-override was active during the solve
+        const _dimK = [0,0,0,0,1,0,0];
+        const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
+        dispVal = (snap.scope.__tempInWasK && _isTemp) ? fromK(raw) : raw;
+        // Honor explicit [unit] override on RHS
+        const tagUnit = (snap.varUnitOverrides && snap.varUnitOverrides[v]) || '';
+        if (tagUnit && tagUnit !== unitLabel) {
+          const cvt = _tryUnitConvert(dispVal, unitLabel, tagUnit);
+          if (cvt.converted) { dispVal = cvt.val; }
+          unitLabel = tagUnit;
+        }
+      }
+      lines.push(unitLabel ? `${v} = ${fmt(dispVal)} [${unitLabel}]` : `${v} = ${fmt(dispVal)}`);
+    }
+    const text = lines.join('\n');
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    if (!ok && navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    if (btn) { btn.textContent = `✓ Copied ${lines.length} vars`; setTimeout(() => btn.textContent = '⎘ Copy solutions', 1800); }
   };
 
   function fmt(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(n!==0&&M.abs(n)<5e-4)return n.toExponential(dp);if(M.abs(n)>=1e9)return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
@@ -6811,7 +6882,49 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
   document.getElementById('pdf-btn').addEventListener('click', () => {
     _buildPrintReport();
-    window.print();
+    // V1.3.7: ensure the diagram canvas is freshly rendered at real dimensions
+    // before print. When the user prints from a non-diagram tab, the canvas
+    // parent has display:none and clientWidth=0, so the canvas would render
+    // at the 600px fallback but may not survive the display flip to @media print.
+    // Fix: temporarily make the diagram tab visible so the canvas gets real
+    // dimensions, redraw, then start the print.
+    try {
+      if (typeof refreshDiagram === 'function' && _lastScope) {
+        const tabDiag = document.getElementById('tab-diagram');
+        const wasActive = tabDiag?.classList.contains('active');
+        // Force-visible with real layout so canvas gets proper clientWidth
+        if (tabDiag && !wasActive) {
+          tabDiag.style.display = 'flex';
+          tabDiag.style.visibility = 'visible';
+        }
+        // Trigger layout, then redraw
+        void tabDiag?.offsetWidth;
+        refreshDiagram(_lastScope);
+        // Belt-and-suspenders: make sure the print-eligibility class is set
+        // if state points exist, so @media print rule activates.
+        try {
+          const pts = extractStatePoints(_lastScope);
+          const hasPoints = pts.ph.length || pts.ts.length || pts.pv.length || pts.psychro.length || pts.moody.length;
+          if (hasPoints && tabDiag) tabDiag.classList.add('diag-has-data');
+        } catch(e) {}
+        // After print, restore if it wasn't the active tab
+        const _restore = () => {
+          if (tabDiag && !wasActive) {
+            tabDiag.style.display = '';
+            tabDiag.style.visibility = '';
+          }
+          window.removeEventListener('afterprint', _restore);
+        };
+        window.addEventListener('afterprint', _restore);
+      }
+    } catch(e) {}
+    // Give the browser ~150ms to paint the canvas before printing.
+    // A second rAF-chained delay ensures the redraw is committed to screen.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => window.print(), 100);
+      });
+    });
   });
 
   // ── Build structured print report ─────────────────────────────────────────
@@ -6886,6 +6999,9 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     });
 
     // ── Render equations section ──
+    // V1.3.7: show ALL input lines including simple assignments (givens).
+    // GIVEN VALUES is a compact summary grid; EQUATIONS is the verbatim input.
+    // They serve different purposes even though they overlap.
     const eqDiv = document.getElementById('pr-equations');
     eqDiv.innerHTML = equationLines.map(line => {
       if (line.type === 'blank') return '<div class="pr-eq-blank"></div>';
@@ -6896,24 +7012,15 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     }).join('');
 
     // ── Given values ──
+    // V1.3.8: hide the GIVEN VALUES section entirely. The EQUATIONS section
+    // above already shows every input line verbatim (including simple
+    // assignments like Q=1000 [kW]). Rendering the same data twice — once
+    // as text, once as a grid — is redundant and confused users.
     const givenDiv = document.getElementById('pr-given');
     const givenLabel = document.getElementById('pr-given-label');
-    const givenEntries = Object.entries(givenVars);
-    if (givenEntries.length === 0) {
-      givenLabel.style.display = 'none';
-      givenDiv.style.display = 'none';
-    } else {
-      givenLabel.style.display = '';
-      givenDiv.style.display = '';
-      givenDiv.innerHTML = givenEntries.map(([name, {val, unitStr}]) => {
-        const prettyName = _prettyEq(name);
-        const unitDisp = unitStr ? `<span style="color:#666;font-size:10px"> ${_esc(unitStr)}</span>` : '';
-        return `<div class="pr-given-item">
-          <span class="pr-given-name">${_esc(prettyName)}</span>
-          <span class="pr-given-val">${_esc(val)}${unitDisp}</span>
-        </div>`;
-      }).join('');
-    }
+    givenLabel.style.display = 'none';
+    givenDiv.style.display = 'none';
+    givenDiv.innerHTML = '';
 
     // ── Results ──
     const resultsDiv = document.getElementById('pr-results');
@@ -7571,7 +7678,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         }
         return `<div class="var-card" style="animation-delay:${i*.04}s"><div><span class="var-name">${v}</span>${unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}</div><span class="var-val">${fmt(raw)}${diffHtml}</span></div>`;
       }).join('');
-      document.getElementById('res-body').innerHTML = `<div class="var-grid">${cards}</div>${current.exergyBreakdown||''}<div class="stats-row">${current.statsHtml||''}</div>`;
+      document.getElementById('res-body').innerHTML = `<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${current.exergyBreakdown||''}<div class="stats-row">${current.statsHtml||''}</div>`;
       return;
     }
 
@@ -9124,6 +9231,13 @@ function computeDome(fluidKey) {
 
 function extractStatePoints(scope) {
   // Returns {ph, ts, pv, psychro}
+  // V1.3.3: if scope.__tempInWasK is set, the scope's T-valued variables
+  // are in Kelvin because the [K]/[°R] bracket override was active during
+  // the solve. Convert K → display temperature unit for diagram plotting
+  // (dome uses fromK(d.T), state points must match).
+  const convertT = scope.__tempInWasK
+    ? (T => fromK(T))   // scope was in K, convert to display
+    : (T => T);         // scope already in display unit
   const ph = [], ts = [], pv = [], psychro = [];
   for (let i = 1; i <= 20; i++) {
     const n = String(i);
@@ -9132,7 +9246,7 @@ function extractStatePoints(scope) {
       if (isFinite(h) && isFinite(P)) ph.push({label: n, h, P});
     }
     if (scope['T'+n] !== undefined && scope['s'+n] !== undefined) {
-      const T = scope['T'+n], s = scope['s'+n];
+      const T = convertT(scope['T'+n]), s = scope['s'+n];
       if (isFinite(T) && isFinite(s)) ts.push({label: n, T, s});
     }
     if (scope['v'+n] !== undefined && scope['P'+n] !== undefined) {
@@ -9142,20 +9256,27 @@ function extractStatePoints(scope) {
     // Psychrometric: T (dry-bulb °C) + w (humidity ratio)
     const Tk = scope['T'+n], wk = scope['w'+n];
     if (Tk !== undefined && wk !== undefined && isFinite(Tk) && isFinite(wk) && wk >= 0 && wk < 0.1) {
-      // Convert T to °C if needed
-      const Tc = UNITS.temp === '°C' ? Tk : UNITS.temp === 'K' ? Tk - 273.15 : UNITS.temp === '°F' ? (Tk-32)*5/9 : Tk*5/9 - 273.15;
-      psychro.push({label: n, T: Tc, w: wk});
+      // Convert T to °C — if scope is in K, use K→°C; otherwise use display→°C
+      const Traw = scope.__tempInWasK ? (Tk - 273.15)
+                 : UNITS.temp === '°C' ? Tk
+                 : UNITS.temp === 'K'  ? Tk - 273.15
+                 : UNITS.temp === '°F' ? (Tk-32)*5/9
+                 : Tk*5/9 - 273.15;
+      psychro.push({label: n, T: Traw, w: wk});
     }
   }
   // Single state fallbacks
   if (!ph.length && scope.h !== undefined && scope.P !== undefined && isFinite(scope.h) && isFinite(scope.P))
     ph.push({label:'', h:scope.h, P:scope.P});
   if (!ts.length && scope.T !== undefined && scope.s !== undefined && isFinite(scope.T) && isFinite(scope.s))
-    ts.push({label:'', T:scope.T, s:scope.s});
+    ts.push({label:'', T:convertT(scope.T), s:scope.s});
   if (!pv.length && scope.v !== undefined && scope.P !== undefined && isFinite(scope.v) && isFinite(scope.P))
     pv.push({label:'', v:scope.v, P:scope.P});
   if (!psychro.length && scope.T !== undefined && scope.w !== undefined && isFinite(scope.T) && isFinite(scope.w) && scope.w >= 0 && scope.w < 0.1) {
-    const Tc = UNITS.temp === '°C' ? scope.T : UNITS.temp === 'K' ? scope.T - 273.15 : (scope.T-32)*5/9;
+    const Tc = scope.__tempInWasK ? (scope.T - 273.15)
+             : UNITS.temp === '°C' ? scope.T
+             : UNITS.temp === 'K'  ? scope.T - 273.15
+             : (scope.T-32)*5/9;
     psychro.push({label:'', T:Tc, w:scope.w});
   }
   // Moody: Re + f pairs (Re1+f1, Re2+f2, …)
