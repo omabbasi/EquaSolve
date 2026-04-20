@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.9</title>
+<title>EquaSolve V1.3.10</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -591,7 +591,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.9</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.10</div>
       </div>
     </div>
 
@@ -671,7 +671,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.9</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.10</span></div>
       
     </div>
   </div>
@@ -839,7 +839,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.9</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.10</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3818,7 +3818,12 @@ function evalDimNode(nd) {
     const l = evalDimNode(nd.L), r = evalDimNode(nd.R);
     switch (nd.op) {
       case '+': case '-': {
-        // Propagate non-zero dim — if one side is dimensionless/unknown, use the other
+        // Propagate non-zero dim — if one side is dimensionless/unknown, use the other.
+        // When both sides have a dim, pick left (first operand) — if they're inconsistent
+        // (K vs kJ/kg etc.) the garbage will have 3+ non-zero components and be
+        // suppressed by the dimToLabel filter. The V1.3.9 Step 5 purge-and-repropagate
+        // pipeline ensures the correct dependency order so genuine ratios like
+        // eta_II_HX (Cp_w variant) end up as truly dimensionless [0,0,0,0,0,0,0].
         const _lz = l.dim.every(v => v === 0), _rz = r.dim.every(v => v === 0);
         const _dim = (!_lz) ? l.dim : r.dim;
         return {val: nd.op==='+' ? l.val+r.val : l.val-r.val, dim: _dim};
