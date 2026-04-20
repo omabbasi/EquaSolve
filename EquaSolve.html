@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.8</title>
+<title>EquaSolve V1.3.9</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -591,7 +591,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.8</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.9</div>
       </div>
     </div>
 
@@ -671,7 +671,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.8</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.9</span></div>
       
     </div>
   </div>
@@ -839,7 +839,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.8</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.9</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -5686,13 +5686,53 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         _seedBracketDimsFromText(_origTxt);
         // Step 3: propagate dims from RHS (reset=false preserves bracket seeds)
         //         Now implicit-equation vars get correct dims since their
-        //         dependencies (m, Q, T0, …) are already seeded.
+        //         dependencies (m, Q, T0, …) are already seeded. Some vars
+        //         may still end up with WRONG dim here if their RHS references
+        //         a variable that hasn't been inferred yet (e.g. eta_II_HX
+        //         references mw, which is only resolved in Step 4). Step 5
+        //         fixes those by purging and re-propagating.
         buildVarDimCache(rhsMap, null, false);
         // Step 4: equation-balance dim inference for still-missing vars
         //         (e.g. mw from mw*Cp_w*(T4-T5)+m*(h2-h3)=0)
         try {
           const _eqLines = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
           _inferMissingVarDims(_eqLines);
+        } catch(e) {}
+        // Step 5: V1.3.9 — fix the "eta_II_HX s/kg" bug.
+        //         Step 3 may have cached variables with WRONG dim because their
+        //         RHS referenced vars that were not yet resolved (e.g.
+        //         eta_II_HX uses mw, which only got cached in Step 4). Find
+        //         those "polluted" cache entries and purge them, then re-run
+        //         Step 3's propagation with the now-complete cache.
+        try {
+          const _bracketVars = new Set();
+          // Re-scan original text to identify bracket-seeded vars — these are
+          // ground truth and must NEVER be purged.
+          _origTxt.split('\n').forEach(line => {
+            const clean = line.replace(/\/\/.*$/, '').trim();
+            const eqIdx = clean.indexOf('=');
+            if (eqIdx < 0) return;
+            const lhs = clean.slice(0, eqIdx).trim();
+            if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+            if (/\[[^\]:]+\]\s*$/.test(clean)) _bracketVars.add(lhs);
+          });
+          // Variables whose RHS references any other user var need re-evaluation
+          // because that other var's dim may have changed in Step 4.
+          const _polluted = [];
+          for (const v of Object.keys(_varDimCache)) {
+            if (_bracketVars.has(v)) continue;          // ground truth
+            const rhs = rhsMap[v];
+            if (typeof rhs !== 'string') continue;      // only rhsMap-derived entries
+            const refs = rhs.match(/[a-zA-Z_]\w*/g) || [];
+            if (refs.some(id => id !== v && _userVarNames.has(id) &&
+                                !(id in CONSTS) && !KNOWN.has(id))) {
+              _polluted.push(v);
+            }
+          }
+          // Purge polluted entries
+          for (const v of _polluted) delete _varDimCache[v];
+          // Re-run propagation — polluted vars get re-evaluated with the full cache
+          buildVarDimCache(rhsMap, null, false);
         } catch(e) {}
 
         const _t0 = performance.now();
@@ -6016,6 +6056,30 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         _seedBracketDimsFromText(filteredTxt);
         buildVarDimCache(_rhsMapSeed, null, false);
         _inferMissingVarDims(filteredTxt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(Boolean));
+        // V1.3.9: purge rhsMap-derived entries whose RHS references other user
+        // vars — they may have been computed with deps unresolved. Re-run to
+        // pick up corrections from _inferMissingVarDims.
+        try {
+          const _bracketVars = new Set();
+          filteredTxt.split('\n').forEach(line => {
+            const clean = line.replace(/\/\/.*$/, '').trim();
+            const eqIdx = clean.indexOf('=');
+            if (eqIdx < 0) return;
+            const lhs = clean.slice(0, eqIdx).trim();
+            if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+            if (/\[[^\]:]+\]\s*$/.test(clean)) _bracketVars.add(lhs);
+          });
+          for (const v of Object.keys(_varDimCache)) {
+            if (_bracketVars.has(v)) continue;
+            const rhs = _rhsMapSeed[v];
+            if (typeof rhs !== 'string') continue;
+            const refs = rhs.match(/[a-zA-Z_]\w*/g) || [];
+            if (refs.some(id => id !== v && _userVarNames.has(id) && !(id in CONSTS) && !KNOWN.has(id))) {
+              delete _varDimCache[v];
+            }
+          }
+          buildVarDimCache(_rhsMapSeed, null, false);
+        } catch(e) {}
       } catch(e) {}
       UNITS.tempIn = _savedTempInSeed;
     }
@@ -6081,9 +6145,33 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       // Build unit labels — seed from bracket tags then infer missing dims
       const rhsMap = buildRHSMap(filteredTxt);
       buildVarDimCache(rhsMap, filteredTxt);
+      _varDimCache = {};
       _seedBracketDimsFromText(filteredTxt);
-      buildVarDimCache(rhsMap, null, false); // re-propagate with seeds
+      buildVarDimCache(rhsMap, null, false); // propagate with seeds
       try { _inferMissingVarDims(filteredTxt.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(Boolean)); } catch(e) {}
+      // V1.3.9: purge polluted cache entries, re-propagate to fix dims like
+      // eta_II_HX that depend on implicit-equation vars (mw) resolved above.
+      try {
+        const _bracketVars = new Set();
+        filteredTxt.split('\n').forEach(line => {
+          const clean = line.replace(/\/\/.*$/, '').trim();
+          const eqIdx = clean.indexOf('=');
+          if (eqIdx < 0) return;
+          const lhs = clean.slice(0, eqIdx).trim();
+          if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+          if (/\[[^\]:]+\]\s*$/.test(clean)) _bracketVars.add(lhs);
+        });
+        for (const v of Object.keys(_varDimCache)) {
+          if (_bracketVars.has(v)) continue;
+          const rhs = rhsMap[v];
+          if (typeof rhs !== 'string') continue;
+          const refs = rhs.match(/[a-zA-Z_]\w*/g) || [];
+          if (refs.some(id => id !== v && _userVarNames.has(id) && !(id in CONSTS) && !KNOWN.has(id))) {
+            delete _varDimCache[v];
+          }
+        }
+        buildVarDimCache(rhsMap, null, false);
+      } catch(e) {}
 
       // Helper: format a single cell value
       function cellFmt(v, scope) {
