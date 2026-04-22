@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.10</title>
+<title>EquaSolve V1.3.14</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -591,7 +591,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.10</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.14</div>
       </div>
     </div>
 
@@ -671,7 +671,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.10</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.14</span></div>
       
     </div>
   </div>
@@ -839,7 +839,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.10</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.14</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3808,9 +3808,15 @@ function evalDimNode(nd) {
     if (/^(s_|sf$|sg$|sfg$|s_f$|s_g$|s_pt|s_px|s_tx|s_ps|s_pv|s_pu|s_tp|s_ph|s_th|s_tv|s_hs|s_vs)/.test(fn)) return {val:1e3, dim:_specS.slice()};
     // Specific volume → m³/kg
     if (/^(v_|vf$|vg$|vfg$|v_f$|v_g$|v_pt|v_px|v_tx|v_ps|v_pv|v_pu|v_tp|v_ph|v_tv|v_hs|v_vs)/.test(fn)) return {val:1, dim:_specVo.slice()};
-    // Psat(T) → pressure [Pa]; Tsat(P) → temperature [K]
-    if (/^psat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]}; // kPa
-    if (/^tsat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1,   dim:[0,0,0,0,1,0,0]};   // K
+    // Temperature-returning functions: T_Ph, T_Ps, T_vs, T_hs, T_vu, T_Pu, T_Pv,
+    // and their fluid-specific aliases T_Ph_R717, T_vs_Air, etc. → K
+    if (/^t_/.test(fn)) return {val:1, dim:[0,0,0,0,1,0,0]};
+    // Pressure-returning functions: P_Tv, P_Tu, P_Th, P_Ts, P_vs, P_hs, P_vu,
+    // and their fluid-specific aliases P_vs_R717, P_Tv_Air, etc. → kPa
+    if (/^p_/.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]};
+    // Psat(T) → pressure [kPa]; Tsat(P) → temperature [K]
+    if (/^psat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1e3, dim:[1,-1,-2,0,0,0,0]};
+    if (/^tsat(_f|_water|_[a-z].*)?$/i.test(fn)) return {val:1,   dim:[0,0,0,0,1,0,0]};
     // Functions don't carry units in this context
     return {val: 1, dim: _D.none.slice()};
   }
@@ -3880,21 +3886,19 @@ function dimToLabel(dim) {
   if (eq([1,-3,0,0,0,0,0]))      return 'kg/m³';      // density
   if (eq([1,-2,-2,0,0,0,0]))     return 'N/m²';       // stress (= Pa)
   // ── Fallback: build label from dim vector ──────────────────────
-  // V1.3.5: suppress garbage labels that are the product of user-equation
-  // dimensional inconsistency (e.g. mixing K and kJ/kg in the same sum).
-  // Only fall back to a raw dim vector label if the dim is "simple":
-  //   - at most 2 non-zero components (anything beyond that not in the known
-  //     compound-quantity table above is almost certainly a user error)
-  //   - no component magnitude greater than 3
-  // Otherwise return null (no label) so the UI shows the number alone.
-  const _nonZero = d.filter(v => v !== 0);
-  const _maxMag = d.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
-  if (_nonZero.length > 2 || _maxMag > 3) return null;
+  // V1.3.11: always build a label from the dim vector — even for "complex" dims.
+  // Suppressing them (as the V1.3.5 filter did) hides useful information.
+  // When a user writes "4.18*(T5-T4)" where 4.18 is a bare dimensionless literal
+  // but Cp_w (kJ/kg·K) is intended, the result dim is s²·K/m² — showing this
+  // tells them their expression is dimensionally inconsistent. If they use the
+  // properly-dimensioned Cp_w instead, V1.3.9 ensures the variable correctly
+  // evaluates to dimensionless [0,0,0,0,0,0,0] and shows no unit.
   const names = ['kg','m','s','A','K','mol','cd'];
+  const sup = n => n === 2 ? '²' : n === 3 ? '³' : String(n);
   let num = '', den = '';
   d.forEach((v, i) => {
-    if (v > 0) num += (v===1 ? names[i] : names[i]+v) + '·';
-    if (v < 0) den += (v===-1? names[i] : names[i]+Math.abs(v)) + '·';
+    if (v > 0) num += (v===1 ? names[i] : names[i]+sup(v)) + '·';
+    if (v < 0) den += (v===-1? names[i] : names[i]+sup(Math.abs(v))) + '·';
   });
   num = num.slice(0,-1); den = den.slice(0,-1);
   if (!num && !den) return null;
@@ -4032,19 +4036,30 @@ function buildVarDimCache(rhsMap, fullTxt, reset=true) {
     }
   }
   // Multi-pass: repeat until no new dims resolved (handles chains like C_h = m_h*cp_h)
+  // V1.3.11: also cache zero-dim (confirmed dimensionless) results, so that
+  // pure-numeric variables like k=1.4 are marked as "resolved" and don't
+  // block _inferMissingVarDims from inferring temperature/pressure variables
+  // in ratio equations like T2/T1 = (P2/P1)^((k-1)/k).
+  // Zero-dim entries that came from unresolved deps will be caught by the
+  // V1.3.9 Step 5 purge-and-repropagate.
   for (let pass = 0; pass < 8; pass++) {
     let added = 0;
     for (const [k, rhs] of Object.entries(rhsMap)) {
       if (k.endsWith('.__all')) continue; // skip meta-entries
       const v = k;
       if (v in _varDimCache) continue;
-      // Try all stored assignments for this variable (first non-zero dim wins)
+      // Try all stored assignments for this variable (first successful eval wins)
       const allRhs = rhsMap[v + '.__all'] || [rhs];
       for (const r of allRhs) {
         try {
           const ast = parse(r);
           const {dim} = evalDimNode(ast);
-          if (dim.some(x => x !== 0)) { _varDimCache[v] = dim.slice(); added++; break; }
+          // Cache both non-zero dims AND confirmed zero-dim (dimensionless).
+          // Previously only non-zero was cached; dimensionless vars like k=1.4
+          // were silently skipped, making them look "unresolved" to downstream.
+          _varDimCache[v] = dim.slice();
+          added++;
+          break;
         } catch(e) {}
       }
     }
@@ -4218,31 +4233,40 @@ function _inferMissingVarDims(equationLines) {
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
         // Find the "reference dim" from known terms — the first non-zero one.
-        // (Zero-dim known terms are compatible with any dim.)
+        // V1.3.11: also track whether ANY known term was found at all, so we can
+        // distinguish "refDim is null because all knowns are genuinely dimensionless"
+        // (e.g. T2/T1 = (P2/P1)^n where RHS is dimensionless → should infer T2=K)
+        // from "refDim is null because there are no known terms" (can't infer).
         let refDim = null;
+        let hasKnownTerms = false;
         for (const t of knownTerms) {
+          hasKnownTerms = true;
           const d = evalDimNode(t.node).dim;
           if (d.some(x => x !== 0)) { refDim = d; break; }
         }
+        // If all known terms were dimensionless, treat refDim as the zero vector.
+        // This allows inference of cases like T2/T1 = dimensionless:
+        //   partialDim(T2/T1 with T2=zero) = [0,0,0,0,-1,0,0] = 1/K
+        //   vDim = [0,0,0,0,0,0,0] - [0,0,0,0,-1,0,0] = [0,0,0,0,1,0,0] = K ✓
+        const effectiveRefDim = refDim ?? (hasKnownTerms ? [0,0,0,0,0,0,0] : null);
 
-        if (vTerms.length === 1 && refDim) {
-          // Single v-term: vDim = refDim − partialDim(vTerm with v=zero)
+        if (vTerms.length === 1 && effectiveRefDim) {
+          // Single v-term: vDim = effectiveRefDim − partialDim(vTerm with v=zero)
           const partialDim = evalDimNode(vTerms[0].node).dim;
-          vDim = dimSub(refDim, partialDim);
-        } else if (vTerms.length === 1 && !refDim && knownTerms.length === 0) {
+          vDim = dimSub(effectiveRefDim, partialDim);
+        } else if (vTerms.length === 1 && !effectiveRefDim && knownTerms.length === 0) {
           // expr = 0 form with only a v-term (e.g. "Sgen = 0"): can't infer
           // refDim. Leave undefined.
-        } else if (vTerms.length > 1 && refDim) {
+        } else if (vTerms.length > 1 && effectiveRefDim) {
           // Multiple v-terms, all must share same partialDim shift. Try:
-          //   each vTerm's partialDim must equal refDim when v has the right dim.
+          //   each vTerm's partialDim must equal effectiveRefDim when v has the right dim.
           // Harder general case — attempt if all partialDims match AND v appears
           // in the same multiplicative position in each term.
           const partialDims = vTerms.map(t => evalDimNode(t.node).dim);
           const allMatch = partialDims.every(d => d.every((x,i) => x === partialDims[0][i]));
-          if (allMatch) vDim = dimSub(refDim, partialDims[0]);
+          if (allMatch) vDim = dimSub(effectiveRefDim, partialDims[0]);
         }
-        // If refDim is null (all knowns are dimensionless or zero) AND vTerms > 0
-        // AND the equation is balanced (diff=0), v is likely dimensionless — no dim.
+        // If effectiveRefDim is null (no known terms at all), v is uninferable — no dim.
       } catch(e) {}
 
       if (vDim && vDim.some(x => x !== 0)) {
@@ -5742,11 +5766,16 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
         const _t0 = performance.now();
         const r=solveSystem(txt,guessOverrides,fixedScope);
-        // V1.3.3: record whether the [K]-override was active during this solve.
-        // If so, scope's T-valued variables are in Kelvin (not display units),
-        // and diagram/state-point code must convert K → display units.
+        // V1.3.3: record whether temperatures in the scope are in an absolute
+        // scale (K or °R). This happens either because the user pre-set
+        // UNITS.tempIn='K' in settings, OR because the [K]/[°R] bracket
+        // auto-override fired. In both cases, computed temperature variables
+        // need fromK() applied when displaying in °C/°F.
+        // V1.3.11: changed from "was overridden?" to "is absolute now?" so
+        // that user-pre-set tempIn=K is also handled correctly.
         const _tempInWasOverridden = (UNITS.tempIn !== _savedTempIn);
-        r.scope.__tempInWasK = _tempInWasOverridden;
+        r.scope.__tempInWasK = _tempInWasOverridden ||
+          UNITS.tempIn === 'K' || UNITS.tempIn === '°R' || UNITS.tempIn === 'degR';
         UNITS.tempIn = _savedTempIn;
         const _solveMs = performance.now() - _t0;
         if(sliderDefs.length)renderSliderZone(sliderDefs); // keep sliders visible after re-solve
@@ -5812,13 +5841,15 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           } else {
             // Computed or un-bracketed variable: use dim inference only
             unitLabel = _bestUnitLabel(v, rhsMap[v]);
-            // V1.3.3: if the [K] override was active during solve, scope holds
-            // temperature-valued variables in Kelvin. Convert to display unit
-            // for cards (same correction applied in extractStatePoints for diagram).
+            // V1.3.3/V1.3.13: if scope temperatures are in Kelvin (either because
+            // the user pre-set UNITS.tempIn='K' in settings, or because the [K]
+            // bracket auto-override fired), convert K → display unit for cards.
+            // Use r.scope.__tempInWasK (set at solve time) — NOT _tempInWasOverridden
+            // which is false when tempIn=K was pre-set rather than auto-triggered.
             const _dimK = [0,0,0,0,1,0,0];
             const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
             let rawShown = raw;
-            if (_tempInWasOverridden && _isTemp && isFinite(raw)) {
+            if (r.scope.__tempInWasK && _isTemp && isFinite(raw)) {
               rawShown = fromK(raw);         // K → display temperature unit
               if (!unitLabel) unitLabel = UNITS.temp;
             }
@@ -6110,8 +6141,11 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
           const _processedTxt = preprocessBrackets(filteredTxt);
           const _r = solveSystem(_processedTxt, {}, {});
-          // V1.3.3: tag scope so diagram/state-point code converts K → display
-          _r.scope.__tempInWasK = (UNITS.tempIn !== _savedTempIn2);
+          // V1.3.11: tag scope with absolute-temperature flag — true if UNITS.tempIn
+          // is K or R either by user pre-set or by auto-override, so computed
+          // temperatures are correctly converted back for display.
+          _r.scope.__tempInWasK = (UNITS.tempIn !== _savedTempIn2) ||
+            UNITS.tempIn === 'K' || UNITS.tempIn === '°R' || UNITS.tempIn === 'degR';
           results.push({ alias, fluidKey, scope: _r.scope, allVars: _r.allVars, error: null });
         } catch(e) {
           results.push({ alias, fluidKey, scope: null, allVars: [], error: e.message });
