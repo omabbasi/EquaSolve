@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.4</title>
+<title>EquaSolve V1.3.16</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -591,7 +591,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.4</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.16</div>
       </div>
     </div>
 
@@ -625,7 +625,6 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         <div>&#8859; &nbsp;Optimization &#8212; Nelder-Mead with inequality constraints and unit annotations</div>
         <div>&#8881; &nbsp;Sensitivity analysis &#8212; normalized finite-difference sensitivity matrix</div>
         <div>&#10215; &nbsp;Live parameter sliders for algebraic, ODE, and DAE systems</div>
-        <div>&#9888; &nbsp;V1.4 unit safety: bracket-only units, strict unknown-unit errors, pressure input-basis conversion, and explicit saturation aliases</div>
       </div>
     </div>
 
@@ -672,7 +671,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.4</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.16</span></div>
       
     </div>
   </div>
@@ -783,8 +782,8 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     <div class="syn-item"><div class="syn-lbl">Multiply</div><code class="syn-code">2*x</code></div>
     <div class="syn-item"><div class="syn-lbl">Functions</div><code class="syn-code">sin, sqrt, log…</code></div>
     <div class="syn-item"><div class="syn-lbl">User function</div><code class="syn-code">f(x) = x^2 + 1</code></div>
-    <div class="syn-item"><div class="syn-lbl">Units (input)</div><code class="syn-code">P = 300[kPa]</code></div>
-    <div class="syn-item"><div class="syn-lbl">Units (label)</div><code class="syn-code">Q = m*cp*dT[kW]</code></div>
+    <div class="syn-item"><div class="syn-lbl">Units (input)</div><code class="syn-code">P = 300 [kPa]</code></div>
+    <div class="syn-item"><div class="syn-lbl">Units (label)</div><code class="syn-code">Q = m*cp*dT [kW]</code></div>
     <div class="syn-item"><div class="syn-lbl">Temp input</div><code class="syn-code">T = 450 [degC]</code></div>
     <div class="syn-item"><div class="syn-lbl">Comments</div><code class="syn-code">// note</code></div>
   </div>
@@ -840,7 +839,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.4</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.16</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1087,11 +1086,11 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
       <details open style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;">
       <summary style="padding:8px 14px;font-size:9px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
-        Bracket Unit Reference — units must be written in square brackets
+        Inline Unit Constants — use directly in equations as multipliers
         <span style="font-size:11px;color:var(--accent);">▾</span>
       </summary>
       <div style="padding:10px 14px;font-size:10px;color:var(--dim);line-height:2;">
-        <div style="margin-bottom:8px;color:var(--accent);font-size:10px;">V1.4 uses <strong>bracket-only units</strong>. Use <code style="color:var(--blue)">P=300[kPa]</code>, not <code style="color:var(--blue)">P=300 kPa</code>. Bare unit multipliers are rejected to avoid silent unit mistakes.</div>
+        <div style="margin-bottom:8px;color:var(--accent);font-size:10px;">Unit constants are <strong>relative to the active display unit</strong>. Changing display unit and re-solving automatically converts all inline values.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
           <div>
             <div style="color:var(--hi);font-weight:600;margin:6px 0 2px">Pressure (→ display unit)</div>
@@ -1277,7 +1276,6 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         <div class="help-table">
           <div class="help-row"><code>x^2</code><span>Power / exponent</span></div>
           <div class="help-row"><code>2*x</code><span>Multiplication (explicit)</span></div>
-          <div class="help-row"><code>P = 300[kPa]</code><span>Bracket-only units; bare units like 300 kPa are rejected</span></div>
           <div class="help-row"><code>x = y + z</code><span>Any algebraic equation</span></div>
           <div class="help-row"><code>// comment</code><span>Line comment</span></div>
           <div class="help-row"><code>Ctrl+Enter</code> / <code>F2</code><span>Solve (keyboard shortcuts)</span></div>
@@ -3059,8 +3057,9 @@ const FUNS_base={
   sfg_P:(P)=>{const T=IF97.Tsat(toMPa(P));return IF97.sfg(T);},
   vf_P:(P)=>{const T=IF97.Tsat(toMPa(P));return fromM3(IF97.vf(T));},
   vg_P:(P)=>{const T=IF97.Tsat(toMPa(P));return fromM3(IF97.vg(T));},
+  // Temperature-based saturation: hf_T(T), hg_T(T), sf_T(T), sg_T(T), vf_T(T), vg_T(T)
   hf_T:(T)=>fromKJ(IF97.hf(toK(T))),  hg_T:(T)=>fromKJ(IF97.hg(toK(T))),  hfg_T:(T)=>fromKJ(IF97.hfg(toK(T))),
-  sf_T:(T)=>IF97.sf(toK(T)),          sg_T:(T)=>IF97.sg(toK(T)),           sfg_T:(T)=>IF97.sfg(toK(T)),
+  sf_T:(T)=>IF97.sf(toK(T)),           sg_T:(T)=>IF97.sg(toK(T)),           sfg_T:(T)=>IF97.sfg(toK(T)),
   vf_T:(T)=>fromM3(IF97.vf(toK(T))),  vg_T:(T)=>fromM3(IF97.vg(toK(T))),
   h_Tx:(T,x)=>fromKJ(IF97.h_Tx(toK(T),x)), s_Tx:(T,x)=>IF97.s_Tx(toK(T),x),
   // Reverse-pair aliases (user convenience: h_TP = h_PT etc.)
@@ -3300,6 +3299,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
+      // V1.3.16: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3466,12 +3466,13 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      FUNS[prefix+'_'+alias] = (arg) => fnT(fl,toK(arg));
-      FUNS[prefix+'_T_'+alias] = (arg) => fnT(fl,toK(arg));
-      FUNS[prefix+'_P_'+alias] = (arg) => fnP(fl,toMPa(arg));
+      // V1.3.16: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
+      FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
+      FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
     }
   }
-  // Water/steam saturation auto-detect
+  // Water/steam saturation — explicit T and P variants
   const wSat = [
     ['hf', (K)=>fromKJ(IF97.hf(K)),  (P)=>fromKJ(IF97.hf(IF97.Tsat(P)))],
     ['hg', (K)=>fromKJ(IF97.hg(K)),  (P)=>fromKJ(IF97.hg(IF97.Tsat(P)))],
@@ -3481,7 +3482,8 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    FUNS[prefix] = (arg) => fnT(toK(arg));
+    // V1.3.16: bare name and _T → temperature-based; _P → pressure-based
+    FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
   }
@@ -3806,13 +3808,13 @@ function evalDimNode(nd) {
     const _specV  = [0,3,-0,0,0,0,-1]; // actually m³/kg = [-1,3,0,0,0,0,0]
     const _specVo = [-1,3,0,0,0,0,0];  // m³/kg (specific volume: v_PT)
     // Enthalpy / internal energy / exergy → kJ/kg (specific energy)
-    if (/^(h_|hf$|hg$|hfg$|h_f$|h_g$|u_|uf$|ug$|ufg$|ex|exf|exflow|phi|psi|exergy|h_pt|h_px|h_tx|h_ps|h_pv|h_pu|h_tp|u_pt|u_tp|h_tv|h_ts|h_hs|h_vs|u_hs|u_tv|u_vs)/.test(fn) && !/^(h_conv|h_darcy|hf_darcy|h_loss|h_pipe|h_cyl|h_flat|h_sphere|h_boil|h_cond)/.test(fn)) return {val:1e3, dim:_specE.slice()};
+    if (/^(h_|hf(?:_|$)|hg(?:_|$)|hfg(?:_|$)|h_f(?:_|$)|h_g(?:_|$)|u_|uf(?:_|$)|ug(?:_|$)|ufg(?:_|$)|ex|exf|exflow|phi|psi|exergy|h_pt|h_px|h_tx|h_ps|h_pv|h_pu|h_tp|u_pt|u_tp|h_tv|h_ts|h_hs|h_vs|u_hs|u_tv|u_vs)/.test(fn) && !/^(h_conv|h_darcy|hf_darcy|h_loss|h_pipe|h_cyl|h_flat|h_sphere|h_boil|h_cond)/.test(fn)) return {val:1e3, dim:_specE.slice()};
     // HT convection coefficient → W/(m²·K)
     if (/^(h_conv|h_pipe|h_cyl|h_flat|h_sphere|h_boil|h_cond)/.test(fn)) return {val:1, dim:[1,0,-3,0,-1,0,0]};
     // Entropy → kJ/(kg·K)
-    if (/^(s_|sf$|sg$|sfg$|s_f$|s_g$|s_pt|s_px|s_tx|s_ps|s_pv|s_pu|s_tp|s_ph|s_th|s_tv|s_hs|s_vs)/.test(fn)) return {val:1e3, dim:_specS.slice()};
+    if (/^(s_|sf(?:_|$)|sg(?:_|$)|sfg(?:_|$)|s_f(?:_|$)|s_g(?:_|$)|s_pt|s_px|s_tx|s_ps|s_pv|s_pu|s_tp|s_ph|s_th|s_tv|s_hs|s_vs)/.test(fn)) return {val:1e3, dim:_specS.slice()};
     // Specific volume → m³/kg
-    if (/^(v_|vf$|vg$|vfg$|v_f$|v_g$|v_pt|v_px|v_tx|v_ps|v_pv|v_pu|v_tp|v_ph|v_tv|v_hs|v_vs)/.test(fn)) return {val:1, dim:_specVo.slice()};
+    if (/^(v_|vf(?:_|$)|vg(?:_|$)|vfg(?:_|$)|v_f(?:_|$)|v_g(?:_|$)|v_pt|v_px|v_tx|v_ps|v_pv|v_pu|v_tp|v_ph|v_tv|v_hs|v_vs)/.test(fn)) return {val:1, dim:_specVo.slice()};
     // Temperature-returning functions: T_Ph, T_Ps, T_vs, T_hs, T_vu, T_Pu, T_Pv,
     // and their fluid-specific aliases T_Ph_R717, T_vs_Air, etc. → K
     if (/^t_/.test(fn)) return {val:1, dim:[0,0,0,0,1,0,0]};
@@ -4156,7 +4158,7 @@ function _seedBracketDimsFromText(rawTxt) {
     if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
     const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
     if (!bm) return;
-    const u0 = _canonUnit(bm[1].trim().replace(/\s+/g,''));
+    const u0 = bm[1].trim().replace(/\s+/g,'').replace(/degC/i,'degC').replace(/degF/i,'degF').replace(/degR/i,'degR');
     const u = _normDenomSeparators(u0);
     // Try direct, case-insensitive, then dot→slash normalised, then *→/ normalised
     const uNorm = bracketDimMap[u]
@@ -4580,7 +4582,7 @@ function isFunctionName(name){
 function parse(src){const toks=tokenize(src);let p=0;const peek=()=>toks[p],eat=v=>{if(toks[p].v!==v)throw new Error('Expected "'+v+'" near "'+toks[p].v+'"');return toks[p++];};function expr(){let L=convert();while(peek().v==='+'||peek().v==='-'){const op=toks[p++].v;L={t:'B',op,L,R:convert()};}return L;}function convert(){return term();}function term(){let L=unary();while(peek().v==='*'||peek().v==='/'){const op=toks[p++].v;L={t:'B',op,L,R:unary()};}return L;}function factor(){const b=primary();if(peek().v==='^'){p++;return{t:'B',op:'^',L:b,R:unary()};}return b;}function unary(){if(peek().v==='-'){p++;return{t:'U',R:factor()};}if(peek().v==='+'){p++;return factor();}return factor();}function primary(){const tk=toks[p];if(tk.t==='N'){p++;return{t:'N',v:tk.v};}if(tk.t==='I'){p++;if(peek().v==='('){eat('(');const args=[];if(peek().v!==')'){{args.push(expr());while(peek().v===','){p++;args.push(expr());}}}eat(')');return{t:'F',fn:tk.v,args};}return{t:'V',n:tk.v};}if(tk.v==='('){eat('(');const nd=expr();eat(')');return nd;}throw new Error('Unexpected: "'+tk.v+'"');}const tree=expr();if(peek().t!=='$')throw new Error('Unexpected "'+peek().v+'"');return tree;}
 function evalNode(nd,sc){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in sc)return sc[nd.n];if(nd.n in CONSTS)return CONSTS[nd.n];throw new Error('Undefined variable: '+nd.n);}if(nd.t==='U')return-evalNode(nd.R,sc);if(nd.t==='B'){
   // ── Temperature & unit expressions inside function args ──────────────
-  // V1.4: use brackets for units, e.g. hf(30[degC]), h_PT(1[MPa], 200[degC]). Bare unit syntax is rejected.
+  // e.g. hf(30 degC), h_PT(1 MPa, 200 degC) — convert to display units
   const l=evalNode(nd.L,sc),r=evalNode(nd.R,sc);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;// >> operator removed — use [unit] bracket syntax instead
 return M.pow(l,r);}
 if(nd.t==='F'){
@@ -4612,107 +4614,149 @@ function hasUnknownVars(nd){const s=new Set();collectVars(nd,s);return s.size>0;
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.4 bracket-only unit safety layer ──────────────────────────────
-// Users must write P=300[kPa] or h_PT(1[MPa], 200[degC]).
-// Bare unit expressions such as P=300 kPa are rejected.
+// ── V1.3.16: Unit safety utilities ───────────────────────────────────────
+// _canonUnit   : normalise case-variant spellings → canonical form
+// _knownBracketUnit : true if the unit is recognised by the engine
+// _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
+// _replaceNumericBracketValuesInLine : convert "1[MPa]" inside any expression
 const _UNIT_CANONICAL = {
-  'pa':'Pa','kpa':'kPa','mpa':'MPa','gpa':'GPa','bar':'bar','mbar':'mbar','atm':'atm','psi':'psi','psia':'psia','psf':'psf','mmhg':'mmHg','torr':'torr',
-  'k':'K','kelvin':'K','degc':'degC','c':'degC','°c':'°C','degr':'degR','r':'degR','°r':'°R','degf':'degF','f':'degF','°f':'°F',
-  'j':'J','joule':'J','kj':'kJ','mj':'MJ','gj':'GJ','wh':'Wh','kwh':'kWh','btu':'BTU','cal':'cal','kcal':'kcal',
-  'w':'W','kw':'kW','mw':'MW','gw':'GW','hp':'hp','n':'N','newton':'newton','kn':'kN','mn':'MN','lbf':'lbf','kip':'kip',
+  'pa':'Pa','kpa':'kPa','mpa':'MPa','gpa':'GPa','bar':'bar','mbar':'mbar',
+  'atm':'atm','psi':'psi','psia':'psia','psf':'psf','mmhg':'mmHg','torr':'torr',
+  'k':'K','kelvin':'K',
+  'degc':'degC','c':'degC','\u00b0c':'\u00b0C',
+  'degr':'degR','r':'degR','\u00b0r':'\u00b0R',
+  'degf':'degF','f':'degF','\u00b0f':'\u00b0F',
+  'j':'J','joule':'J','kj':'kJ','mj':'MJ','gj':'GJ',
+  'wh':'Wh','kwh':'kWh','btu':'BTU','cal':'cal','kcal':'kcal',
+  'w':'W','kw':'kW','mw':'MW','gw':'GW','hp':'hp',
+  'n':'N','newton':'newton','kn':'kN','mn':'MN','lbf':'lbf','kip':'kip',
   'kg':'kg','g':'g','mg':'mg','tonne':'tonne','lb':'lb','lbm':'lbm','slug':'slug',
-  'm':'m','mm':'mm','cm':'cm','km':'km','ft':'ft','foot':'ft','feet':'ft','inch':'inch','in':'inch','yd':'yd','mi':'mi',
-  'm2':'m2','m^2':'m2','m²':'m²','cm2':'cm2','cm^2':'cm2','cm²':'cm²','ft2':'ft2','ft^2':'ft2','ft²':'ft²',
-  'm3':'m3','m^3':'m3','m³':'m³','cm3':'cm3','cm^3':'cm3','cm³':'cm³','mm3':'mm3','ft3':'ft3','ft^3':'ft3','ft³':'ft³','l':'L','liter':'liter','litre':'liter','ml':'mL','cl':'cL','gal':'gal','gallon':'gallon',
-  's':'s','sec':'sec','second':'sec','seconds':'sec','ms':'ms','min':'min_t','min_t':'min_t','hr':'hr','hour':'hour','day':'day','yr':'yr','deg':'deg','rad':'rad','rpm':'rpm','%':'%','ppm':'ppm','cp':'cP'
+  'm':'m','mm':'mm','cm':'cm','km':'km','ft':'ft','foot':'ft','feet':'ft',
+  'inch':'inch','in':'inch','yd':'yd','mi':'mi',
+  'm2':'m2','m^2':'m2','m\u00b2':'m\u00b2','cm2':'cm2','cm^2':'cm2','cm\u00b2':'cm\u00b2',
+  'ft2':'ft2','ft^2':'ft2','ft\u00b2':'ft\u00b2',
+  'm3':'m3','m^3':'m3','m\u00b3':'m\u00b3','cm3':'cm3','cm^3':'cm3','cm\u00b3':'cm\u00b3',
+  'mm3':'mm3','ft3':'ft3','ft^3':'ft3','ft\u00b3':'ft\u00b3',
+  'l':'L','liter':'liter','litre':'liter','ml':'mL','cl':'cL','gal':'gal','gallon':'gallon',
+  's':'s','sec':'sec','second':'sec','seconds':'sec',
+  'ms':'ms','min':'min_t','min_t':'min_t','hr':'hr','hour':'hour','day':'day','yr':'yr',
+  'deg':'deg','rad':'rad','rpm':'rpm','%':'%','ppm':'ppm','cp':'cP'
 };
-const _BARE_UNIT_TOKENS = new Set(['Pa','kPa','MPa','GPa','bar','mbar','atm','psi','psia','psf','mmHg','torr','K','degC','degF','degR','°C','°F','°R','J','kJ','MJ','GJ','Wh','kWh','BTU','cal','kcal','W','kW','MW','GW','hp','N','kN','MN','lbf','kip','kg','g','mg','tonne','lb','lbm','slug','m','mm','cm','km','ft','inch','in','yd','mi','m2','m3','cm2','cm3','ft2','ft3','L','liter','mL','cL','gal','gallon','s','sec','ms','min_t','hr','hour','day','yr','deg','rad','rpm','cP']);
 function _canonUnit(u){
   let s=String(u||'').trim().replace(/\s+/g,'');
   if(!s) return s;
-  s=s.replace(/\u00B7/g,'·').replace(/m\^3/g,'m3').replace(/m\^2/g,'m2').replace(/cm\^3/g,'cm3').replace(/cm\^2/g,'cm2').replace(/ft\^3/g,'ft3').replace(/ft\^2/g,'ft2').replace(/°c/gi,'°C').replace(/°f/gi,'°F').replace(/°r/gi,'°R');
+  s=s.replace(/\u00B7/g,'\u00b7').replace(/m\^3/g,'m3').replace(/m\^2/g,'m2')
+     .replace(/cm\^3/g,'cm3').replace(/cm\^2/g,'cm2')
+     .replace(/ft\^3/g,'ft3').replace(/ft\^2/g,'ft2')
+     .replace(/\u00b0c/gi,'\u00b0C').replace(/\u00b0f/gi,'\u00b0F').replace(/\u00b0r/gi,'\u00b0R');
   const low=s.toLowerCase();
   if(_UNIT_CANONICAL[low]) return _UNIT_CANONICAL[low];
-  return s.replace(/[A-Za-z°][A-Za-z0-9°]*/g,t=>_UNIT_CANONICAL[t.toLowerCase()]||t);
+  return s.replace(/[A-Za-z\u00b0][A-Za-z0-9\u00b0]*/g,t=>_UNIT_CANONICAL[t.toLowerCase()]||t);
 }
 function _knownBracketUnit(unitStr){
   const u=_canonUnit(unitStr);
   if(_OP_CONSTS[u]!==undefined) return true;
+  if(['degC','degF','degR','\u00b0C','\u00b0F','\u00b0R','K'].includes(u)) return true;
   try{
     const tbl=buildCompoundTable();
     if(u in tbl) return true;
-    const uNorm=u.replace(/\./g,'/').replace(/\s+/g,'').replace(/·/g,'/');
+    const uNorm=u.replace(/\./g,'/').replace(/\s+/g,'').replace(/\u00b7/g,'/');
     if(uNorm in tbl) return true;
     const slashIdx=u.indexOf('/');
-    if(slashIdx>=0){
-      const uStar=u.slice(0,slashIdx)+u.slice(slashIdx).replace(/[*·]/g,'/');
-      if(uStar in tbl) return true;
-    }
+    if(slashIdx>=0){const uStar=u.slice(0,slashIdx)+u.slice(slashIdx).replace(/[*\u00b7]/g,'/');if(uStar in tbl) return true;}
   }catch(e){}
-  if(typeof _UNIT_SI_FACTORS!=='undefined' && (u in _UNIT_SI_FACTORS)) return true;
-  return ['degC','degF','degR','°C','°F','°R','K'].includes(u);
+  return false;
 }
-function _unitKind(u){
-  u=_canonUnit(u);
-  if(['degC','°C','degF','°F','K','degR','°R'].includes(u)) return 'temp';
-  if(['Pa','kPa','MPa','GPa','bar','mbar','atm','psi','psia','psf','mmHg','torr'].includes(u)) return 'pres';
-  return '';
-}
-function _pressureFactorToInput(u){
-  const pa={Pa:1,kPa:1e3,MPa:1e6,GPa:1e9,bar:1e5,mbar:100,atm:101325,psi:6894.757,psia:6894.757,psf:47.8803,mmHg:133.322,torr:133.322};
-  const inPa={kPa:1e3,MPa:1e6,bar:1e5,psia:6894.757}[UNITS.presIn]||1e6;
-  return pa[u]/inPa;
-}
+const _BARE_UNIT_TOKENS = new Set([
+  'Pa','kPa','MPa','GPa','bar','mbar','atm','psi','psia','psf','mmHg','torr',
+  'K','degC','degF','degR',
+  'J','kJ','MJ','GJ','Wh','kWh','BTU','cal','kcal',
+  'W','kW','MW','GW','hp','N','kN','MN','lbf','kip',
+  'kg','g','mg','tonne','lb','lbm','slug',
+  'm','mm','cm','km','ft','inch','yd','mi',
+  'm2','m3','cm2','cm3','ft2','ft3','L','liter','mL','cL','gal','gallon',
+  's','sec','ms','min_t','hr','hour','day','yr','deg','rad','rpm','cP'
+]);
 function _rejectBareUnitSyntax(txt){
-  const units=[..._BARE_UNIT_TOKENS].sort((a,b)=>b.length-a.length).map(u=>u.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
-  const re=new RegExp('(^|[^A-Za-z0-9_\\]\\.])([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)(?:\\s*)('+units+')(?=$|[^A-Za-z0-9_])','i');
+  const units=[..._BARE_UNIT_TOKENS].sort((a,b)=>b.length-a.length)
+    .map(u=>u.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re=new RegExp(
+    '(^|[^A-Za-z0-9_\\]\\.])'  +
+    '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)' +
+    '(?:\\s+)(' + units + ')' +
+    '(?=$|[^A-Za-z0-9_])','i');
   for(const line of String(txt||'').split('\n')){
     const clean=line.replace(/\/\/.*$/,'').replace(/\[[^\]]+\]/g,' ');
     const m=clean.match(re);
-    if(m) throw new Error('V1.4 uses bracket-only units. Write '+m[2]+'['+m[3]+'] instead of '+m[2]+' '+m[3]+'.');
+    if(m) throw new Error('Bracket-only units required. Write '+m[2]+'['+m[3]+'] instead of "'+m[2]+' '+m[3]+'".');
   }
 }
 function _replaceNumericBracketValuesInLine(line){
-  const cidx = line.indexOf('//');
-  const body = cidx >= 0 ? line.slice(0,cidx) : line;
-  const comment = cidx >= 0 ? line.slice(cidx) : '';
-  const re = /(^|[^A-Za-z0-9_.\]])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\[([^\]]+)\]/g;
-  const out = body.replace(re, (m,prefix,num,unitRaw) => {
-    const unit = _canonUnit(unitRaw);
-    if(!_knownBracketUnit(unit)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in line: '+line.trim());
-    const cv = _bracketConvert(parseFloat(num), unit);
-    if(cv===null || !isFinite(cv)) throw new Error('Could not convert unit ['+unitRaw.trim()+'] in line: '+line.trim());
-    return prefix + cv;
+  const cidx=line.indexOf('//');
+  const body=cidx>=0?line.slice(0,cidx):line;
+  const comment=cidx>=0?line.slice(cidx):'';
+  const re=/(^|[^A-Za-z0-9_.\]])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\[([^\]]+)\]/g;
+  const out=body.replace(re,(m,prefix,num,unitRaw)=>{
+    const unit=_canonUnit(unitRaw);
+    if(!_knownBracketUnit(unit)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in: '+line.trim());
+    const cv=_bracketConvert(parseFloat(num),unit);
+    if(cv===null||!isFinite(cv)) throw new Error('Cannot convert unit ['+unitRaw.trim()+'] in: '+line.trim());
+    return prefix+cv;
   });
-  return out + comment;
+  return out+comment;
 }
 
 // Convert a numeric value from [unit] bracket to internal display units
 function _bracketConvert(val, unitStr) {
   const u = _canonUnit(unitStr);
   const tIn = UNITS.tempIn || UNITS.temp;
-  // Temperature — convert absolute temperature values into the active INPUT basis,
-  // because property functions call toK() on their arguments.
-  if (u==='degC'||u==='°C') { if(tIn==='°C') return val; if(tIn==='K') return val+273.15; if(tIn==='°F') return val*9/5+32; if(tIn==='°R') return (val+273.15)*9/5; }
-  if (u==='degF'||u==='°F') { if(tIn==='°F') return val; if(tIn==='K') return (val-32)*5/9+273.15; if(tIn==='°C') return (val-32)*5/9; if(tIn==='°R') return val+459.67; }
-  if (u==='K') { if(tIn==='K') return val; if(tIn==='°C') return val-273.15; if(tIn==='°F') return (val-273.15)*9/5+32; if(tIn==='°R') return val*9/5; }
-  if (u==='degR'||u==='°R') { if(tIn==='°R') return val; if(tIn==='K') return val*5/9; if(tIn==='°C') return val*5/9-273.15; if(tIn==='°F') return val-459.67; }
-  // Pressure — convert into active INPUT pressure basis (fixes display/input mismatch).
-  if (_unitKind(u)==='pres') return val * _pressureFactorToInput(u);
-  if (_OP_CONSTS[u] !== undefined && isFinite(_OP_CONSTS[u]) && _OP_CONSTS[u] !== 0) return val * _OP_CONSTS[u];
+  // Temperature — offset conversion
+  if (u==='degC'||u==='°C') {
+    if(tIn==='°C') return val;
+    if(tIn==='K')  return val+273.15;
+    if(tIn==='°F') return val*9/5+32;
+    if(tIn==='°R') return (val+273.15)*9/5;
+  }
+  if (u==='degF'||u==='°F') {
+    if(tIn==='°F') return val;
+    if(tIn==='K')  return (val-32)*5/9+273.15;
+    if(tIn==='°C') return (val-32)*5/9;
+    if(tIn==='°R') return val+459.67;
+  }
+  if (u==='K') {
+    if(tIn==='K')  return val;
+    if(tIn==='°C') return val-273.15;
+    if(tIn==='°F') return (val-273.15)*9/5+32;
+    if(tIn==='°R') return val*9/5;
+  }
+  if (u==='degR'||u==='°R') {
+    if(tIn==='°R') return val;
+    if(tIn==='K')  return val*5/9;
+    if(tIn==='°C') return val*5/9-273.15;
+    if(tIn==='°F') return val-459.67;
+  }
+  // Simple units via _OP_CONSTS (pressure, energy, power, mass, length, velocity, volume)
+  if (_OP_CONSTS[u] !== undefined && isFinite(_OP_CONSTS[u]) && _OP_CONSTS[u] !== 0) {
+    return val * _OP_CONSTS[u];
+  }
+  // Compound units via buildCompoundTable (kJ/kg, W/m2/K, kg/m3, etc.)
+  // V1.3.2: also try '*'-as-denominator-separator normalization (kJ/kg*K → kJ/kg/K)
   try {
-    const tbl=buildCompoundTable();
+    const tbl = buildCompoundTable();
     if (u in tbl) return val * tbl[u];
-    const uNorm=u.replace(/\./g,'/').replace(/\s+/g,'').replace(/·/g,'/');
-    if (uNorm!==u && uNorm in tbl) return val * tbl[uNorm];
-    const slashIdx=u.indexOf('/');
-    if (slashIdx>=0) {
-      const uStar=u.slice(0,slashIdx)+u.slice(slashIdx).replace(/[*·]/g,'/');
-      if (uStar!==u && uStar in tbl) return val * tbl[uStar];
+    // Try common normalizations before giving up
+    const uNorm = u.replace(/\./g, '/').replace(/\s+/g,'').replace(/·/g,'/');
+    if (uNorm !== u && uNorm in tbl) return val * tbl[uNorm];
+    // Denominator *-separator: once a '/' appears, subsequent '*' acts like '/'
+    const slashIdx = u.indexOf('/');
+    if (slashIdx >= 0) {
+      const uStar = u.slice(0, slashIdx) + u.slice(slashIdx).replace(/[*·]/g, '/');
+      if (uStar !== u && uStar in tbl) return val * tbl[uStar];
     }
   } catch(e) {}
-  return null;
+  return null; // unknown unit — leave value unchanged
 }
+
 function analyzeAlgSystem(raw){_rejectBareUnitSyntax(raw);const allLines=String(raw||'').split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(l=>l);const funcDefPat=/^([a-zA-Z_]\w*)\s*\(([^)]+)\)\s*=\s*(.+)$/;const userFuncNames=new Set();const rawLines=allLines.filter(line=>{const m=line.match(funcDefPat);if(m){const params=m[2].split(',').map(s=>s.trim());if(params.every(p=>/^[a-zA-Z_]\w*$/.test(p))){userFuncNames.add(m[1]);return false;}}return true;});userFuncNames.forEach(n=>KNOWN.add(n));// Pre-process [unit] bracket expressions — convert numeric values, strip brackets
 function _isUnitNode(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNode(nd.R);if(nd.t==='B')return _isUnitNode(nd.L)&&_isUnitNode(nd.R);return false;}
 function _evalUnitSI(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return-_evalUnitSI(nd.R);if(nd.t==='B'){const l=_evalUnitSI(nd.L),r=_evalUnitSI(nd.R);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;return Math.pow(l,r);}return 1;}
@@ -4776,7 +4820,6 @@ function newtonND(residuals,vars,x0){const n=vars.length,x=x0.slice(),h=1e-7;con
 // Apply [unit] bracket conversion to all lines before solving
 // Converts e.g. "P1 = 4.5 [MPa]" → "P1 = 4500" when display unit is kPa
 function _normDisplayUnit(u) {
-  u = _canonUnit(u);
   return u.replace(/\bm3\b/g,'m³').replace(/\bm2\b/g,'m²')
            .replace(/m\^3/g,'m³').replace(/m\^2/g,'m²')
            .replace(/\bdegC\b/gi,'°C').replace(/\bdegF\b/gi,'°F').replace(/\bdegR\b/gi,'°R')
@@ -4787,11 +4830,11 @@ function _normDisplayUnit(u) {
 }
 
 function preprocessBrackets(txt) {
-  _rejectBareUnitSyntax(txt);
   // Only reset _bracketDisplayMap on the outer (real) call that actually has brackets.
   // The inner call from solveSystem receives already-preprocessed text (no brackets) and
   // must NOT wipe the map that the outer call already populated correctly.
   if (/\[[^\]]+\]/.test(txt)) _bracketDisplayMap = {};
+  _rejectBareUnitSyntax(txt);
   return txt.split('\n').map(line => {
     const clean = line.replace(/\/\/.*$/, '');
     const idx = clean.indexOf('=');
@@ -4803,13 +4846,13 @@ function preprocessBrackets(txt) {
     if (icBm) {
       const [, valExpr, unitStrRaw] = icBm;
       const unitStr = _canonUnit(unitStrRaw);
-      if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw.trim()+'] in line: '+line.trim());
+      if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw.trim()+'] in: '+line.trim());
       try {
         const ast = parse(valExpr.trim());
         if (_isUnitNodeSimple(ast)) {
           const numVal = _evalUnitSISimple(ast);
           if (isFinite(numVal)) {
-            const cv = _bracketConvert(numVal, unitStr.trim());
+            const cv = _bracketConvert(numVal, unitStr);
             if (cv !== null && isFinite(cv)) {
               const comment = line.slice(line.indexOf(clean) + clean.length);
               return lhs + ' = ' + cv + comment;
@@ -4824,7 +4867,7 @@ function preprocessBrackets(txt) {
     if (!bm) return _replaceNumericBracketValuesInLine(line);
     const valExpr = bm[1].trim(), unitStrRaw = bm[2].trim();
     const unitStr = _canonUnit(unitStrRaw);
-    if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw+'] in line: '+line.trim());
+    if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw+'] in: '+line.trim());
     try {
       const ast = parse(valExpr);
       // Only convert pure numeric/constant expressions
@@ -4843,7 +4886,7 @@ function preprocessBrackets(txt) {
       }
     } catch(e) {}
     // Strip bracket but keep value as-is for non-numeric expressions (display label only).
-    // Numeric bracketed values inside the expression are still converted.
+    // Numeric bracketed values inside the RHS expression are still converted.
     return _replaceNumericBracketValuesInLine(lhs + ' = ' + valExpr);
   }).join('\n');
 }
@@ -4955,20 +4998,20 @@ function solveSystem(raw,userGuesses,fixedScope={}){
 // ═══════════════════════════════════════════════════════════════════
 const EX=[
   {text:'2*x + 3*y = 12\nx - y = 1'},
-  {text:'// Steam: find T, h, s from (P, v)\n// State: P=2000 kPa, v=0.1512 m³/kg\nP = 2000\nv_known = 0.1512\nT = T_Pv(P, v_known)\nh = h_Pv(P, v_known)\ns = s_Pv(P, v_known)'},
-  {text:'// Steam: find T, h, s, v from (P, u)\n// State: P=1000 kPa, u=2550 kJ/kg\nP = 1000\nu_known = 2550\nT = T_Pu(P, u_known)\nh = h_Pu(P, u_known)\ns = s_Pu(P, u_known)\nv = v_Pu(P, u_known)'},
-  {text:'// Steam: find state from (h, s) — isentropic turbine exit\n// Turbine inlet: P_in=10000 kPa, T_in=550 °C\nP_in = 10000\nT_in = 550\nh_in = h_PT(P_in, T_in)\ns_in = s_PT(P_in, T_in)\n// Isentropic expansion to P_out=50 kPa\nP_out = 50\ns_out = s_in\nh_out = h_Ps(P_out, s_out)\n// Alternatively: find T,P from (h,s) directly\nT_out = T_Ps(P_out, s_out)\nw_turbine = h_in - h_out'},
-  {text:'// R-134a: full VCC using (P,h) for all states\nT_evap = -10\nT_cond = 40\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: isentropic compression — use h_Ps\nh2 = h_Ps_R134a(P_high, s1)\nT2 = T_Ph_R134a(P_high, h2)\n// State 3: sat liquid\nh3 = hf_R134a(T_cond)\nv3 = vf_R134a(T_cond)\n// State 4: throttle\nh4 = h3\nCOP  = (h1 - h4) / (h2 - h1)'},
-  {text:'// R-134a two-phase: find state from (P, v)\nP = 300\n// Specific volume of wet mixture\nv_mix = 0.04\n// Find quality and other properties\nx    = x_Pv_R134a(P, v_mix)\nT    = T_Px_R134a(P, x)\nh_mix = h_Px_R134a(P, x)\ns_mix = s_Px_R134a(P, x)'},
-  {text:'// CO₂: find state from (v, u) — supercritical region\n// State: T=400 K, P=10 MPa\nv_in = 0.00613\nu_in = 523.66\nT_state = T_vu_R744(v_in, u_in)\nP_state = P_vu_R744(v_in, u_in)\nh_state = h_vu_R744(v_in, u_in)\ns_state = s_vu_R744(v_in, u_in)'},
-  {text:'// NH₃: find state from (v, s) — superheated\n// State: T=340 K, P=2 MPa\nv_in = 0.07273\ns_in = 5.3625\nT_state = T_vs_R717(v_in, s_in)\nP_state = P_vs_R717(v_in, s_in)\nh_state = h_vs_R717(v_in, s_in)\nu_state = u_vs_R717(v_in, s_in)'},
-  {text:'// Complete Rankine Cycle (water)\nP_high = 10000\nT_high = 550\nP_low  = 50\n// Turbine inlet (P,T)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nv1 = v_PT(P_high, T_high)\nu1 = u_PT(P_high, T_high)\n// Turbine exit: isentropic — find from (P,s)\nT2 = T_Ps(P_low, s1)\nh2 = h_Ps(P_low, s1)\nv2 = v_Ps(P_low, s1)\nu2 = u_Ps(P_low, s1)\nx2 = x_Ps(P_low, s1)\n// Pump inlet — sat liquid\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\n// Pump outlet (kPa·m³/kg = kJ/kg)\nh4 = h3 + v3*(P_high - P_low)\n// Performance\nw_turb = h1 - h2\nw_pump = h4 - h3\nq_in   = h1 - h4\neta    = (w_turb - w_pump) / q_in'},
+  {text:'// Steam: find T, h, s from (P, v)\n// State: P=2000 kPa, v=0.1512 m³/kg\nP = 2000 [kPa]\nv_known = 0.1512 [m3/kg]\nT = T_Pv(P, v_known)\nh = h_Pv(P, v_known)\ns = s_Pv(P, v_known)'},
+  {text:'// Steam: find T, h, s, v from (P, u)\n// State: P=1000 kPa, u=2550 kJ/kg\nP = 1000 [kPa]\nu_known = 2550 [kJ/kg]\nT = T_Pu(P, u_known)\nh = h_Pu(P, u_known)\ns = s_Pu(P, u_known)\nv = v_Pu(P, u_known)'},
+  {text:'// Steam: find state from (h, s) — isentropic turbine exit\n// Turbine inlet: P_in=10000 kPa, T_in=550 °C\nP_in = 10000 [kPa]\nT_in = 550 [degC]\nh_in = h_PT(P_in, T_in)\ns_in = s_PT(P_in, T_in)\n// Isentropic expansion to P_out=50 kPa\nP_out = 50 [kPa]\ns_out = s_in\nh_out = h_Ps(P_out, s_out)\n// Alternatively: find T,P from (h,s) directly\nT_out = T_Ps(P_out, s_out)\nw_turbine = h_in - h_out'},
+  {text:'// R-134a: full VCC using (P,h) for all states\nT_evap = -10 [degC]\nT_cond = 40 [degC]\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: isentropic compression — use h_Ps\nh2 = h_Ps_R134a(P_high, s1)\nT2 = T_Ph_R134a(P_high, h2)\n// State 3: sat liquid\nh3 = hf_R134a(T_cond)\nv3 = vf_R134a(T_cond)\n// State 4: throttle\nh4 = h3\nCOP  = (h1 - h4) / (h2 - h1)'},
+  {text:'// R-134a two-phase: find state from (P, v)\nP = 300 [kPa]\n// Specific volume of wet mixture\nv_mix = 0.04 [m3/kg]\n// Find quality and other properties\nx    = x_Pv_R134a(P, v_mix)\nT    = T_Px_R134a(P, x)\nh_mix = h_Px_R134a(P, x)\ns_mix = s_Px_R134a(P, x)'},
+  {text:'// CO₂: find state from (v, u) — supercritical region\n// State: T=400 K, P=10 MPa\nv_in = 0.00613 [m3/kg]\nu_in = 523.66 [kJ/kg]\nT_state = T_vu_R744(v_in, u_in)\nP_state = P_vu_R744(v_in, u_in)\nh_state = h_vu_R744(v_in, u_in)\ns_state = s_vu_R744(v_in, u_in)'},
+  {text:'// NH₃: find state from (v, s) — superheated\n// State: T=340 K, P=2 MPa\nv_in = 0.07273 [m3/kg]\ns_in = 5.3625 [kJ/kg/K]\nT_state = T_vs_R717(v_in, s_in)\nP_state = P_vs_R717(v_in, s_in)\nh_state = h_vs_R717(v_in, s_in)\nu_state = u_vs_R717(v_in, s_in)'},
+  {text:'// Complete Rankine Cycle (water)\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// Turbine inlet (P,T)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nv1 = v_PT(P_high, T_high)\nu1 = u_PT(P_high, T_high)\n// Turbine exit: isentropic — find from (P,s)\nT2 = T_Ps(P_low, s1)\nh2 = h_Ps(P_low, s1)\nv2 = v_Ps(P_low, s1)\nu2 = u_Ps(P_low, s1)\nx2 = x_Ps(P_low, s1)\n// Pump inlet — sat liquid\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\n// Pump outlet (kPa·m³/kg = kJ/kg)\nh4 = h3 + v3*(P_high - P_low)\n// Performance\nw_turb = h1 - h2\nw_pump = h4 - h3\nq_in   = h1 - h4\neta    = (w_turb - w_pump) / q_in'},
   // ── Diagram examples (states numbered for P-h / T-s auto-plot) ──
-  {text:'// R134a VCC — states for P-h diagram\n// Select R134a in Fluids tab, then go to Diagram tab\nT_evap = -10\nT_cond = 40\n// Pressures at each state\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nP3 = P2\nP4 = P1\n// State 1: sat. vapour at evaporator exit\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after isentropic compression\nh2 = h_Ps_R134a(P2, s1)\nT2 = T_Ph_R134a(P2, h2)\n// State 3: sat. liquid at condenser exit\nh3 = hf_R134a(T_cond)\n// State 4: throttle (isenthalpic)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000\nT_high = 550\nP_low  = 50\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T3 + v3*(P_high - P_low) / 4.18\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
+  {text:'// R134a VCC — states for P-h diagram\n// Select R134a in Fluids tab, then go to Diagram tab\nT_evap = -10 [degC]\nT_cond = 40 [degC]\n// Pressures at each state\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nP3 = P2\nP4 = P1\n// State 1: sat. vapour at evaporator exit\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after isentropic compression\nh2 = h_Ps_R134a(P2, s1)\nT2 = T_Ph_R134a(P2, h2)\n// State 3: sat. liquid at condenser exit\nh3 = hf_R134a(T_cond)\n// State 4: throttle (isenthalpic)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
+  {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T3 + v3*(P_high - P_low) / 4.18\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
   // ── Parametric sweep examples ──
-  {text:'// VCC COP vs condensing temperature\n// Syntax: var = [start : step : end]\nT_cond = [30:5:60]\nT_evap = -10\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P2, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// Rankine efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nP_high = [3000:1000:15000]\nT_high = 550\nP_low  = 50\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
+  {text:'// VCC COP vs condensing temperature\n// Syntax: var = [start : step : end]\nT_cond = [30:5:60]\nT_evap = -10 [degC]\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P2, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
+  {text:'// Rankine efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nP_high = [3000:1000:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
   // ── Live parameter slider examples ──
   {text:'// Live parameter sliders — linear system\n// Press Solve → select a and b as parameters\n// then drag the sliders to explore solutions\na*x + b*y = 12\nx - y = 1'},
   {text:'// Live sliders — heat exchanger\n// U = overall heat transfer coeff [kW/m²·K]\n// A = area [m²], LMTD_val = log-mean temp diff [K]\n// Press Solve → select U and A as parameters\n// Note: dT1 ≠ dT2 required (equal terminals → LMTD = 0/0)\nQ = U * A * LMTD_val\nLMTD_val = (dT1 - dT2) / log(dT1 / dT2)\ndT1 = T_hot_in - T_cold_out\ndT2 = T_hot_out - T_cold_in\nT_hot_in = 120\nT_hot_out = 80\nT_cold_in = 20\nT_cold_out = 50'},
@@ -4993,10 +5036,10 @@ const EX=[
   // ── Multi-fluid optimization example ──
   {text:'// Opt: Find best refrigerant for VCC — maximize COP\n// Optimizer finds best temperatures for each fluid automatically\nmaximize COP\nfluid = choice(R134a, R32, R1234yf, R290, R717)\nT_cond = free(40, 30, 55) [degC]\nT_evap = free(-10, -20, 5) [degC]\nh1 = hg_f(T_evap)\ns1 = sg_f(T_evap)\nP_high = Psat_f(T_cond)\nh2 = h_Ps_f(P_high, s1)\nh3 = hf_f(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nCOP >= 2.5'},
   // ── Exergy examples ──
-  {text:'// Exergy: Rankine cycle — flow exergy and destruction\nT0 = 25           // dead state [°C]\nP0 = 101.325      // dead state [kPa]\nP_high = 10000    // boiler pressure [kPa]\nT_high = 550      // boiler temperature [°C]\nP_low  = 10       // condenser pressure [kPa]\n// State properties\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nT2 = T_Ps(P_low, s1)\nh3 = hf(T2)\ns3 = sf(T2)\nv3 = vf(T2)\nh4 = h3 + v3*(P_high - P_low)\ns4 = s3\n// Performance\nw_turbine = h1 - h2\nw_pump    = h4 - h3\nw_net     = w_turbine - w_pump\nq_boiler  = h1 - h4\neta_th    = w_net / q_boiler\n// Flow exergy using exf(h,s) — detects h,s pair from variable names\n// Dead state h0,s0 computed internally from T0,P0\nex1 = exf(h1, s1)\nex2 = exf(h2, s2)\nex3 = exf(h3, s3)\nex4 = exf(h4, s4)\n// Heat exergy supplied in boiler\nex_Q_boiler = exheat(q_boiler, T_high)\n// Exergy destruction per component\nex_dest_boiler    = ex_Q_boiler - (ex1 - ex4)\nex_dest_turbine   = ex1 - ex2 - w_turbine\nex_dest_condenser = ex2 - ex3\nex_dest_pump      = w_pump - (ex4 - ex3)\n// Exergetic efficiency\neta_ex = w_net / ex_Q_boiler'},
-  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25            // dead state temperature [°C]\nP0 = 101.325       // dead state pressure [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10\nT_cond = 40\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at dead state boundary temperature\nex_Q_cond = exheat(Q_cond, T0)\nex_Q_evap = exheat(Q_evap, T0)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = (-ex_Q_evap) - m_dot*(ex1 - ex4)\n// Exergetic COP\nCOP_ex = (-ex_Q_evap) / W_comp'},
+  {text:'// Exergy: Rankine cycle — flow exergy and destruction\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 10 [kPa]\n// State properties\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nT2 = T_Ps(P_low, s1)\nh3 = hf(T2)\ns3 = sf(T2)\nv3 = vf(T2)\nh4 = h3 + v3*(P_high - P_low)\ns4 = s3\n// Performance\nw_turbine = h1 - h2\nw_pump    = h4 - h3\nw_net     = w_turbine - w_pump\nq_boiler  = h1 - h4\neta_th    = w_net / q_boiler\n// Flow exergy using exf(h,s) — detects h,s pair from variable names\n// Dead state h0,s0 computed internally from T0,P0\nex1 = exf(h1, s1)\nex2 = exf(h2, s2)\nex3 = exf(h3, s3)\nex4 = exf(h4, s4)\n// Heat exergy supplied in boiler\nex_Q_boiler = exheat(q_boiler, T_high)\n// Exergy destruction per component\nex_dest_boiler    = ex_Q_boiler - (ex1 - ex4)\nex_dest_turbine   = ex1 - ex2 - w_turbine\nex_dest_condenser = ex2 - ex3\nex_dest_pump      = w_pump - (ex4 - ex3)\n// Exergetic efficiency\neta_ex = w_net / ex_Q_boiler'},
+  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10 [degC]\nT_cond = 40 [degC]\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at dead state boundary temperature\nex_Q_cond = exheat(Q_cond, T0)\nex_Q_evap = exheat(Q_evap, T0)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = (-ex_Q_evap) - m_dot*(ex1 - ex4)\n// Exergetic COP\nCOP_ex = (-ex_Q_evap) / W_comp'},
   // ── Pareto front examples ──
-  {text:'// Pareto: R-134a VCC — HX size vs COP\n// Higher COP needs closer approach temps → larger HX (higher UA)\n// This reveals the true capital cost vs efficiency trade-off\nminimize UA_total\nCOP >= [2.0 : 0.25 : 4.5]   // Pareto: enforce increasing COP\nT_cond = free(42, 32, 58)   // condensing temp [C]\nT_evap = free(-8, -20, 2)   // evaporating temp [C]\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\nh2 = h_Ps_R134a(P_high, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\n// HX sizing from approach temperature\nT_wi = 25           // cooling water inlet [C]\ndT_cd = T_cond - T_wi\nUA_cd = Q_cond / dT_cd\nT_ci = 12           // chilled water inlet [C]\ndT_ev = T_ci - T_evap\nUA_ev = Q_evap / dT_ev\nUA_total = UA_cd + UA_ev'},
+  {text:'// Pareto: R-134a VCC — HX size vs COP\n// Higher COP needs closer approach temps → larger HX (higher UA)\n// This reveals the true capital cost vs efficiency trade-off\nminimize UA_total\nCOP >= [2.0 : 0.25 : 4.5]   // Pareto: enforce increasing COP\nT_cond = free(42, 32, 58)   // condensing temp [C]\nT_evap = free(-8, -20, 2)   // evaporating temp [C]\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\nh2 = h_Ps_R134a(P_high, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\n// HX sizing from approach temperature\nT_wi = 25 [degC]\ndT_cd = T_cond - T_wi\nUA_cd = Q_cond / dT_cd\nT_ci = 12 [degC]\ndT_ev = T_ci - T_evap\nUA_ev = Q_evap / dT_ev\nUA_total = UA_cd + UA_ev'},
   {text:'// Pareto: Counterflow HX — effectiveness vs UA cost\n// Sweep effectiveness from 0.5 to 0.95, minimize UA (cost)\nminimize UA\neff >= [0.50 : 0.05 : 0.95]   // Pareto sweep on effectiveness\nUA = free(2.0, 0.1, 50)\nm_h = 2.0\nm_c = 1.5\ncp_h = 2.1\ncp_c = 4.186\nC_h = m_h * cp_h\nC_c = m_c * cp_c\nC_min = min(C_h, C_c)\nC_max = max(C_h, C_c)\nCr = C_min / C_max\nNTU_val = NTU(UA, C_min)\neff = eff_NTU_cf(NTU_val, Cr)'},
   // ── Uncertainty examples ──
   {text:'// Unc: Steam turbine work — GUM uncertainty analysis\n// Measurements have instrument uncertainties\nunc P_in = 10000 ± 50     // inlet pressure [kPa] ± gauge uncertainty\nunc T_in = 550 ± 2        // inlet temperature [°C] ± thermocouple\nunc P_out = 50 ± 1        // outlet pressure [kPa] ± gauge uncertainty\ns_out = s_in\nh_in = h_PT(P_in, T_in)\ns_in = s_PT(P_in, T_in)\nh_out = h_Ps(P_out, s_out)\nT_out = T_Ps(P_out, s_out)\nw_turbine = h_in - h_out'},
@@ -5006,7 +5049,7 @@ const EX=[
   {text:'// Sens: Counterflow heat exchanger\n// Sensitivity of Q and effectiveness to UA and flow rates\nsens UA = 2.5       // overall conductance [kW/K]\nsens m_h = 2.0      // hot fluid mass flow [kg/s]\nsens m_c = 1.5      // cold fluid mass flow [kg/s]\nsens T_h1 = 120     // hot inlet temperature [degC]\nsens T_c1 = 20      // cold inlet temperature [degC]\ncp_h = 2.1          // kJ/kg K — oil\ncp_c = 4.186        // kJ/kg K — water\nC_h = m_h * cp_h\nC_c = m_c * cp_c\nC_min = min(C_h, C_c)\nC_max = max(C_h, C_c)\nCr = C_min / C_max\nNTU_val = NTU(UA, C_min)\neff = eff_NTU_cf(NTU_val, Cr)\nQ = eff * C_min * (T_h1 - T_c1)\nT_h2 = T_h1 - Q / C_h\nT_c2 = T_c1 + Q / C_c'},
   // ── 2D Map examples ──
   {text:'// 2D Map: R-134a VCC COP over (T_cond, T_evap)\n// Use two [start:step:end] ranges — generates contour map\nT_cond = [30:5:60]   // x-axis: condensing temperature [°C]\nT_evap = [-20:5:0]   // y-axis: evaporating temperature [°C]\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P_high, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// 2D Map: Rankine cycle efficiency over (P_high, T_high)\n// Select COP or eta from the Plot dropdown\nP_high = [3000:1000:15000]  // x-axis: boiler pressure [kPa]\nT_high = [400:50:600]       // y-axis: boiler temperature [°C]\nP_low  = 10\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
+  {text:'// 2D Map: Rankine cycle efficiency over (P_high, T_high)\n// Select COP or eta from the Plot dropdown\nP_high = [3000:1000:15000]  // x-axis: boiler pressure [kPa]\nT_high = [400:50:600]       // y-axis: boiler temperature [°C]\nP_low  = 10 [kPa]\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
   // ── REGRESSION EXAMPLES ──────────────────────────────────────────────────
   {text:`// Regression: Newton's Law of Cooling
 // Format 1: inline tuple list  data = [(x1,y1),(x2,y2),...]
@@ -5160,7 +5203,7 @@ function updateSidebar(){
 //  UNIT UI
 // ═══════════════════════════════════════════════════════════════════
 // Sync pressure/energy/length/mass/velocity CONSTS to current display units
-// V1.4: unit constants are internal only. Users must write bracketed units such as D = 2[ft].
+// so inline unit expressions like "D = 2 ft" produce values in the display unit after re-solve.
 function updateUnitConsts(){
   // Populate _OP_CONSTS with display-calibrated unit factors for [unit] brackets.
   // These are NOT in CONSTS/KNOWN — unit names are not accessible as bare variables.
