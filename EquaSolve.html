@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.25</title>
+<title>EquaSolve V1.3.26</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -626,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.25</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.26</div>
       </div>
     </div>
 
@@ -706,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.25</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.26</span></div>
       
     </div>
   </div>
@@ -875,7 +875,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.25</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.26</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3346,7 +3346,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
-      // V1.3.25: bare name and _T alias → temperature-based; _P alias → pressure-based
+      // V1.3.26: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3513,7 +3513,7 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      // V1.3.25: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      // V1.3.26: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
       FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
@@ -3529,7 +3529,7 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    // V1.3.25: bare name and _T → temperature-based; _P → pressure-based
+    // V1.3.26: bare name and _T → temperature-based; _P → pressure-based
     FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
@@ -4309,7 +4309,7 @@ function _inferMissingVarDims(equationLines) {
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
         // Find the "reference dim" from known terms — ALL non-zero ones must agree.
-        // V1.3.25: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
+        // V1.3.26: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
         // the equation is dimensionally inconsistent — skip inference for this variable
         // rather than silently assigning a wrong dim from whichever term we happen to see first.
         let refDim = null;
@@ -4695,7 +4695,7 @@ function hasUnknownVars(nd){const s=new Set();collectVars(nd,s);return s.size>0;
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.3.25: Unit safety utilities ───────────────────────────────────────
+// ── V1.3.26: Unit safety utilities ───────────────────────────────────────
 // _canonUnit   : normalise case-variant spellings → canonical form
 // _knownBracketUnit : true if the unit is recognised by the engine
 // _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
@@ -5832,10 +5832,7 @@ function renderDiagPanel(r, extra) {
     rows.push(`<div class="diag-row"><span class="diag-lbl">Sequential solves</span><span class="diag-val">${seqCount} <small style="opacity:.6">(explicit substitution)</small></span></div>`);
   }
 
-  // Pure sequential note
-  if (usedSeq && !usedNR) {
-    rows.push(`<div class="diag-row"><span class="diag-lbl"></span><span style="font-size:10px;color:var(--green,#4ec9b0)">&#10003; All variables resolved sequentially — no Newton\u2013Raphson needed</span></div>`);
-  }
+  // Pure sequential note — removed: misleading when property functions iterate internally
 
   // NR details
   if (usedNR) {
@@ -6299,6 +6296,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const usedNR=r.nrIter>0;
         $lb.innerHTML='✓ Solution Found'+(usedNR?'<span class="method-badge badge-nr">Sequential + Newton–Raphson</span>':'<span class="method-badge badge-seq">Sequential Substitution</span>');
         const sliderNames=new Set(sliderDefs.map(d=>d.name));
+        const displayVars=r.allVars.filter(v=>!sliderNames.has(v)).sort((a,b)=>a.localeCompare(b));
         // Clear sweep diagram data when fresh single solve happens
         window._lastSweepResults = null;
         // Store raw solve result for snapshot capture
@@ -6309,7 +6307,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           varUnitOverrides: varUnitOverrides,
           txt: txt
         };
-        const cards=r.allVars.filter(v=>!sliderNames.has(v)).sort((a,b)=>a.localeCompare(b)).map((v,i)=>{
+        const cards=displayVars.map((v,i)=>{
           const raw=r.scope[v];
           let dispVal, unitLabel;
 
@@ -6358,14 +6356,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
           return`<div class="var-card" style="animation-delay:${i*.04}s"><div><span class="var-name">${v}</span>${unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}</div><span class="var-val">${fmt(dispVal)}</span></div>`;
         }).join('');
-        const displayVars=r.allVars.filter(v=>!sliderNames.has(v)).sort((a,b)=>a.localeCompare(b));
-        const _timeLbl = _solveMs < 1 ? '<1 ms' : _solveMs < 1000 ? `${_solveMs.toFixed(1)} ms` : `${(_solveMs/1000).toFixed(2)} s`;
-        const stats=[['Variables',displayVars.length],['Seq. solved',r.seqCount],...(usedNR?[['NR iter.',r.nrIter],['Residual',r.nrRes.toExponential(2)]]:[]),['Solve time',_timeLbl]].map(([l,v])=>`<div class="stat"><span class="stat-l">${l}: </span>${v}</div>`).join('');
-
         // ── Exergy destruction breakdown ──────────────────────────────
         const exergyBreakdown = _buildExergyBreakdown(displayVars, r.scope);
 
-        $bd.innerHTML=`<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${exergyBreakdown}<div class="stats-row">${stats}</div>`;
+        $bd.innerHTML=`<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${exergyBreakdown}`;
         $algZone.classList.add('visible');
         // Run unit consistency advisory
         try { runUnitAdvisory(_origTxt, r.scope, rhsMap, varUnitOverrides); } catch(e) {}
@@ -6383,7 +6377,6 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           unitOverrides: varUnitOverrides,
           rhsMap,
           exergyBreakdown,
-          statsHtml: `<div class="stats-row">${stats}</div>`,
           label: '✓ Solution',
           time: new Date()
         });
@@ -7933,7 +7926,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       $statusBar.className = 'eq-status-bar';
       $statusBar.querySelector('.eq-status-icon').textContent = 'ℹ';
       const labels = {ode:'ODE/DAE system', sweep:'Parametric sweep', sweep2d:'2D surface plot', opt:'Optimization', sens:'Sensitivity analysis', unc:'Uncertainty analysis', pareto:'Pareto front'};
-      $statusMsg.innerHTML = `<span class="eq-status-pill pill-dim">${labels[type]||type}</span> — press Solve to run`;
+      $statusMsg.innerHTML = `<span class="eq-status-pill pill-dim">${labels[type]||type}</span>`;
       return;
     }
     // Algebraic — run DOF analysis
@@ -8372,7 +8365,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         }
         return `<div class="var-card" style="animation-delay:${i*.04}s"><div><span class="var-name">${v}</span>${unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}</div><span class="var-val">${fmt(raw)}${diffHtml}</span></div>`;
       }).join('');
-      document.getElementById('res-body').innerHTML = `<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${current.exergyBreakdown||''}<div class="stats-row">${current.statsHtml||''}</div>`;
+      document.getElementById('res-body').innerHTML = `<div class="copy-solutions-row no-print" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="window._copySolutions(this)" class="copy-btn-solutions" style="font-size:10px;padding:5px 12px;background:var(--surface);color:var(--hi);border:1px solid var(--border2);border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.03em" title="Copy all solved variables as name = value [unit] lines">⎘ Copy solutions</button></div><div class="var-grid">${cards}</div>${current.exergyBreakdown||''}`;
       return;
     }
 
