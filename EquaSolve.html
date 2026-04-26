@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.16</title>
+<title>EquaSolve V1.3.25</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -393,13 +393,48 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 .res-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;color:var(--mute)}.res-lbl.ok{color:var(--green)}.res-lbl.err{color:var(--red)}
 .unit-advisory{background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-left:3px solid var(--accent2);border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11px;line-height:1.7;display:none;}
 .unit-advisory.visible{display:block;}
+.unit-advisory.has-dim-errors{background:rgba(220,60,60,.06);border-color:rgba(220,60,60,.35);border-left-color:var(--red,#e05252);}
 .unit-advisory-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);font-weight:600;margin-bottom:6px;}
+.unit-advisory.has-dim-errors .unit-advisory-title{color:var(--red,#e05252);}
 .unit-advisory-item{color:var(--dim);padding:2px 0;}
 .unit-advisory-item code{color:var(--accent2);background:rgba(210,153,34,.1);border-radius:3px;padding:0 4px;font-family:inherit;}
-/* History tabs in result header */
+.unit-advisory-item.dim-error{color:var(--red,#e05252);font-weight:500;}
+.unit-advisory-item.dim-error code{color:var(--red,#e05252);background:rgba(220,60,60,.1);}
+.unit-advisory-sep{border:none;border-top:1px solid rgba(128,128,128,.2);margin:6px 0;}
+
 .res-lbl-row{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 .res-lbl-row .res-lbl{margin-bottom:0;flex:1;min-width:0;}
 .hist-tabs{display:flex;gap:3px;flex-shrink:0;}
+/* ── Solver Diagnostics Panel ───────────────────────────────────── */
+.diag-panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:0;margin-top:8px;font-size:11px;overflow:hidden;display:none;}
+.diag-panel.visible{display:block;}
+.diag-header{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 12px;cursor:pointer;user-select:none;gap:8px;}
+.diag-header:hover{background:rgba(128,128,128,.06);}
+.diag-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mute);font-weight:600;flex-shrink:0;}
+.diag-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;}
+.diag-chevron{color:var(--mute);font-size:10px;transition:transform .2s;flex-shrink:0;}
+.diag-panel.expanded .diag-chevron{transform:rotate(180deg);}
+.diag-body{display:none;border-top:1px solid var(--border);padding:10px 12px;
+  flex-direction:column;gap:8px;}
+.diag-panel.expanded .diag-body{display:flex;}
+.diag-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.diag-lbl{color:var(--mute);font-size:10px;min-width:110px;flex-shrink:0;}
+.diag-val{color:var(--hi);font-size:11px;font-weight:500;}
+.diag-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
+  font-size:10px;font-weight:600;letter-spacing:.04em;}
+.diag-badge-seq{background:rgba(100,180,255,.12);color:#64b4ff;}
+.diag-badge-nr{background:rgba(194,130,255,.12);color:var(--purple,#c882ff);}
+.diag-badge-both{background:rgba(78,201,176,.12);color:var(--green,#4ec9b0);}
+.diag-cond-ok{color:var(--green,#4ec9b0);}
+.diag-cond-warn{color:var(--accent2,#d29522);}
+.diag-cond-bad{color:var(--red,#e05252);}
+.diag-loose{color:var(--accent2,#d29522);font-size:10px;margin-left:4px;}
+.diag-vars{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;}
+.diag-var-chip{background:rgba(194,130,255,.1);color:var(--purple,#c882ff);
+  border-radius:3px;padding:1px 6px;font-size:10px;font-family:inherit;}
 .hist-tab{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:9px;color:var(--mute);cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s;white-space:nowrap;}
 .hist-tab:hover{border-color:var(--accent);color:var(--accent);}
 .hist-tab.active{background:rgba(240,136,62,.12);border-color:var(--accent);color:var(--accent);}
@@ -591,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.16</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.25</div>
       </div>
     </div>
 
@@ -671,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.16</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.25</span></div>
       
     </div>
   </div>
@@ -834,12 +869,13 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="toolbar-divider"></div>
       <span class="type-badge badge-empty" id="type-badge">—</span>
       <span class="solve-status" id="solve-status"></span>
+
       </div><!-- /eq-toolbar -->
     </div><!-- /eq-topbar -->
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.16</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.25</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -885,8 +921,19 @@ textarea.eq-ta::placeholder{color:var(--mute)}
         </div>
         <div id="res-body"><div class="res-idle">Enter equations and press Solve…</div></div>
         <div class="unit-advisory" id="unit-advisory">
-          <div class="unit-advisory-title">&#9888; Unit Advisory</div>
+          <div class="unit-advisory-title" id="unit-advisory-title">&#9888; Unit Advisory</div>
+          <div id="unit-advisory-errors"></div>
+          <hr class="unit-advisory-sep" id="unit-advisory-sep" style="display:none">
           <div id="unit-advisory-body"></div>
+        </div>
+        <!-- Solver Diagnostics Panel -->
+        <div class="diag-panel" id="diag-panel">
+          <div class="diag-header" onclick="this.closest('.diag-panel').classList.toggle('expanded')">
+            <span class="diag-title">&#9881; Solver Diagnostics</span>
+            <div class="diag-summary" id="diag-summary"></div>
+            <span class="diag-chevron">&#9660;</span>
+          </div>
+          <div class="diag-body" id="diag-body"></div>
         </div>
       </div>
     </div>
@@ -3299,7 +3346,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
-      // V1.3.16: bare name and _T alias → temperature-based; _P alias → pressure-based
+      // V1.3.25: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3466,7 +3513,7 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      // V1.3.16: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      // V1.3.25: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
       FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
@@ -3482,7 +3529,7 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    // V1.3.16: bare name and _T → temperature-based; _P → pressure-based
+    // V1.3.25: bare name and _T → temperature-based; _P → pressure-based
     FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
@@ -4013,21 +4060,43 @@ let _bracketDisplayMap = {};
 // Best unit label: prefers name-based guess for power/work variables when
 // dim inference gives only specific energy (kJ/kg) — happens when mass flow rate
 // propagation is incomplete (e.g. m3 variable dim not resolved)
+function _hasDimConflictInSum(nd) {
+  if (!nd) return false;
+  if (nd.t === 'B' && (nd.op === '+' || nd.op === '-')) {
+    let ld, rd;
+    try { ld = evalDimNode(nd.L)?.dim; } catch(e) {}
+    try { rd = evalDimNode(nd.R)?.dim; } catch(e) {}
+    if (ld && rd && !ld.every((x,i) => x === rd[i])) return true;
+  }
+  if (nd.L && _hasDimConflictInSum(nd.L)) return true;
+  if (nd.R && _hasDimConflictInSum(nd.R)) return true;
+  if (nd.args) { for (const a of nd.args) if (_hasDimConflictInSum(a)) return true; }
+  return false;
+}
+// Cache of variables confirmed to have dim-conflict RHS — checked before ANY unit assignment
+let _dimConflictVars = new Set();
+function _rhs_has_dim_conflict(rhsMapEntry) {
+  if (!rhsMapEntry) return false;
+  try { return _hasDimConflictInSum(parse(rhsMapEntry)); } catch(e) { return false; }
+}
 function _bestUnitLabel(v, rhsMapEntry) {
-  // 1. RHS dimensional inference (handles computed variables from rhsMap)
+  // Rule: if the RHS expression contains a sum of incompatible dimensions, show no unit.
+  if (_dimConflictVars.has(v) || _rhs_has_dim_conflict(rhsMapEntry)) return '';
+  // 1. RHS dimensional inference
   const dimUnit = rhsMapEntry ? inferUnitFromRHS(rhsMapEntry)?.unit : null;
   if (dimUnit) return dimUnit;
-  // 2. Direct _varDimCache lookup (populated by bracket seeding + _inferMissingVarDims)
+  // 2. Direct _varDimCache lookup
   if (_varDimCache && v in _varDimCache) {
     const label = dimToLabel(_varDimCache[v]);
     if (label) return label;
   }
-  // 3. No label — never guess from variable name (avoids m1→kg/s, W→power etc.)
+  // 3. No label
   return '';
 }
 function buildVarDimCache(rhsMap, fullTxt, reset=true) {
   if (reset) {
     _varDimCache = {};
+    _dimConflictVars.clear();
     // Collect ALL variable names from both LHS and RHS — prevents user vars like
     // m3, m2, s1, s2 etc. from being mistaken for UNIT_DIM entries (m3=m³, s=seconds)
     _userVarNames = new Set(Object.keys(rhsMap));
@@ -4239,18 +4308,26 @@ function _inferMissingVarDims(equationLines) {
 
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
-        // Find the "reference dim" from known terms — the first non-zero one.
-        // V1.3.11: also track whether ANY known term was found at all, so we can
-        // distinguish "refDim is null because all knowns are genuinely dimensionless"
-        // (e.g. T2/T1 = (P2/P1)^n where RHS is dimensionless → should infer T2=K)
-        // from "refDim is null because there are no known terms" (can't infer).
+        // Find the "reference dim" from known terms — ALL non-zero ones must agree.
+        // V1.3.25: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
+        // the equation is dimensionally inconsistent — skip inference for this variable
+        // rather than silently assigning a wrong dim from whichever term we happen to see first.
         let refDim = null;
         let hasKnownTerms = false;
+        let dimConflict = false;
         for (const t of knownTerms) {
           hasKnownTerms = true;
-          const d = evalDimNode(t.node).dim;
-          if (d.some(x => x !== 0)) { refDim = d; break; }
+          let d;
+          try { d = evalDimNode(t.node).dim; } catch(e) {}
+          if (!d || d.every(x => x === 0)) continue; // skip null or dimensionless terms
+          if (refDim === null) {
+            refDim = d;
+          } else if (!d.every((x,i) => x === refDim[i])) {
+            dimConflict = true; // known terms have incompatible dims
+            break;
+          }
         }
+        if (dimConflict) { delete _varDimCache[v]; _dimConflictVars.add(v); continue; } // can't infer — skip
         // If all known terms were dimensionless, treat refDim as the zero vector.
         // This allows inference of cases like T2/T1 = dimensionless:
         //   partialDim(T2/T1 with T2=zero) = [0,0,0,0,-1,0,0] = 1/K
@@ -4438,6 +4515,10 @@ function buildCompoundTable() {
       'kg/m3':1/(M/V3), 'kg/m^3':1/(M/V3),
       'g/cm3':1000/(M/V3), 'g/mL':1000/(M/V3),
       'kg/L':1000/(M/V3), 'lb/ft3':16.0185/(M/V3),
+      // ── Specific volume [display vol / display mass] ───────────────
+      // SV: how many display spec-vol units per m³/kg
+      ...(()=>{const SV={'m³/kg':1,'L/kg':1e3,'ft³/lb':16.0185}[UNITS.vol]||1;
+        return {'m3/kg':SV,'m³/kg':SV,'L/kg':1e-3*SV,'ft3/lb':(1/16.0185)*SV,'ft³/lb':(1/16.0185)*SV};})(),
       // ── Thermal conductivity [W/(m·K)] — stored in SI ────────────
       'W/m/K':1, 'W/m*K':1, 'kW/m/K':1000, 'W/cm/K':100, 'W/mm/K':1000,
       'W/m/C':1,  // per °C same factor as per K
@@ -4614,7 +4695,7 @@ function hasUnknownVars(nd){const s=new Set();collectVars(nd,s);return s.size>0;
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.3.16: Unit safety utilities ───────────────────────────────────────
+// ── V1.3.25: Unit safety utilities ───────────────────────────────────────
 // _canonUnit   : normalise case-variant spellings → canonical form
 // _knownBracketUnit : true if the unit is recognised by the engine
 // _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
@@ -4657,6 +4738,7 @@ function _knownBracketUnit(unitStr){
   const u=_canonUnit(unitStr);
   if(_OP_CONSTS[u]!==undefined) return true;
   if(['degC','degF','degR','\u00b0C','\u00b0F','\u00b0R','K'].includes(u)) return true;
+  if(typeof _UNIT_SI_FACTORS!=='undefined' && (u in _UNIT_SI_FACTORS)) return true;
   try{
     const tbl=buildCompoundTable();
     if(u in tbl) return true;
@@ -4685,10 +4767,12 @@ function _rejectBareUnitSyntax(txt){
     '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)' +
     '(?:\\s+)(' + units + ')' +
     '(?=$|[^A-Za-z0-9_])','i');
-  for(const line of String(txt||'').split('\n')){
+  const _rLines=String(txt||'').split('\n');
+  for(let _rIdx=0;_rIdx<_rLines.length;_rIdx++){
+    const line=_rLines[_rIdx];
     const clean=line.replace(/\/\/.*$/,'').replace(/\[[^\]]+\]/g,' ');
     const m=clean.match(re);
-    if(m) throw new Error('Bracket-only units required. Write '+m[2]+'['+m[3]+'] instead of "'+m[2]+' '+m[3]+'".');
+    if(m) throw new Error('Line '+(_rIdx+1)+': Bracket-only units required. Write '+m[2]+'['+m[3]+'] instead of "'+m[2]+' '+m[3]+'".|LINE|'+line.trim());
   }
 }
 function _replaceNumericBracketValuesInLine(line){
@@ -4762,7 +4846,12 @@ function _isUnitNode(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==
 function _evalUnitSI(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return-_evalUnitSI(nd.R);if(nd.t==='B'){const l=_evalUnitSI(nd.L),r=_evalUnitSI(nd.R);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;return Math.pow(l,r);}return 1;}
 const lines=rawLines.map(line=>{const idx=line.indexOf('=');if(idx<0)return line.replace(/\s*\[[^\]:]*\]\s*$/,'');const lhs=line.slice(0,idx).trim();const rhs=line.slice(idx+1).trim();if(!/^[a-zA-Z_]\w*$/.test(lhs))return line.replace(/\s*\[[^\]:]*\]\s*$/,'');// Check for [unit] bracket at end of RHS
 const bm=rhs.match(/^([\s\S]+?)\s*\[([^\]]+)\]\s*$/);if(!bm)return line;const valExpr=bm[1].trim(),unitStr=bm[2].trim();try{const ast=parse(valExpr);if(_isUnitNode(ast)){const numVal=_evalUnitSI(ast);if(isFinite(numVal)){const cv=_bracketConvert(numVal,unitStr);if(cv!==null&&isFinite(cv))return`${lhs} = ${cv}`;}}}catch(e){}return`${lhs} = ${valExpr}`;});
-const pairs=[];const varSet=new Set();lines.forEach((line,eqIndex)=>{const idx=line.indexOf('=');if(idx<0)throw new Error('Missing "=" in line: '+line);const la=parse(line.slice(0,idx).trim()),ra=parse(line.slice(idx+1).trim());pairs.push({la,ra,line,eqIndex});collectVars(la,varSet);collectVars(ra,varSet);});userFuncNames.forEach(n=>{if(!FUNS[n])KNOWN.delete(n);});const allVars=Array.from(varSet).sort();const eqCount=pairs.length,varCount=allVars.length,diff=varCount-eqCount;return{lines,pairs,allVars,eqCount,varCount,diff};}
+const pairs=[];const varSet=new Set();lines.forEach((line,eqIndex)=>{const idx=line.indexOf('=');if(idx<0)throw new Error('Missing "=" in line: '+line);
+// Find original source line number for accurate error highlighting
+const _rawSrc=String(raw||'').split('\n');const _origIdx=_rawSrc.findIndex(l=>l.replace(/\/\/.*/,'').trim()===line.replace(/\/\/.*/,'').trim());const _srcNum=_origIdx>=0?_origIdx+1:eqIndex+1;
+// Detect trailing comma — common mistake from math/spreadsheet notation
+const rhs=line.slice(idx+1).trim();if(rhs.endsWith(','))throw new Error('Line '+_srcNum+': Trailing comma — equations are separated by new lines, not commas. Remove the comma.|LINE|'+_rawSrc[_origIdx>=0?_origIdx:eqIndex]?.trim());
+try{const la=parse(line.slice(0,idx).trim()),ra=parse(rhs);pairs.push({la,ra,line,eqIndex});collectVars(la,varSet);collectVars(ra,varSet);}catch(pe){throw new Error('Line '+_srcNum+': '+pe.message+'|LINE|'+(_rawSrc[_origIdx>=0?_origIdx:eqIndex]?.trim()||line.trim()));}});userFuncNames.forEach(n=>{if(!FUNS[n])KNOWN.delete(n);});const allVars=Array.from(varSet).sort();const eqCount=pairs.length,varCount=allVars.length,diff=varCount-eqCount;return{lines,pairs,allVars,eqCount,varCount,diff};}
 
 
 function detectODEFreeParams(txt, existingSliderNames) {
@@ -4816,8 +4905,30 @@ function detectODEFreeParams(txt, existingSliderNames) {
 // ═══════════════════════════════════════════════════════════════════
 function solve1D(la,ra,vname,scope,x0){const h=1e-7;let x=x0;for(let i=0;i<200;i++){const sc={...scope};sc[vname]=x;const f=evalNode(la,sc)-evalNode(ra,sc);if(M.abs(f)<1e-10)return x;const sc2={...scope};sc2[vname]=x+h;const df=(evalNode(la,sc2)-evalNode(ra,sc2)-f)/h;if(M.abs(df)<1e-20)break;x-=f/df;}const sc={...scope};sc[vname]=x;if(M.abs(evalNode(la,sc)-evalNode(ra,sc))<1e-6)return x;throw new Error('1D solver failed for '+vname);}
 function tryExplicit(la,ra,vname,scope){if(la.t==='V'&&la.n===vname)return evalNode(ra,scope);if(ra.t==='V'&&ra.n===vname)return evalNode(la,scope);return null;}
-function newtonND(residuals,vars,x0){const n=vars.length,x=x0.slice(),h=1e-7;const maxIter=SOLVER_CFG.nrMaxIter||400;const tol=SOLVER_CFG.nrTol||1e-10;for(let it=0;it<maxIter;it++){const sc={};vars.forEach((v,i)=>sc[v]=x[i]);const F=residuals.map(r=>r(sc));const norm=M.sqrt(F.reduce((s,v)=>s+v*v,0));if(norm<tol)return{x,iter:it+1,res:norm};const J=Array.from({length:n},()=>new Array(n).fill(0));for(let j=0;j<n;j++){const s2={...sc};s2[vars[j]]+=h;const Fh=residuals.map(r=>r(s2));for(let i=0;i<n;i++)J[i][j]=(Fh[i]-F[i])/h;}const A=J.map((row,i)=>[...row,-F[i]]);for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(M.abs(A[r][c])>M.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];if(M.abs(A[c][c])<1e-14)continue;for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<=n;k++)A[r][k]-=f*A[c][k];}}for(let i=0;i<n;i++)if(M.abs(A[i][i])>1e-14)x[i]+=A[i][n]/A[i][i];}const sc={};vars.forEach((v,i)=>sc[v]=x[i]);const norm=M.sqrt(residuals.map(r=>r(sc)).reduce((s,v)=>s+v*v,0));if(norm<1e-5)return{x,iter:maxIter,res:norm};throw new Error('Newton–Raphson did not converge (res='+norm.toExponential(2)+')');}
-// Apply [unit] bracket conversion to all lines before solving
+function _condEst(J,n){const A=J.map(r=>[...r]);let maxD=0,minD=Infinity;for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(M.abs(A[r][c])>M.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];if(M.abs(A[c][c])<1e-14)continue;maxD=M.max(maxD,M.abs(A[c][c]));minD=M.min(minD,M.abs(A[c][c]));for(let r=c+1;r<n;r++){const f=A[r][c]/A[c][c];for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];}}return minD<1e-14?Infinity:maxD/minD;}
+function newtonND(residuals,vars,x0){
+  const n=vars.length,x=x0.slice(),h=1e-7;
+  const maxIter=SOLVER_CFG.nrMaxIter||400;const tol=SOLVER_CFG.nrTol||1e-10;
+  let lastJ=null;
+  for(let it=0;it<maxIter;it++){
+    const sc={};vars.forEach((v,i)=>sc[v]=x[i]);
+    const F=residuals.map(r=>r(sc));
+    const norm=M.sqrt(F.reduce((s,v)=>s+v*v,0));
+    const J=Array.from({length:n},()=>new Array(n).fill(0));
+    for(let j=0;j<n;j++){const s2={...sc};s2[vars[j]]+=h;const Fh=residuals.map(r=>r(s2));for(let i=0;i<n;i++)J[i][j]=(Fh[i]-F[i])/h;}
+    lastJ=J;
+    if(norm<tol)return{x,iter:it+1,res:norm,condNum:_condEst(J,n)};
+    const A=J.map((row,i)=>[...row,-F[i]]);
+    for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(M.abs(A[r][c])>M.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];if(M.abs(A[c][c])<1e-14)continue;for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<=n;k++)A[r][k]-=f*A[c][k];}}
+    for(let i=0;i<n;i++)if(M.abs(A[i][i])>1e-14)x[i]+=A[i][n]/A[i][i];
+  }
+  const sc2={};vars.forEach((v,i)=>sc2[v]=x[i]);
+  const F2=residuals.map(r=>r(sc2));
+  const norm2=M.sqrt(F2.reduce((s,v)=>s+v*v,0));
+  const condNum=lastJ?_condEst(lastJ,n):Infinity;
+  if(norm2<1e-5)return{x,iter:maxIter,res:norm2,condNum,convergedLoosely:true};
+  throw new Error('Newton–Raphson did not converge after '+maxIter+' iterations (‖r‖='+norm2.toExponential(2)+')|NR_DIAG|'+JSON.stringify({vars,vals:x,res:F2,condNum}));
+}// Apply [unit] bracket conversion to all lines before solving
 // Converts e.g. "P1 = 4.5 [MPa]" → "P1 = 4500" when display unit is kPa
 function _normDisplayUnit(u) {
   return u.replace(/\bm3\b/g,'m³').replace(/\bm2\b/g,'m²')
@@ -4835,7 +4946,8 @@ function preprocessBrackets(txt) {
   // must NOT wipe the map that the outer call already populated correctly.
   if (/\[[^\]]+\]/.test(txt)) _bracketDisplayMap = {};
   _rejectBareUnitSyntax(txt);
-  return txt.split('\n').map(line => {
+  return txt.split('\n').map((line, lineIdx) => {
+    try {
     const clean = line.replace(/\/\/.*$/, '');
     const idx = clean.indexOf('=');
     if (idx < 0) return _replaceNumericBracketValuesInLine(line);
@@ -4888,6 +5000,13 @@ function preprocessBrackets(txt) {
     // Strip bracket but keep value as-is for non-numeric expressions (display label only).
     // Numeric bracketed values inside the RHS expression are still converted.
     return _replaceNumericBracketValuesInLine(lhs + ' = ' + valExpr);
+    } catch(e) {
+      // Re-throw with source line number so the UI can highlight it
+      if (!e.message.match(/^Line \d+:/)) {
+        throw new Error('Line '+(lineIdx+1)+': '+e.message+'|LINE|'+line.trim());
+      }
+      throw e;
+    }
   }).join('\n');
 }
 function _isUnitNodeSimple(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNodeSimple(nd.R);if(nd.t==='B')return _isUnitNodeSimple(nd.L)&&_isUnitNodeSimple(nd.R);return false;}
@@ -4980,17 +5099,61 @@ function solveSystem(raw,userGuesses,fixedScope={}){
   try {
     const la=parse(line.slice(0,idx).trim());
     const ra=parse(line.slice(idx+1).trim());
-    return{la,ra};
+    return{la,ra,line};
   } catch(pe) {
     const rawLines = raw.split('\n');
     const origIdx = rawLines.findIndex(l => l.replace(/\/\/.*/,'').trim() === line.trim());
     const lineNum = origIdx >= 0 ? origIdx + 1 : lineIdx + 1;
     throw new Error('Line ' + lineNum + ': ' + pe.message + '|LINE|' + line.trim());
   }
-});const allVarSet=new Set();pairs.forEach(({la,ra})=>{collectVars(la,allVarSet);collectVars(ra,allVarSet);});const allVars=Array.from(allVarSet);if(!allVars.length)throw new Error('No variables found.');const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...unsolved]){const{la,ra}=pairs[ei];const unk=[...new Set([...countUnknowns(la,solved),...countUnknowns(ra,solved)])];if(unk.length===0){unsolved.delete(ei);progress=true;continue;}if(unk.length===1){const vname=unk[0];let val=null;try{val=tryExplicit(la,ra,vname,scope);}catch(e){val=null;}if(val===null){const starts=[...((userGuesses&&userGuesses[vname]!==undefined)?[userGuesses[vname]]:[]),1,300,2500,0.1,-1,10,500,0.01,...Array.from({length:6},()=>(M.random()-0.2)*500+1)];let found=false;for(const x0 of starts){try{val=solve1D(la,ra,vname,scope,x0);found=true;break;}catch(e){}}if(!found)continue;}scope[vname]=val;solved.add(vname);unsolved.delete(ei);seqCount++;progress=true;}}}let nrIter=0,nrRes=0;if(unsolved.size>0){const remEqs=[...unsolved].map(i=>pairs[i]);const remVarSet=new Set();remEqs.forEach(({la,ra})=>{countUnknowns(la,solved).forEach(v=>remVarSet.add(v));countUnknowns(ra,solved).forEach(v=>remVarSet.add(v));});const remVars=Array.from(remVarSet).sort();const residuals=remEqs.map(({la,ra})=>sc=>{const fc={...scope,...sc};return evalNode(la,fc)-evalNode(ra,fc);});const guessStart=remVars.map(v=>(userGuesses&&userGuesses[v]!==undefined)?userGuesses[v]:1);const seeds=[guessStart,remVars.map(()=>1),remVars.map(()=>300),remVars.map(()=>0.1),remVars.map(()=>500),...Array.from({length:Math.max(0,(SOLVER_CFG&&SOLVER_CFG.nrStarts)||14)},()=>remVars.map(()=>(M.random()-0.2)*500+1))];let lastErr,nr=null;for(const s of seeds){try{nr=newtonND(residuals,remVars,s);break;}catch(e){lastErr=e;}}if(!nr)throw lastErr;remVars.forEach((v,i)=>{scope[v]=nr.x[i];solved.add(v);});nrIter=nr.iter;nrRes=nr.res;}
+});const allVarSet=new Set();pairs.forEach(({la,ra})=>{collectVars(la,allVarSet);collectVars(ra,allVarSet);});const allVars=Array.from(allVarSet);if(!allVars.length)throw new Error('No variables found.');const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;
+// Track the last meaningful (non-numerical) error for error attribution
+let _lastPropErr=null, _lastPropLine='';
+while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...unsolved]){const{la,ra,line:eLine}=pairs[ei];const unk=[...new Set([...countUnknowns(la,solved),...countUnknowns(ra,solved)])];if(unk.length===0){unsolved.delete(ei);progress=true;continue;}if(unk.length===1){const vname=unk[0];let val=null;try{val=tryExplicit(la,ra,vname,scope);}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum|exf requires/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}val=null;}if(val===null){const starts=[...((userGuesses&&userGuesses[vname]!==undefined)?[userGuesses[vname]]:[]),1,300,2500,0.1,-1,10,500,0.01,...Array.from({length:6},()=>(M.random()-0.2)*500+1)];let found=false;for(const x0 of starts){try{val=solve1D(la,ra,vname,scope,x0);found=true;break;}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}}}if(!found)continue;}scope[vname]=val;solved.add(vname);unsolved.delete(ei);seqCount++;progress=true;}}}let nrIter=0,nrRes=0,nrCondNum=Infinity,nrVarNames=[],nrLoose=false;if(unsolved.size>0){const remEqs=[...unsolved].map(i=>pairs[i]);const remVarSet=new Set();remEqs.forEach(({la,ra})=>{countUnknowns(la,solved).forEach(v=>remVarSet.add(v));countUnknowns(ra,solved).forEach(v=>remVarSet.add(v));});const remVars=Array.from(remVarSet).sort();const residuals=remEqs.map(({la,ra})=>sc=>{const fc={...scope,...sc};return evalNode(la,fc)-evalNode(ra,fc);});const guessStart=remVars.map(v=>(userGuesses&&userGuesses[v]!==undefined)?userGuesses[v]:1);const seeds=[guessStart,remVars.map(()=>1),remVars.map(()=>300),remVars.map(()=>0.1),remVars.map(()=>500),...Array.from({length:Math.max(0,(SOLVER_CFG&&SOLVER_CFG.nrStarts)||14)},()=>remVars.map(()=>(M.random()-0.2)*500+1))];let lastErr,nr=null;for(const s of seeds){try{nr=newtonND(residuals,remVars,s);break;}catch(e){lastErr=e;}}if(!nr){
+  // Parse diagnostic payload from newtonND if present
+  const diagM = lastErr?.message?.match(/\|NR_DIAG\|(.+)$/s);
+  if(diagM){
+    try{
+      const d=JSON.parse(diagM[1]);
+      const varLines=d.vars.map((v,i)=>{
+        const rv=d.vals[i],ri=d.res[i];
+        return v+'='+rv.toExponential(3)+' (eq residual: '+Math.abs(ri).toExponential(2)+')';
+      }).join('\n  ');
+      // Identify worst equations
+      const worstIdx=d.res.map((r,i)=>({i,a:Math.abs(r)})).sort((a,b)=>b.a-a.a).slice(0,3).map(x=>x.i);
+      // Find source lines for worst equations
+      const remEqSrc=pairs.filter((_,i)=>unsolved.has(i));
+      const worstLines=worstIdx.map(i=>remEqSrc[i]?.line||'').filter(Boolean);
+      // Classify likely cause
+      let hint='';
+      if(d.condNum>1e10)hint='\n\u2022 Ill-conditioned Jacobian (cond\u2248'+d.condNum.toExponential(2)+'): likely near-singular equations or extreme variable magnitudes.';
+      if(d.vars.some((_,i)=>Math.abs(d.vals[i])>1e8||Math.abs(d.vals[i])<1e-8))hint+='\n\u2022 Some variables have extreme values \u2014 add guess(var,value) hints or check units.';
+      if(_lastPropErr)hint+='\n\u2022 Property function error during iteration: '+_lastPropErr.message;
+      const guessLines=d.vars.map(v=>'// guess: '+v+' = ?').join('\n');
+      throw new Error(
+        'Solver could not converge. Unsolved variables:\n  '+d.vars.join(', ')+
+        '\n\nLast iterate residuals:\n  '+varLines+
+        (worstLines.length?'\n\nWorst-residual equations:\n  '+worstLines.join('\n  '):'')+
+        (hint?'\n\nLikely causes:'+hint:'')+
+        '\n\nTry adding initial guesses above your equations:\n'+guessLines
+      );
+    }catch(pe){if(pe.message.startsWith('Solver could not converge'))throw pe;}
+  }
+  // Fallback: propagate property error if any, otherwise raw lastErr
+  if(_lastPropErr && _lastPropLine){
+    const rawSrcLines=raw.split('\n');
+    const origIdx=rawSrcLines.findIndex(l=>l.replace(/\/\/.*/,'').trim()===_lastPropLine.replace(/\/\/.*/,'').trim());
+    const lnum=origIdx>=0?origIdx+1:'?';
+    throw new Error('Line '+lnum+': '+_lastPropErr.message+'|LINE|'+_lastPropLine.trim());
+  }
+  throw lastErr;
+}remVars.forEach((v,i)=>{scope[v]=nr.x[i];solved.add(v);});nrIter=nr.iter;nrRes=nr.res;nrCondNum=nr.condNum||Infinity;nrVarNames=remVars;nrLoose=!!nr.convergedLoosely;}
   if (scope.T0 !== undefined) _exergyDeadState.T0 = scope.T0;
   if (scope.P0 !== undefined) _exergyDeadState.P0 = scope.P0;
-  return{scope,allVars,seqCount,nrIter,nrRes,userFunNames:_userFunNames};
+  const method = seqCount>0 && nrIter>0 ? 'Sequential + Newton\u2013Raphson'
+               : nrIter>0               ? 'Newton\u2013Raphson'
+               :                          'Sequential';
+  return{scope,allVars,seqCount,nrIter,nrRes,nrCondNum,nrVarNames,nrLoose,method,userFunNames:_userFunNames};
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -5600,9 +5763,123 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
 
 
 // ── Unit Consistency Advisory ──────────────────────────────────────────────
+// ── Solver Diagnostics Panel ─────────────────────────────────────────────
+function renderDiagPanel(r, extra) {
+  const panel   = document.getElementById('diag-panel');
+  const summary = document.getElementById('diag-summary');
+  const body    = document.getElementById('diag-body');
+  if (!panel || !summary || !body) return;
+
+  const seqCount   = r.seqCount   || 0;
+  const nrIter     = r.nrIter     || 0;
+  const nrRes      = r.nrRes      || 0;
+  const nrCondNum  = r.nrCondNum  != null ? r.nrCondNum : Infinity;
+  const nrVarNames = r.nrVarNames || [];
+  const nrLoose    = !!r.nrLoose;
+  const method     = r.method     || (nrIter > 0 ? 'Newton\u2013Raphson' : 'Sequential');
+  const totalVars  = (r.allVars   || []).length;
+  const solveMs    = extra?.solveMs ?? null;
+  const sweepN     = extra?.sweepN  ?? null;
+
+  const usedNR  = nrIter > 0;
+  const usedSeq = seqCount > 0;
+
+  // ── Method badge ──────────────────────────────────────────────────
+  let badgeCls = 'diag-badge-seq';
+  if (method.includes('Newton') && method.includes('+')) badgeCls = 'diag-badge-both';
+  else if (method.includes('Newton')) badgeCls = 'diag-badge-nr';
+  const methodBadge = `<span class="diag-badge ${badgeCls}">${method}</span>`;
+
+  // ── Condition number ──────────────────────────────────────────────
+  let condHtml = '', condClass = 'diag-cond-ok', condLabel = '';
+  if (usedNR && isFinite(nrCondNum)) {
+    if      (nrCondNum < 1e4)  { condClass = 'diag-cond-ok';   condLabel = 'Well-conditioned'; }
+    else if (nrCondNum < 1e8)  { condClass = 'diag-cond-warn'; condLabel = 'Moderate'; }
+    else                       { condClass = 'diag-cond-bad';  condLabel = 'Ill-conditioned'; }
+    condHtml = `<span class="${condClass}">${nrCondNum.toExponential(2)} <small style="opacity:.7">${condLabel}</small></span>`;
+  }
+
+  const looseWarn = nrLoose ? `<span class="diag-loose">&#9888; Loose convergence</span>` : '';
+  const resStr    = usedNR  ? `\u2016r\u2016\u202f=\u202f${nrRes.toExponential(2)}` : '';
+
+  // ── Summary (collapsed) ───────────────────────────────────────────
+  summary.innerHTML = [
+    methodBadge,
+    `<span style="font-size:10px;color:var(--mute)">${totalVars} vars</span>`,
+    usedSeq && !usedNR ? `<span style="font-size:10px;color:var(--mute)">${seqCount} seq</span>` : '',
+    usedNR  ? `<span style="font-size:10px;color:var(--mute)">${nrIter}\u202fiter</span>` : '',
+    resStr  ? `<span style="font-size:10px;color:var(--mute)">${resStr}</span>` : '',
+    solveMs != null ? `<span style="font-size:10px;color:var(--mute)">${solveMs < 1 ? '<1\u202fms' : solveMs < 1000 ? solveMs.toFixed(1)+'\u202fms' : (solveMs/1000).toFixed(2)+'\u202fs'}</span>` : '',
+    looseWarn
+  ].filter(Boolean).join('');
+
+  // ── Body (expanded) ───────────────────────────────────────────────
+  const rows = [];
+
+  // Method
+  rows.push(`<div class="diag-row"><span class="diag-lbl">Method</span><span class="diag-val">${methodBadge}</span></div>`);
+
+  // Sweep count
+  if (sweepN != null) {
+    rows.push(`<div class="diag-row"><span class="diag-lbl">Sweep runs</span><span class="diag-val">${sweepN}</span></div>`);
+  }
+
+  // Variables
+  rows.push(`<div class="diag-row"><span class="diag-lbl">Variables solved</span><span class="diag-val">${totalVars}</span></div>`);
+
+  // Sequential solves
+  if (usedSeq) {
+    rows.push(`<div class="diag-row"><span class="diag-lbl">Sequential solves</span><span class="diag-val">${seqCount} <small style="opacity:.6">(explicit substitution)</small></span></div>`);
+  }
+
+  // Pure sequential note
+  if (usedSeq && !usedNR) {
+    rows.push(`<div class="diag-row"><span class="diag-lbl"></span><span style="font-size:10px;color:var(--green,#4ec9b0)">&#10003; All variables resolved sequentially — no Newton\u2013Raphson needed</span></div>`);
+  }
+
+  // NR details
+  if (usedNR) {
+    rows.push(`<div class="diag-row"><span class="diag-lbl">NR iterations</span><span class="diag-val">${nrIter}${nrIter >= (typeof SOLVER_CFG !== 'undefined' ? (SOLVER_CFG.nrMaxIter||400) : 400) ? ' <small style="color:var(--accent2)">(max reached)</small>' : ''}</span></div>`);
+
+    const resClass = nrLoose ? 'diag-cond-warn' : nrRes < 1e-8 ? 'diag-cond-ok' : '';
+    rows.push(`<div class="diag-row"><span class="diag-lbl">Final residual \u2016r\u2016</span><span class="diag-val ${resClass}">${nrRes.toExponential(3)}${nrLoose ? ' <span class="diag-loose">&#9888; Loose \u2014 results may be approximate</span>' : ''}</span></div>`);
+
+    if (condHtml) {
+      rows.push(`<div class="diag-row"><span class="diag-lbl">Jacobian cond. no.</span><span class="diag-val">${condHtml}</span></div>`);
+      if (nrCondNum > 1e8) {
+        rows.push(`<div class="diag-row"><span class="diag-lbl"></span><span style="font-size:10px;color:var(--accent2)">High condition number \u2014 try rescaling variables or adding better initial guesses.</span></div>`);
+      }
+    }
+
+    if (nrVarNames.length > 0) {
+      const chips = nrVarNames.map(v => `<span class="diag-var-chip">${v}</span>`).join('');
+      rows.push(`<div class="diag-row"><span class="diag-lbl">NR variables</span><div class="diag-vars">${chips}</div></div>`);
+    }
+  }
+
+  // Solve time
+  if (solveMs != null) {
+    const tStr = solveMs < 1 ? '<1\u202fms' : solveMs < 1000 ? solveMs.toFixed(1)+'\u202fms' : (solveMs/1000).toFixed(2)+'\u202fs';
+    rows.push(`<div class="diag-row"><span class="diag-lbl">Solve time</span><span class="diag-val">${tStr}</span></div>`);
+  }
+
+  body.innerHTML = rows.join('');
+  panel.classList.add('visible');
+}
+
+function hideDiagPanel() {
+  const panel = document.getElementById('diag-panel');
+  if (panel) { panel.classList.remove('visible', 'expanded'); }
+}
+
 function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   const warnings = [];
   const lines = txt.split('\n');
+  // Pre-clear error section so stale errors don't persist across solves
+  const _elPre = document.getElementById('unit-advisory');
+  const _errPre = document.getElementById('unit-advisory-errors');
+  if (_elPre) _elPre.classList.remove('visible','has-dim-errors');
+  if (_errPre) _errPre.innerHTML = '';
 
   // ── Check 1: Dead state missing when exergy functions are used ──────────
   const usesExergy = lines.some(l => /\b(exf|exflow|exheat|ex_f|exfhs)\s*\(/.test(l.replace(/\/\/.*$/,'')));
@@ -5749,15 +6026,125 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     }
   });
 
+  // ── Check 4: Equation-level LHS ≠ RHS dimensional consistency ─────────
+  // ── Check 5: Transcendental functions applied to dimensional arguments ──
+  // ── Check 6: Addition/subtraction of unlike dimensions ──────────────────
+  const dimErrors = [];  // shown in red — actual dimensional inconsistencies
+
+  function _dimEq(a, b) { return a && b && a.every((v,i) => v === b[i]); }
+  function _isDimless(d) { return d && d.every(v => v === 0); }
+  const _TRANSCEND = new Set(['sin','cos','tan','asin','acos','atan','atan2',
+    'log','ln','log2','log10','exp','sinh','cosh','tanh','asinh','acosh','atanh']);
+
+  // Walk AST to detect: (5) transcendental on dim arg; (6) add/sub unlike dims
+  function _walkDimCheck(nd, lineNum, seen, errs) {
+    if (!nd) return;
+    if (nd.t === 'F') {
+      const fn = (nd.fn || nd.n || '').toLowerCase();
+      if (_TRANSCEND.has(fn)) {
+        for (const arg of (nd.args || [])) {
+          let d; try { d = evalDimNode(arg)?.dim; } catch(e) {}
+          if (d && !_isDimless(d)) {
+            const lbl = dimToLabel(d);
+            if (lbl) {
+              const key = lineNum + ':tr:' + fn + ':' + lbl;
+              if (!seen.has(key)) { seen.add(key);
+                errs.push(`Line ${lineNum}: <code>${fn}(…)</code> — argument is dimensional [${lbl}]; expected dimensionless.`);
+              }
+            }
+          }
+        }
+      }
+      (nd.args || []).forEach(a => _walkDimCheck(a, lineNum, seen, errs));
+    }
+    if (nd.t === 'B' && (nd.op === '+' || nd.op === '-')) {
+      let ld, rd;
+      try { ld = evalDimNode(nd.L)?.dim; } catch(e) {}
+      try { rd = evalDimNode(nd.R)?.dim; } catch(e) {}
+      if (ld && rd && !_dimEq(ld, rd)) {
+        const ll = dimToLabel(ld), rl = dimToLabel(rd);
+        if (ll && rl) {
+          const key = lineNum + ':add:' + ll + ':' + rl;
+          if (!seen.has(key)) { seen.add(key);
+            errs.push(`Line ${lineNum}: adding/subtracting [${ll}] and [${rl}] — incompatible dimensions.`);
+          }
+        }
+      }
+    }
+    if (nd.L) _walkDimCheck(nd.L, lineNum, seen, errs);
+    if (nd.R) _walkDimCheck(nd.R, lineNum, seen, errs);
+    if (nd.args) nd.args.forEach(a => _walkDimCheck(a, lineNum, seen, errs));
+  }
+
+  const _dimSeen = new Set();
+  lines.forEach((lineRaw, i) => {
+    const clean = lineRaw.replace(/\/\/.*$/, '').trim();
+    if (!clean) return;
+    const lineNum = i + 1;
+    // Strip [unit] brackets so parse() doesn't choke on them
+    const stripped = clean.replace(/\s*\[[^\]]+\]/g, '');
+    const eqIdx = stripped.indexOf('=');
+    if (eqIdx < 0) return;
+    const lhsStr = stripped.slice(0, eqIdx).trim();
+    const rhsStr = stripped.slice(eqIdx + 1).trim();
+    if (!lhsStr || !rhsStr) return;
+
+    let lhsAst, rhsAst;
+    try { lhsAst = parse(lhsStr); } catch(e) { return; }
+    try { rhsAst = parse(rhsStr); } catch(e) { return; }
+
+    // Check 4: LHS dim ≠ RHS dim
+    let lhsDim = null, rhsDim = null;
+    try { lhsDim = evalDimNode(lhsAst)?.dim; } catch(e) {}
+    try { rhsDim = evalDimNode(rhsAst)?.dim; } catch(e) {}
+
+    if (lhsDim && rhsDim && !_dimEq(lhsDim, rhsDim)) {
+      const ll = dimToLabel(lhsDim), rl = dimToLabel(rhsDim);
+      // Only flag when both sides have readable labels (avoid false positives on novel dims)
+      if (ll && rl) {
+        const key = lineNum + ':eq:' + ll + ':' + rl;
+        if (!_dimSeen.has(key)) { _dimSeen.add(key);
+          const lhsDisp = lhsStr.length > 28 ? lhsStr.slice(0,26)+'…' : lhsStr;
+          const rhsDisp = rhsStr.length > 28 ? rhsStr.slice(0,26)+'…' : rhsStr;
+          dimErrors.push(`Line ${lineNum}: <code>${lhsDisp}</code> [${ll}] ≠ <code>${rhsDisp}</code> [${rl}] — dimensional mismatch.`);
+        }
+      }
+    }
+
+    // Check 5 & 6: walk both AST sides
+    _walkDimCheck(lhsAst, lineNum, _dimSeen, dimErrors);
+    _walkDimCheck(rhsAst, lineNum, _dimSeen, dimErrors);
+  });
+
   // ── Render ───────────────────────────────────────────────────────────────
   const el = document.getElementById('unit-advisory');
+  const titleEl = document.getElementById('unit-advisory-title');
+  const errEl = document.getElementById('unit-advisory-errors');
+  const sepEl = document.getElementById('unit-advisory-sep');
   const body = document.getElementById('unit-advisory-body');
   if (!el || !body) return;
-  if (warnings.length === 0) {
-    el.classList.remove('visible');
+
+  const hasDimErrors = dimErrors.length > 0;
+  const hasWarnings = warnings.length > 0;
+
+  if (!hasDimErrors && !hasWarnings) {
+    el.classList.remove('visible', 'has-dim-errors');
     return;
   }
-  body.innerHTML = warnings.map(w => `<div class="unit-advisory-item">&#8594; ${w}</div>`).join('');
+
+  el.classList.toggle('has-dim-errors', hasDimErrors);
+  if (titleEl) titleEl.innerHTML = hasDimErrors
+    ? '&#10007; Dimensional Consistency Errors'
+    : '&#9888; Unit Advisory';
+
+  if (errEl) errEl.innerHTML = dimErrors.map(w =>
+    `<div class="unit-advisory-item dim-error">&#10007; ${w}</div>`).join('');
+
+  if (sepEl) sepEl.style.display = (hasDimErrors && hasWarnings) ? '' : 'none';
+
+  body.innerHTML = warnings.map(w =>
+    `<div class="unit-advisory-item">&#8594; ${w}</div>`).join('');
+
   el.classList.add('visible');
 }
 
@@ -5953,7 +6340,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
             // Use r.scope.__tempInWasK (set at solve time) — NOT _tempInWasOverridden
             // which is false when tempIn=K was pre-set rather than auto-triggered.
             const _dimK = [0,0,0,0,1,0,0];
-            const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
+            const _isTemp = !_dimConflictVars.has(v) && !_rhs_has_dim_conflict(rhsMap[v]) &&
+                            _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
             let rawShown = raw;
             if (r.scope.__tempInWasK && _isTemp && isFinite(raw)) {
               rawShown = fromK(raw);         // K → display temperature unit
@@ -5981,6 +6369,9 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         $algZone.classList.add('visible');
         // Run unit consistency advisory
         try { runUnitAdvisory(_origTxt, r.scope, rhsMap, varUnitOverrides); } catch(e) {}
+        // Solver diagnostics panel
+        try { renderDiagPanel(r, {solveMs: _solveMs}); } catch(e) {}
+
         // On mobile, scroll result zone into view
         if (window.innerWidth < 900) setTimeout(()=>$algZone.scrollIntoView({behavior:'smooth',block:'start'}), 80);
         $stat.style.color='var(--green)'; $stat.textContent=`✓ ${displayVars.length} vars`;
@@ -6089,7 +6480,65 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
             }
           }
         }
-        // Fallback: try parsing each line to find which one throws
+        // Format 5: "Unknown function: NAME" → find line containing NAME(
+        if (!lineHint) {
+          const unkFnM = err.message.match(/Unknown function:\s*(\w+)/);
+          if (unkFnM) {
+            const fname = unkFnM[1];
+            const reFn = new RegExp('\\b' + fname.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*\\(');
+            errorLineNum = errLines.findIndex(l => reFn.test(l.replace(/\/\/.*$/, '')));
+            if (errorLineNum >= 0) lineHint = `<div style="font-size:10px;color:var(--mute);margin-top:5px">→ Line ${errorLineNum+1}: <code>${errLines[errorLineNum].trim()}</code></div>`;
+          }
+        }
+        // Format 6: "1D solver failed for VARNAME" → find equation with VARNAME on RHS
+        if (!lineHint) {
+          const s1DM = err.message.match(/1D solver failed for\s+(\w+)/);
+          if (s1DM) {
+            const vname = s1DM[1];
+            const reV = new RegExp('\\b' + vname + '\\b');
+            // Prefer lines where the var appears on the RHS (not just the LHS assignment)
+            errorLineNum = errLines.findIndex(l => {
+              const clean = l.replace(/\/\/.*$/, '');
+              const eqIdx = clean.indexOf('=');
+              if (eqIdx < 0) return false;
+              const rhs = clean.slice(eqIdx + 1);
+              return reV.test(rhs);
+            });
+            if (errorLineNum < 0) errorLineNum = errLines.findIndex(l => reV.test(l.replace(/\/\/.*$/, '')));
+            if (errorLineNum >= 0) lineHint = `<div style="font-size:10px;color:var(--mute);margin-top:5px">→ Line ${errorLineNum+1}: <code>${errLines[errorLineNum].trim()}</code></div>`;
+          }
+        }
+        // Format 7: "in: LINE_CONTENT" — extract line snippet and find it in source
+        if (!lineHint) {
+          const inLineM = err.message.match(/\bin:\s*(.{5,80})$/);
+          if (inLineM) {
+            const snippet = inLineM[1].trim();
+            // Search for source line whose trimmed text starts with / contains the snippet
+            errorLineNum = errLines.findIndex(l => {
+              const lt = l.trim();
+              return lt === snippet || lt.startsWith(snippet.slice(0,25)) || snippet.startsWith(lt.slice(0,25));
+            });
+            if (errorLineNum >= 0) lineHint = `<div style="font-size:10px;color:var(--mute);margin-top:5px">→ Line ${errorLineNum+1}: <code>${errLines[errorLineNum].trim()}</code></div>`;
+          }
+        }
+        // Format 8: property domain errors — find first line with a thermo function call
+        if (!lineHint && /out of (IF97 |)range|cannot compute sat|Tsat:|Psat:|above the critical|below the minimum|inversion failed/.test(err.message)) {
+          const thermoRe = /\b(h_P[TSvuh]|h_T[PSvx]|s_P[TSvuh]|v_P[TSvuh]|T_P[hvus]|P_T[hvxs]|hf|hg|sf|sg|vf|vg|Psat|Tsat|h_Ps|h_Ph|T_Pv|T_Ph)\s*[_(]/;
+          errorLineNum = errLines.findIndex(l => thermoRe.test(l.replace(/\/\/.*$/, '')));
+          if (errorLineNum >= 0) lineHint = `<div style="font-size:10px;color:var(--mute);margin-top:5px">→ Line ${errorLineNum+1}: <code>${errLines[errorLineNum].trim()}</code></div>`;
+        }
+        // Format 9: Unexpected "TOKEN" — find line that contains the unexpected token at end or unexpectedly
+        if (!lineHint) {
+          const unexpM = err.message.match(/Unexpected "([^"]+)"/);
+          if (unexpM) {
+            const tok = unexpM[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+            // Prefer line that ENDS with the unexpected token (e.g. trailing comma)
+            errorLineNum = errLines.findIndex(l => new RegExp(tok + '\\s*$').test(l.replace(/\/\/.*$/, '')));
+            // Fallback: any line containing it in a non-operator position
+            if (errorLineNum < 0) errorLineNum = errLines.findIndex(l => new RegExp('[^=!<>]' + tok).test(l.replace(/\/\/.*$/, '')));
+            if (errorLineNum >= 0) lineHint = `<div style="font-size:10px;color:var(--mute);margin-top:5px">→ Line ${errorLineNum+1}: <code>${errLines[errorLineNum].trim()}</code></div>`;
+          }
+        }
         if (!lineHint) {
           try {
             for (let idx = 0; idx < errLines.length; idx++) {
@@ -6377,6 +6826,17 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
       $bd.innerHTML = table + errorNotes;
       $algZone.classList.add('visible');
+
+      // Diagnostics panel — aggregate across fluid runs
+      try {
+        const _diagR = valid[0] || {};
+        renderDiagPanel(
+          {seqCount: _diagR.seqCount||0, nrIter: _diagR.nrIter||0, nrRes: _diagR.nrRes||0,
+           nrCondNum: _diagR.nrCondNum, nrVarNames: _diagR.nrVarNames||[], nrLoose: false,
+           method: _diagR.method||'Sequential', allVars: _diagR.allVars||[]},
+          {solveMs: elapsed, sweepN: valid.length}
+        );
+      } catch(e) {}
 
       // Store for print
       window._lastFluidSweepHTML = table + errorNotes;
@@ -7312,6 +7772,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     sliderState={}; sliderDefs=[]; pendingParamSelection=null;
     renderSliderZone([]);
     _lastSolveText = null;
+    if (typeof hideDiagPanel === 'function') hideDiagPanel();
   }
 
   // Solve button + keyboard shortcut
@@ -9210,7 +9671,19 @@ function runODESolver(txt) {
       stat.style.color='var(--green)';
       stat.textContent=`✓ ${odeResult.nPoints} pts · ${odeResult.typeLabel || `${odeResult.stateVars.length} vars`} · ${(()=>{const _ms=performance.now()-_t0;return _ms<1?'<1 ms':_ms<1000?_ms.toFixed(1)+' ms':(_ms/1000).toFixed(2)+' s';})()}`;
       document.getElementById('ode-result-zone').classList.add('visible');
-      const _odeTimeEl = document.getElementById('ode-result-zone').querySelector('.ode-zone-header span:first-child');
+      // Diagnostics panel — ODE shows method and solve stats
+      try {
+        const _odeMs = performance.now() - _t0;
+        const _odeNpts = odeResult?.nPoints || 0;
+        const _odeVars = odeResult?.stateVars?.length || 0;
+        renderDiagPanel(
+          {seqCount: _odeVars, nrIter: 0, nrRes: 0, nrCondNum: Infinity,
+           nrVarNames: [], nrLoose: false,
+           method: odeResult?.method || 'RK4/RK45',
+           allVars: odeResult?.stateVars || []},
+          {solveMs: _odeMs, sweepN: null}
+        );
+      } catch(e) {}
       if (_odeTimeEl) _odeTimeEl.innerHTML = `ODE / DAE · <span style="text-transform:none">${(()=>{const _ms=performance.now()-_t0;return _ms<1?'<1 ms':_ms<1000?_ms.toFixed(1)+' ms':(_ms/1000).toFixed(2)+' s';})()}</span>`;
       requestAnimationFrame(() => refreshODEPlot());
     } catch(e) {
@@ -13027,6 +13500,19 @@ function runParametricSweep(txt) {
       // Store sweep results for diagram overlay
       window._lastSweepResults = { sweep, results, sweepName: sweep.name };
       renderSweepResults(sweep, results, outputVars, autoYLines.map(l=>l.split('=')[0].trim()), buildRHSMap(txt), _sweepTimeLbl);
+      // Diagnostics panel — use first successful solve's diagnostics
+      try {
+        const _firstR = results.find(r => r.scope && Object.keys(r.scope).length > 0);
+        if (_firstR) {
+          // solveSystem doesn't store diag in results[] directly — build summary
+          renderDiagPanel(
+            {seqCount: 0, nrIter: 0, nrRes: 0, nrCondNum: Infinity,
+             nrVarNames: [], nrLoose: false, method: 'Sequential',
+             allVars: _firstR.vars||[]},
+            {solveMs: _sweepTimeMs, sweepN: sweep.values.length}
+          );
+        }
+      } catch(e) {}
       // Refresh diagram tab with sweep data if it was open
       refreshDiagram(null);
       $stat.style.color='var(--green)'; $stat.textContent=`∿ ${sweep.values.length} pts · ${_sweepTimeLbl}`;
