@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.32</title>
+<title>EquaSolve V1.3.33</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -626,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.32</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.33</div>
       </div>
     </div>
 
@@ -706,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.32</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.33</span></div>
       
     </div>
   </div>
@@ -875,7 +875,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.32</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.33</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -894,7 +894,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     <div class="ed-wrap">
       <div class="line-nums" id="lnums"><div class="ln">1</div></div>
       <div class="eq-highlight" id="eq-highlight" aria-hidden="true"></div>
-      <textarea class="eq-ta" id="eq-input" spellcheck="false"
+      <textarea class="eq-ta" id="eq-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
         placeholder="// Algebraic, ODE, or mixed DAE — type is auto-detected&#10;x^2 + y^2 = 25&#10;x + y = 7"></textarea>
     </div>
     <!-- Validation status bar — only shown for algebraic systems -->
@@ -3348,7 +3348,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
-      // V1.3.32: bare name and _T alias → temperature-based; _P alias → pressure-based
+      // V1.3.33: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3515,7 +3515,7 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      // V1.3.32: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      // V1.3.33: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
       FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
@@ -3531,7 +3531,7 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    // V1.3.32: bare name and _T → temperature-based; _P → pressure-based
+    // V1.3.33: bare name and _T → temperature-based; _P → pressure-based
     FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
@@ -4311,7 +4311,7 @@ function _inferMissingVarDims(equationLines) {
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
         // Find the "reference dim" from known terms — ALL non-zero ones must agree.
-        // V1.3.32: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
+        // V1.3.33: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
         // the equation is dimensionally inconsistent — skip inference for this variable
         // rather than silently assigning a wrong dim from whichever term we happen to see first.
         let refDim = null;
@@ -4696,7 +4696,7 @@ function hasUnknownVars(nd,forceVars){const s=new Set();collectVars(nd,s,forceVa
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.3.32: Unit safety utilities ───────────────────────────────────────
+// ── V1.3.33: Unit safety utilities ───────────────────────────────────────
 // _canonUnit   : normalise case-variant spellings → canonical form
 // _knownBracketUnit : true if the unit is recognised by the engine
 // _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
@@ -6972,6 +6972,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     if(sliderRerunTimer){clearTimeout(sliderRerunTimer);sliderRerunTimer=null;}
     window._odeSliderRerun=false;
     $in.value=''; updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
+    autoResizeTA(); renderHighlight(); _hlErrorLine = -1; _hlErrToken = null;
     $algZone.classList.remove('visible');
     $odeZone.classList.remove('visible');
     odeResult=null;
@@ -8015,6 +8016,11 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   // (Ctrl+Enter handled in keydown listener above with undo/redo)
   autoResizeTA(); // initial size
   renderHighlight(); // initial highlight
+  // Re-sync overlay after browser form-state restoration on refresh/back-nav
+  // The browser may restore the textarea value AFTER JS runs, without firing 'input'
+  window.addEventListener('pageshow', () => {
+    requestAnimationFrame(() => { autoResizeTA(); renderHighlight(); updateTypeBadge(); updateValidationStatus(); });
+  });
 
   // Example buttons (delegated on aside)
   document.querySelector('aside').addEventListener('click', e=>{
