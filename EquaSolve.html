@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.31</title>
+<title>EquaSolve V1.3.32</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -626,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.31</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.32</div>
       </div>
     </div>
 
@@ -706,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.31</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.32</span></div>
       
     </div>
   </div>
@@ -875,7 +875,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.31</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.32</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3348,7 +3348,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
-      // V1.3.31: bare name and _T alias → temperature-based; _P alias → pressure-based
+      // V1.3.32: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3515,7 +3515,7 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      // V1.3.31: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      // V1.3.32: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
       FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
@@ -3531,7 +3531,7 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    // V1.3.31: bare name and _T → temperature-based; _P → pressure-based
+    // V1.3.32: bare name and _T → temperature-based; _P → pressure-based
     FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
@@ -4311,7 +4311,7 @@ function _inferMissingVarDims(equationLines) {
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
         // Find the "reference dim" from known terms — ALL non-zero ones must agree.
-        // V1.3.31: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
+        // V1.3.32: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
         // the equation is dimensionally inconsistent — skip inference for this variable
         // rather than silently assigning a wrong dim from whichever term we happen to see first.
         let refDim = null;
@@ -4690,14 +4690,13 @@ if(nd.t==='F'){
   // The old bare-unit pressure-hint mechanism (window._satArgIsPressure) has
   // been removed along with bare-unit expression syntax.
   const args=nd.args.map(a=>evalNode(a,sc));if(nd.fn in FUNS)return FUNS[nd.fn](...args);throw new Error('Unknown function: '+nd.fn);}throw new Error('Bad AST');}
-function collectVars(nd,out){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n))out.add(nd.n);if(nd.t==='B'){collectVars(nd.L,out);collectVars(nd.R,out);}if(nd.t==='U')collectVars(nd.R,out);if(nd.t==='F')nd.args.forEach(a=>collectVars(a,out));}
-function countUnknowns(nd,solved){const s=new Set();collectVars(nd,s);return[...s].filter(v=>!solved.has(v));}
-
-function hasUnknownVars(nd){const s=new Set();collectVars(nd,s);return s.size>0;}
+function collectVars(nd,out,forceVars){if(!nd)return;if(nd.t==='V'&&(!KNOWN.has(nd.n)||(forceVars&&forceVars.has(nd.n))))out.add(nd.n);if(nd.t==='B'){collectVars(nd.L,out,forceVars);collectVars(nd.R,out,forceVars);}if(nd.t==='U')collectVars(nd.R,out,forceVars);if(nd.t==='F')nd.args.forEach(a=>collectVars(a,out,forceVars));}
+function countUnknowns(nd,solved,forceVars){const s=new Set();collectVars(nd,s,forceVars);return[...s].filter(v=>!solved.has(v));}
+function hasUnknownVars(nd,forceVars){const s=new Set();collectVars(nd,s,forceVars);return s.size>0;}
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.3.31: Unit safety utilities ───────────────────────────────────────
+// ── V1.3.32: Unit safety utilities ───────────────────────────────────────
 // _canonUnit   : normalise case-variant spellings → canonical form
 // _knownBracketUnit : true if the unit is recognised by the engine
 // _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
@@ -4848,12 +4847,17 @@ function _isUnitNode(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==
 function _evalUnitSI(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return-_evalUnitSI(nd.R);if(nd.t==='B'){const l=_evalUnitSI(nd.L),r=_evalUnitSI(nd.R);if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;return Math.pow(l,r);}return 1;}
 const lines=rawLines.map(line=>{const idx=line.indexOf('=');if(idx<0)return line.replace(/\s*\[[^\]:]*\]\s*$/,'');const lhs=line.slice(0,idx).trim();const rhs=line.slice(idx+1).trim();if(!/^[a-zA-Z_]\w*$/.test(lhs))return line.replace(/\s*\[[^\]:]*\]\s*$/,'');// Check for [unit] bracket at end of RHS
 const bm=rhs.match(/^([\s\S]+?)\s*\[([^\]]+)\]\s*$/);if(!bm)return line;const valExpr=bm[1].trim(),unitStr=bm[2].trim();try{const ast=parse(valExpr);if(_isUnitNode(ast)){const numVal=_evalUnitSI(ast);if(isFinite(numVal)){const cv=_bracketConvert(numVal,unitStr);if(cv!==null&&isFinite(cv))return`${lhs} = ${cv}`;}}}catch(e){}return`${lhs} = ${valExpr}`;});
-const pairs=[];const varSet=new Set();lines.forEach((line,eqIndex)=>{const idx=line.indexOf('=');if(idx<0)throw new Error('Missing "=" in line: '+line);
+const pairs=[];const varSet=new Set();
+// Pre-scan: collect all LHS simple identifiers so user-assigned names beat built-in function names
+// e.g. s_air = R*log(P1/P2) — s_air is registered as a fluid function but user is defining it as a variable
+const _lhsVarNames=new Set();
+lines.forEach(line=>{const idx=line.indexOf('=');if(idx<0)return;const lhs=line.slice(0,idx).trim();if(/^[a-zA-Z_]\w*$/.test(lhs))_lhsVarNames.add(lhs);});
+lines.forEach((line,eqIndex)=>{const idx=line.indexOf('=');if(idx<0)throw new Error('Missing "=" in line: '+line);
 // Find original source line number for accurate error highlighting
 const _rawSrc=String(raw||'').split('\n');const _origIdx=_rawSrc.findIndex(l=>l.replace(/\/\/.*/,'').trim()===line.replace(/\/\/.*/,'').trim());const _srcNum=_origIdx>=0?_origIdx+1:eqIndex+1;
 // Detect trailing comma — common mistake from math/spreadsheet notation
 const rhs=line.slice(idx+1).trim();if(rhs.endsWith(','))throw new Error('Line '+_srcNum+': Trailing comma — equations are separated by new lines, not commas. Remove the comma.|LINE|'+_rawSrc[_origIdx>=0?_origIdx:eqIndex]?.trim());
-try{const la=parse(line.slice(0,idx).trim()),ra=parse(rhs);pairs.push({la,ra,line,eqIndex});collectVars(la,varSet);collectVars(ra,varSet);}catch(pe){throw new Error('Line '+_srcNum+': '+pe.message+'|LINE|'+(_rawSrc[_origIdx>=0?_origIdx:eqIndex]?.trim()||line.trim()));}});userFuncNames.forEach(n=>{if(!FUNS[n])KNOWN.delete(n);});const allVars=Array.from(varSet).sort();const eqCount=pairs.length,varCount=allVars.length,diff=varCount-eqCount;return{lines,pairs,allVars,eqCount,varCount,diff};}
+try{const la=parse(line.slice(0,idx).trim()),ra=parse(rhs);pairs.push({la,ra,line,eqIndex});collectVars(la,varSet,_lhsVarNames);collectVars(ra,varSet,_lhsVarNames);}catch(pe){throw new Error('Line '+_srcNum+': '+pe.message+'|LINE|'+(_rawSrc[_origIdx>=0?_origIdx:eqIndex]?.trim()||line.trim()));}});userFuncNames.forEach(n=>{if(!FUNS[n])KNOWN.delete(n);});const allVars=Array.from(varSet).sort();const eqCount=pairs.length,varCount=allVars.length,diff=varCount-eqCount;return{lines,pairs,allVars,eqCount,varCount,diff,lhsVarNames:_lhsVarNames};}
 
 
 function detectODEFreeParams(txt, existingSliderNames) {
@@ -5108,10 +5112,13 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     const lineNum = origIdx >= 0 ? origIdx + 1 : lineIdx + 1;
     throw new Error('Line ' + lineNum + ': ' + pe.message + '|LINE|' + line.trim());
   }
-});const allVarSet=new Set();pairs.forEach(({la,ra})=>{collectVars(la,allVarSet);collectVars(ra,allVarSet);});const allVars=Array.from(allVarSet);if(!allVars.length)throw new Error('No variables found.');const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;
+});const allVarSet=new Set();
+// Pre-scan LHS names so user-assigned variables beat built-in function names (e.g. s_air, h_co2)
+const _sysLhsNames=new Set(pairs.map(p=>{const idx=p.line.indexOf('=');if(idx<0)return null;const lhs=p.line.slice(0,idx).trim();return /^[a-zA-Z_]\w*$/.test(lhs)?lhs:null;}).filter(Boolean));
+pairs.forEach(({la,ra})=>{collectVars(la,allVarSet,_sysLhsNames);collectVars(ra,allVarSet,_sysLhsNames);});const allVars=Array.from(allVarSet);if(!allVars.length)throw new Error('No variables found.');const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;
 // Track the last meaningful (non-numerical) error for error attribution
 let _lastPropErr=null, _lastPropLine='';
-while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...unsolved]){const{la,ra,line:eLine}=pairs[ei];const unk=[...new Set([...countUnknowns(la,solved),...countUnknowns(ra,solved)])];if(unk.length===0){unsolved.delete(ei);progress=true;continue;}if(unk.length===1){const vname=unk[0];let val=null;try{val=tryExplicit(la,ra,vname,scope);}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum|exf requires/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}val=null;}if(val===null){const starts=[...((userGuesses&&userGuesses[vname]!==undefined)?[userGuesses[vname]]:[]),1,300,2500,0.1,-1,10,500,0.01,...Array.from({length:6},()=>(M.random()-0.2)*500+1)];let found=false;for(const x0 of starts){try{val=solve1D(la,ra,vname,scope,x0);found=true;break;}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}}}if(!found)continue;}scope[vname]=val;solved.add(vname);unsolved.delete(ei);seqCount++;progress=true;}}}let nrIter=0,nrRes=0,nrCondNum=Infinity,nrVarNames=[],nrLoose=false;if(unsolved.size>0){const remEqs=[...unsolved].map(i=>pairs[i]);const remVarSet=new Set();remEqs.forEach(({la,ra})=>{countUnknowns(la,solved).forEach(v=>remVarSet.add(v));countUnknowns(ra,solved).forEach(v=>remVarSet.add(v));});const remVars=Array.from(remVarSet).sort();const residuals=remEqs.map(({la,ra})=>sc=>{const fc={...scope,...sc};return evalNode(la,fc)-evalNode(ra,fc);});const guessStart=remVars.map(v=>(userGuesses&&userGuesses[v]!==undefined)?userGuesses[v]:1);const seeds=[guessStart,remVars.map(()=>1),remVars.map(()=>300),remVars.map(()=>0.1),remVars.map(()=>500),...Array.from({length:Math.max(0,(SOLVER_CFG&&SOLVER_CFG.nrStarts)||14)},()=>remVars.map(()=>(M.random()-0.2)*500+1))];let lastErr,nr=null;for(const s of seeds){try{nr=newtonND(residuals,remVars,s);break;}catch(e){lastErr=e;}}if(!nr){
+while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...unsolved]){const{la,ra,line:eLine}=pairs[ei];const unk=[...new Set([...countUnknowns(la,solved,_sysLhsNames),...countUnknowns(ra,solved,_sysLhsNames)])];if(unk.length===0){unsolved.delete(ei);progress=true;continue;}if(unk.length===1){const vname=unk[0];let val=null;try{val=tryExplicit(la,ra,vname,scope);}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum|exf requires/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}val=null;}if(val===null){const starts=[...((userGuesses&&userGuesses[vname]!==undefined)?[userGuesses[vname]]:[]),1,300,2500,0.1,-1,10,500,0.01,...Array.from({length:6},()=>(M.random()-0.2)*500+1)];let found=false;for(const x0 of starts){try{val=solve1D(la,ra,vname,scope,x0);found=true;break;}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}}}if(!found)continue;}scope[vname]=val;solved.add(vname);unsolved.delete(ei);seqCount++;progress=true;}}}let nrIter=0,nrRes=0,nrCondNum=Infinity,nrVarNames=[],nrLoose=false;if(unsolved.size>0){const remEqs=[...unsolved].map(i=>pairs[i]);const remVarSet=new Set();remEqs.forEach(({la,ra})=>{countUnknowns(la,solved,_sysLhsNames).forEach(v=>remVarSet.add(v));countUnknowns(ra,solved,_sysLhsNames).forEach(v=>remVarSet.add(v));});const remVars=Array.from(remVarSet).sort();const residuals=remEqs.map(({la,ra})=>sc=>{const fc={...scope,...sc};return evalNode(la,fc)-evalNode(ra,fc);});const guessStart=remVars.map(v=>(userGuesses&&userGuesses[v]!==undefined)?userGuesses[v]:1);const seeds=[guessStart,remVars.map(()=>1),remVars.map(()=>300),remVars.map(()=>0.1),remVars.map(()=>500),...Array.from({length:Math.max(0,(SOLVER_CFG&&SOLVER_CFG.nrStarts)||14)},()=>remVars.map(()=>(M.random()-0.2)*500+1))];let lastErr,nr=null;for(const s of seeds){try{nr=newtonND(residuals,remVars,s);break;}catch(e){lastErr=e;}}if(!nr){
   // Parse diagnostic payload from newtonND if present
   const diagM = lastErr?.message?.match(/\|NR_DIAG\|(.+)$/s);
   if(diagM){
