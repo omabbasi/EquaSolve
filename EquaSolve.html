@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.30</title>
+<title>EquaSolve V1.3.31</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -95,7 +95,7 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
   #solve-status{font-size:10px;white-space:nowrap;flex-shrink:1;max-width:80px;overflow:hidden;text-overflow:ellipsis;}
   /* ── Editor ── */
   textarea.eq-ta{min-height:120px;font-size:12px;line-height:20px;height:40dvh;overflow-y:scroll !important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;color:var(--hi) !important;}
-  .eq-highlight{font-size:12px;line-height:20px;height:40dvh;overflow-y:hidden !important;}
+  .eq-highlight{font-size:12px;line-height:20px;height:40dvh;overflow-y:hidden !important;white-space:pre;}
   .ed-wrap{overflow:visible;}
 
   /* ── Result cards: 2-col ── */
@@ -124,9 +124,9 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
 }
 .p-lbl{font-size:9px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}.p-lbl .hint{color:var(--green);margin-left:8px}
 .ed-wrap{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border2);transition:border-color .2s;flex-shrink:0}.ed-wrap:focus-within{border-color:var(--accent)}
-.eq-highlight{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;padding:12px 12px 12px 44px;font-size:13px;line-height:22px;font-family:inherit;white-space:pre-wrap;word-wrap:break-word;pointer-events:none;color:transparent;overflow:hidden;box-sizing:border-box;border:none;background:transparent;z-index:2;}
+.eq-highlight{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;padding:12px 12px 12px 44px;font-size:13px;line-height:22px;font-family:inherit;white-space:pre;pointer-events:none;color:transparent;overflow:hidden;box-sizing:border-box;border:none;background:transparent;z-index:2;}
 .hl-comment{color:#6e7681;background:transparent;}
-.hl-error-line{background:rgba(248,81,73,.15);border-radius:2px;display:block;}
+.hl-error-line{background:rgba(248,81,73,.15);border-radius:2px;display:block;white-space:pre;}
 .hl-err-tok{background:rgba(248,81,73,.45);border-radius:2px;outline:1px solid rgba(248,81,73,.8);color:transparent;}
 .hl-err-eof{border-right:2px solid #f85149;margin-right:-2px;animation:blink-caret .9s step-end infinite;}
 @keyframes blink-caret{0%,100%{border-color:#f85149}50%{border-color:transparent}}
@@ -626,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.30</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.31</div>
       </div>
     </div>
 
@@ -706,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.30</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.31</span></div>
       
     </div>
   </div>
@@ -875,7 +875,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.30</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.31</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3348,7 +3348,7 @@ function setActiveFunctions(){
       ['vg',  (fl,K)=>fromM3(fl.vg(K)),   (fl,P)=>fromM3(fl.vg(fl.Tsat(P)))],
     ];
     for(const[prefix,fnT,fnP] of satDefs){
-      // V1.3.30: bare name and _T alias → temperature-based; _P alias → pressure-based
+      // V1.3.31: bare name and _T alias → temperature-based; _P alias → pressure-based
       const boundT = (arg)=>fnT(src,toK(arg));
       const boundP = (arg)=>fnP(src,toMPa(arg));
       FUNS[prefix]=boundT; FUNS[prefix+'_T']=boundT; FUNS[prefix+'_P']=boundP;
@@ -3515,7 +3515,7 @@ function _registerSatAutoFunctions() {
   for (const [alias, key] of Object.entries(FLUID_ALIASES)) {
     const fl = FLUIDS[key]; if (!fl) continue;
     for (const [prefix, fnT, fnP] of satDefs) {
-      // V1.3.30: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
+      // V1.3.31: bare _alias and _T_alias → temperature-based; _P_alias → pressure-based
       FUNS[prefix+'_'+alias]     = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_T_'+alias]   = (arg) => fnT(fl, toK(arg));
       FUNS[prefix+'_P_'+alias]   = (arg) => fnP(fl, toMPa(arg));
@@ -3531,7 +3531,7 @@ function _registerSatAutoFunctions() {
     ['vg', (K)=>fromM3(IF97.vg(K)),   (P)=>fromM3(IF97.vg(IF97.Tsat(P)))],
   ];
   for (const [prefix, fnT, fnP] of wSat) {
-    // V1.3.30: bare name and _T → temperature-based; _P → pressure-based
+    // V1.3.31: bare name and _T → temperature-based; _P → pressure-based
     FUNS[prefix]      = (arg) => fnT(toK(arg));
     FUNS[prefix+'_T'] = (arg) => fnT(toK(arg));
     FUNS[prefix+'_P'] = (arg) => fnP(toMPa(arg));
@@ -4311,7 +4311,7 @@ function _inferMissingVarDims(equationLines) {
         if (vTerms.length === 0) { delete _varDimCache[v]; continue; }
 
         // Find the "reference dim" from known terms — ALL non-zero ones must agree.
-        // V1.3.30: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
+        // V1.3.31: if two known terms have DIFFERENT non-zero dims (e.g. S = T + P),
         // the equation is dimensionally inconsistent — skip inference for this variable
         // rather than silently assigning a wrong dim from whichever term we happen to see first.
         let refDim = null;
@@ -4697,7 +4697,7 @@ function hasUnknownVars(nd){const s=new Set();collectVars(nd,s);return s.size>0;
 function collectRoleStats(nd,stats,ctx={}){if(!nd)return;if(nd.t==='V'&&!KNOWN.has(nd.n)){const st=stats[nd.n]||(stats[nd.n]={occ:0,eqs:new Set(),mult:0,div:0,pow:0,add:0,coeff:0});st.occ++;if(ctx.eqIndex!=null)st.eqs.add(ctx.eqIndex);if(ctx.role==='mult')st.mult++;if(ctx.role==='div')st.div++;if(ctx.role==='pow')st.pow++;if(ctx.role==='add')st.add++;if(ctx.coeff)st.coeff++;return;}if(nd.t==='B'){if(nd.op==='*'||nd.op==='/'){const lH=hasUnknownVars(nd.L),rH=hasUnknownVars(nd.R);collectRoleStats(nd.L,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:rH});collectRoleStats(nd.R,stats,{...ctx,role:nd.op==='*'?'mult':'div',coeff:lH});return;}if(nd.op==='^'){collectRoleStats(nd.L,stats,{...ctx,role:'pow',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'pow',coeff:hasUnknownVars(nd.L)});return;}collectRoleStats(nd.L,stats,{...ctx,role:'add',coeff:false});collectRoleStats(nd.R,stats,{...ctx,role:'add',coeff:false});return;}if(nd.t==='U'){collectRoleStats(nd.R,stats,ctx);return;}if(nd.t==='F')nd.args.forEach(a=>collectRoleStats(a,stats,{...ctx,coeff:false}));}
 function freeParamNameScore(name){const n=String(name||'');const lo=n.toLowerCase();let score=0;const preferred=new Set(['a','b','c','d','k','m','n','r','alpha','beta','gamma','lambda','mu','nu']);const discouraged=new Set(['x','y','z','t','time','theta','omega','phi','psi']);const thermoState=new Set(['t','p','v','u','h','s']);if(preferred.has(lo))score+=8;if(/^[a-z]$/.test(lo)&&!discouraged.has(lo))score+=4;if(/^(coef|coeff|param|gain|factor|ratio|const|constant|alpha|beta|gamma|lambda|mu|nu|kappa|sigma|epsilon)/.test(lo))score+=7;if(discouraged.has(lo))score-=8;if(/^[xyz](_|\d+)?$/i.test(n))score-=8;if(/^[TPVUHSm]$/.test(n))score-=4;if(thermoState.has(lo)&&n===n.toUpperCase())score-=4;return score;}
 
-// ── V1.3.30: Unit safety utilities ───────────────────────────────────────
+// ── V1.3.31: Unit safety utilities ───────────────────────────────────────
 // _canonUnit   : normalise case-variant spellings → canonical form
 // _knownBracketUnit : true if the unit is recognised by the engine
 // _rejectBareUnitSyntax : throw on "300 kPa" (must be "300[kPa]")
@@ -7800,7 +7800,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
     const lines = escaped.split('\n');
     const highlighted = lines.map((line, idx) => {
-      // Red underline on error line
+      // Split code and comment
       let processedLine;
       const commentIdx = line.indexOf('//');
       if (commentIdx >= 0) {
@@ -7808,6 +7808,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       } else {
         processedLine = applyDots(line);
       }
+      // Error line token highlight
       if (idx === _hlErrorLine) {
         let lineTok = processedLine;
         if (_hlErrToken === 'EOF') {
@@ -7815,16 +7816,17 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         } else if (_hlErrToken && _hlErrToken.length > 0) {
           const esc = _hlErrToken.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
             .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          // Use word boundaries for identifier tokens to avoid matching inside function names
           const boundary = /^\w+$/.test(_hlErrToken) ? `\\b${esc}\\b` : esc;
           lineTok = lineTok.replace(new RegExp('(' + boundary + ')'), '<span class="hl-err-tok">$1</span>');
         }
-        return '<span class="hl-error-line">' + lineTok + '</span>';
+        // Each line is a div — hl-error-line as a div fills exactly one line
+        return '<div class="hl-error-line">' + lineTok + '</div>';
       }
-      return processedLine;
-    }).join('\n');
+      // Wrap every line in a div so layout is always one line per row
+      return '<div>' + processedLine + '</div>';
+    }).join('');
 
-    $hl.innerHTML = highlighted + '\n';
+    $hl.innerHTML = highlighted;
 
     // Sync scroll position with textarea
     $hl.scrollTop = $in.scrollTop;
