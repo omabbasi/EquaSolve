@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.34</title>
+<title>EquaSolve V1.3.35</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -626,7 +626,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.34</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.35</div>
       </div>
     </div>
 
@@ -706,7 +706,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.34</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.35</span></div>
       
     </div>
   </div>
@@ -875,7 +875,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.34</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.35</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -8641,99 +8641,126 @@ mu = 1000`},
 ];
 
 // ---- HIGHER-ORDER ODE PREPROCESSOR ----
-// Converts y'' = f(...), y''' = f(...) into first-order systems
-// y'' = f  →  y' = _y1,  _y1' = f   (with y' → _y1 substitution in f)
-// IC: y'(0) = v  →  _y1(0) = v
+// Converts higher-order ODEs into first-order systems by introducing
+// intermediate variables.  Handles BOTH explicit and implicit forms:
+//
+//   Explicit form (any of):
+//     y'' = f(t, y, y')
+//     m*y''  +  c*y'  +  k*y  =  F(t)         ← coefficients on derivatives
+//     a*y'' + b*y'   =  g(t, y)               ← derivatives on LHS only
+//     f(t, y, y', y'')              =  0      ← fully implicit
+//
+// Strategy:
+//   For y of max order n, introduce intermediates _y1, _y2, ..., _y(n-1)
+//   such that  _yk = y^(k)  (the k-th derivative).
+//   Then:
+//     y'   → _y1    (when k < n)
+//     y''  → _y2    (when k < n)
+//     ...
+//     y^(n) → _y(n-1)'   (the highest derivative becomes the deriv of the
+//                         last intermediate var).
+//   This converts every line to either:
+//     (a) an explicit first-order equation:  _y(n-1)' = ...
+//     (b) an implicit first-order equation:  m*_y(n-1)' + ... = ...
+//   Both cases are handled cleanly downstream by parseODESystem.
+//   Chain equations  y' = _y1,  _y1' = _y2, ...  tie the system together.
+//   Prime ICs y^(k)(t0) = v  →  _yk(t0) = v.
 function preprocessHigherOrder(lines) {
-  // Find all higher-order derivative equations: y'' = ..., y''' = ..., etc.
-  const higherPat = /^(\w+)('{2,})\s*=\s*(.+)$/;
-  const primeIcPat = /^(\w+)('+)\(([^)]+)\)\s*=\s*(.+)$/;
+  // Match any   <ident><primes>   occurrence with a final lookahead so we
+  // capture the full prime run (e.g. y'' is order 2, not two order-1 hits).
+  const allPrimePat = /\b([a-zA-Z_]\w*)('+)(?!')/g;
+  // Prime IC pattern:  y'(0) = val,  y''(0) = val, ...
+  const primeIcPat  = /^(\w+)('+)\s*\(([^)]+)\)\s*=\s*(.+)$/;
 
-  // Collect max derivative order for each variable
+  // ── Step 1: scan ALL prime occurrences across ALL lines ────────────────
+  // Collect the max prime order encountered per variable name.  This works
+  // regardless of whether the highest derivative is alone on the LHS or
+  // mixed with other terms (e.g.  m*y'' + c*y' + k*y = 0  ).
   const maxOrder = {};
   for (const line of lines) {
-    const m = line.match(higherPat);
-    if (m) {
-      const order = m[2].length;
-      maxOrder[m[1]] = Math.max(maxOrder[m[1]] || 0, order);
+    let m;
+    allPrimePat.lastIndex = 0;
+    while ((m = allPrimePat.exec(line)) !== null) {
+      const name = m[1], order = m[2].length;
+      if (order > (maxOrder[name] || 0)) maxOrder[name] = order;
     }
   }
-  if (!Object.keys(maxOrder).length) return lines;
 
-  // Build intermediate variable names: y'' → introduce _y1 (= y')
-  // y''' → introduce _y1 (= y'), _y2 (= y'')
+  // Only variables whose max order is ≥ 2 need expansion.  Order-1 primes
+  // are handled by parseODESystem directly (explicit or implicit 1st-order).
   const intermed = {}; // varname → ['_y1', '_y2', ...]
   for (const [y, order] of Object.entries(maxOrder)) {
-    intermed[y] = [];
-    for (let i = 1; i < order; i++) intermed[y].push(`_${y}${i}`);
+    if (order >= 2) {
+      intermed[y] = [];
+      for (let i = 1; i < order; i++) intermed[y].push(`_${y}${i}`);
+    }
   }
+  if (!Object.keys(intermed).length) return lines;
 
-  // Replace y', y'', ... in an expression string with intermediate var names
-  // Must replace from highest order down to avoid partial matches
+  // ── Step 2: substitution helper ────────────────────────────────────────
+  // For variable y with intermediates  vars = [_y1, _y2, ..., _y(n-1)]:
+  //   y^(n)  → vars[n-2] + "'"   (highest order becomes a 1st-order deriv)
+  //   y^(k)  → vars[k-1]         for 1 ≤ k ≤ n-1
+  // Replace highest order FIRST so its primes are consumed before lower-
+  // order patterns scan the same characters.
   function substPrimes(expr, y, vars) {
     let s = expr;
-    for (let i = vars.length; i >= 1; i--) {
-      // Match y followed by exactly i apostrophes, not followed by another apostrophe
+    const maxOrd = vars.length + 1;
+    // Highest order: y followed by exactly maxOrd primes (lookahead blocks
+    // matching a longer prime run that may exist in pathological input).
+    const reHigh = new RegExp(`\\b${y}${"'".repeat(maxOrd)}(?!')`, 'g');
+    s = s.replace(reHigh, `${vars[maxOrd - 2]}'`);
+    // Lower orders, descending so longer prime runs are consumed first.
+    for (let i = maxOrd - 1; i >= 1; i--) {
       const re = new RegExp(`\\b${y}${"'".repeat(i)}(?!')`, 'g');
       s = s.replace(re, vars[i - 1]);
     }
     return s;
   }
 
-  const out = [];
-  const chainAdded = new Set(); // track which vars had chain equations added
-
-  for (const line of lines) {
-    // Higher-order derivative equation: y'' = expr
-    const hm = line.match(higherPat);
-    if (hm) {
-      const [, y, primes, rhs] = hm;
-      const order = primes.length;
-      const vars = intermed[y]; // intermediate var names
-
-      // Substitute all prime references in RHS
-      let newRhs = rhs;
-      for (const [vy, vvars] of Object.entries(intermed)) {
-        newRhs = substPrimes(newRhs, vy, vvars);
-      }
-
-      // Highest intermediate' = processed RHS
-      out.push(`${vars[vars.length - 1]}' = ${newRhs}`);
-
-      // Add chain equations once per variable
-      if (!chainAdded.has(y)) {
-        chainAdded.add(y);
-        out.push(`${y}' = ${vars[0]}`); // y' = _y1
-        for (let i = 0; i < vars.length - 1; i++) {
-          out.push(`${vars[i]}' = ${vars[i + 1]}`); // _y1' = _y2, etc.
-        }
-      }
-      continue;
+  // Apply substitution for ALL expanded variables to a whole line.
+  function substLine(line) {
+    let s = line;
+    for (const [y, vars] of Object.entries(intermed)) {
+      s = substPrimes(s, y, vars);
     }
+    return s;
+  }
 
-    // Prime initial condition: y'(0) = val → _y1(0) = val
+  // ── Step 3: emit chain equations once per expanded variable ────────────
+  // y' = _y1, _y1' = _y2, ..., _y(n-2)' = _y(n-1)
+  const out = [];
+  for (const [y, vars] of Object.entries(intermed)) {
+    out.push(`${y}' = ${vars[0]}`);
+    for (let i = 0; i < vars.length - 1; i++) {
+      out.push(`${vars[i]}' = ${vars[i + 1]}`);
+    }
+  }
+
+  // ── Step 4: process each input line ────────────────────────────────────
+  for (const line of lines) {
+    // Prime IC:  y'(0) = v   →   _y1(0) = v
+    //            y''(0) = v  →   _y2(0) = v   (when order=2 expansion)
     const im = line.match(primeIcPat);
     if (im) {
       const [, y, primes, t0, val] = im;
       const order = primes.length;
-      if (intermed[y] && order <= intermed[y].length) {
-        out.push(`${intermed[y][order - 1]}(${t0}) = ${val}`);
+      if (intermed[y]) {
+        if (order >= 1 && order <= intermed[y].length) {
+          out.push(`${intermed[y][order - 1]}(${t0}) = ${val}`);
+        }
+        // else: IC order exceeds available intermediates — this is a
+        // constraint on the highest derivative (determined by the ODE
+        // itself), not an independent state-var IC.  Drop silently to
+        // avoid leaving a stray prime that would corrupt the parser.
         continue;
       }
     }
-
-    // Regular line — substitute any prime references in RHS
-    let processed = line;
-    const eqIdx = processed.indexOf('=');
-    if (eqIdx >= 0) {
-      const lhs = processed.slice(0, eqIdx + 1);
-      let rhs = processed.slice(eqIdx + 1);
-      for (const [y, vars] of Object.entries(intermed)) {
-        rhs = substPrimes(rhs, y, vars);
-      }
-      processed = lhs + rhs;
-    }
-    out.push(processed);
+    // Everything else: substitute primes throughout (LHS and RHS).
+    // After this, the line is either explicit 1st-order, implicit 1st-order,
+    // an algebraic equation, an IC, a span, or a parameter assignment — all
+    // of which parseODESystem handles natively.
+    out.push(substLine(line));
   }
 
   return out;
