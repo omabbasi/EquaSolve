@@ -62,27 +62,29 @@ The application works fully offline once loaded. The same file runs on Windows, 
 ## Quick example
 
 ```
-// Refrigeration cycle COP with R134a
-T_evap = -10 [C]
-T_cond = 40 [C]
-m_dot = 0.05 [kg/s]
+// Refrigeration cycle (vapor-compression) with R-134a
+T_evap = -10 [degC]
+T_cond = 40  [degC]
 
-// State 1: saturated vapor leaving evaporator
-h_1 = h_R134a(T = T_evap, x = 1)
-s_1 = s_R134a(T = T_evap, x = 1)
-P_1 = P_sat_R134a(T = T_evap)
+P_low  = Psat_R134a(T_evap)
+P_high = Psat_R134a(T_cond)
+
+// State 1: saturated vapour leaving evaporator
+h1 = hg_R134a(T_evap)
+s1 = sg_R134a(T_evap)
 
 // State 2: isentropic compression
-P_2 = P_sat_R134a(T = T_cond)
-h_2 = h_R134a(P = P_2, s = s_1)
+h2 = h_Ps_R134a(P_high, s1)
+T2 = T_Ph_R134a(P_high, h2)
 
 // State 3: saturated liquid leaving condenser
-h_3 = h_R134a(T = T_cond, x = 0)
+h3 = hf_R134a(T_cond)
+
+// State 4: isenthalpic throttle
+h4 = h3
 
 // Performance
-Q_dot_evap = m_dot * (h_1 - h_3)
-W_dot_comp = m_dot * (h_2 - h_1)
-COP = Q_dot_evap / W_dot_comp
+COP = (h1 - h4) / (h2 - h1)
 ```
 
 Paste into the Equations tab and press **Solve**. Results are supported with full unit and can be exported as a multi-sheet report.
