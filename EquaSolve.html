@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.35</title>
+<title>EquaSolve V1.3.39</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -17,7 +17,7 @@
 .theme-btn:hover{color:var(--hi);border-color:var(--accent)}
 html,body{height:100%;font-family:'DM Mono','Fira Code','Courier New',monospace;background:var(--bg);color:var(--text);font-size:13px;font-weight:400;}
 .light body,.light html,.light{font-weight:500;}
-.light textarea.eq-ta{font-weight:500;}
+.light textarea.eq-ta,.light .eq-highlight{font-weight:500;}
 .light .tab,.light .syn-lbl,.light .s-lbl,.light .var-unit,.light .tf-fn,.light .unit-label{font-weight:600;}
 body{display:flex;flex-direction:column;min-height:100dvh;overflow:hidden}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;position:relative;z-index:600}
@@ -125,6 +125,7 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
 .p-lbl{font-size:9px;color:var(--mute);letter-spacing:.1em;text-transform:uppercase}.p-lbl .hint{color:var(--green);margin-left:8px}
 .ed-wrap{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border2);transition:border-color .2s;flex-shrink:0}.ed-wrap:focus-within{border-color:var(--accent)}
 .eq-highlight{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;padding:12px 12px 12px 44px;font-size:13px;line-height:22px;font-family:inherit;white-space:pre;pointer-events:none;color:transparent;overflow:hidden;box-sizing:border-box;border:none;background:transparent;z-index:2;}
+.eq-highlight-inner{display:inline-block;min-width:100%;vertical-align:top;}
 .hl-comment{color:#6e7681;background:transparent;}
 .hl-error-line{background:rgba(248,81,73,.15);border-radius:2px;display:block;white-space:pre;}
 .hl-err-tok{background:rgba(248,81,73,.45);border-radius:2px;outline:1px solid rgba(248,81,73,.8);color:transparent;}
@@ -134,7 +135,7 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
 textarea.eq-ta{color:var(--hi) !important;position:relative;z-index:1;}
 .line-nums{position:absolute;left:0;top:0;width:34px;background:var(--surface);border-right:1px solid var(--border);padding:12px 0;pointer-events:none;z-index:3}
 .ln{height:22px;line-height:22px;font-size:11px;color:var(--mute);text-align:center}
-textarea.eq-ta{width:100%;min-height:170px;background:var(--bg);border:none;color:var(--hi);font-size:13px;line-height:22px;padding:12px 12px 12px 44px;resize:none;outline:none;font-family:inherit;display:block;flex-shrink:0;overflow-x:hidden;overflow-y:hidden;}
+textarea.eq-ta{width:100%;min-height:170px;background:var(--bg);border:none;color:var(--hi);font-size:13px;line-height:22px;padding:12px 12px 12px 44px;resize:none;outline:none;font-family:inherit;display:block;flex-shrink:0;overflow-x:auto;overflow-y:hidden;white-space:pre;word-wrap:normal;overflow-wrap:normal;}
 textarea.eq-ta::placeholder{color:var(--mute)}
 /* Type detection badge */
 .type-badge{font-size:10px;padding:3px 9px;border-radius:4px;font-weight:700;letter-spacing:.04em;flex-shrink:0;transition:all .2s;}
@@ -626,7 +627,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.35</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.39</div>
       </div>
     </div>
 
@@ -706,7 +707,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.35</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.39</span></div>
       
     </div>
   </div>
@@ -875,7 +876,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.35</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.39</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -894,7 +895,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     <div class="ed-wrap">
       <div class="line-nums" id="lnums"><div class="ln">1</div></div>
       <div class="eq-highlight" id="eq-highlight" aria-hidden="true"></div>
-      <textarea class="eq-ta" id="eq-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+      <textarea class="eq-ta" id="eq-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off"
         placeholder="// Algebraic, ODE, or mixed DAE — type is auto-detected&#10;x^2 + y^2 = 25&#10;x + y = 7"></textarea>
     </div>
     <!-- Validation status bar — only shown for algebraic systems -->
@@ -4269,6 +4270,58 @@ function _inferMissingVarDims(equationLines) {
     return false;
   }
 
+  // V1.3.39: structural power of variable v in a monomial AST node.
+  // Returns 0 if v doesn't appear, 1 for linear (e.g. v, v/x, 2*v), n>1 for v^n
+  // (e.g. v^2 → 2, v*v → 2, v^2/x → 2), negative for 1/v^n, null if structure
+  // can't be reduced to v^n form (additive structure with v, non-integer exponent,
+  // v inside a function call).
+  // Used to correctly infer dim(v) when v appears under a power in an equation:
+  //    e.g. cp*T = V^2/(2*1000) → V's dim must be sqrt(refDim/2)
+  // The dim-balance formula generalises from vDim = refDim - partialDim (linear)
+  // to: vDim = (refDim - partialDim) / vPow.
+  function vPowerInNode(node, v) {
+    if (!node) return 0;
+    if (node.t === 'V') return node.n === v ? 1 : 0;
+    if (node.t === 'N') return 0;
+    if (node.t === 'U') return vPowerInNode(node.R, v);
+    if (node.t === 'F') {
+      // v appearing inside a function call (e.g. exp(v), sqrt(v)) — can't simplify
+      if (node.args && node.args.some(a => vAppearsIn(a, v))) return null;
+      return 0;
+    }
+    if (node.t === 'B') {
+      if (node.op === '+' || node.op === '-') {
+        // Additive structure with v present: not a monomial in v, can't simplify.
+        // E.g. (v + a)^2 expands to v² + 2va + a² which has mixed powers.
+        if (vAppearsIn(node, v)) return null;
+        return 0;
+      }
+      if (node.op === '*') {
+        const lp = vPowerInNode(node.L, v);
+        const rp = vPowerInNode(node.R, v);
+        if (lp === null || rp === null) return null;
+        return lp + rp;
+      }
+      if (node.op === '/') {
+        const lp = vPowerInNode(node.L, v);
+        const rp = vPowerInNode(node.R, v);
+        if (lp === null || rp === null) return null;
+        return lp - rp;
+      }
+      if (node.op === '^') {
+        const lp = vPowerInNode(node.L, v);
+        if (lp === null) return null;
+        if (lp === 0) return 0;  // exponent doesn't matter if base has no v
+        // L contains v: R must be a numeric integer for dim balance to remain linear
+        let rval = null;
+        try { rval = evalDimNode(node.R).val; } catch(e) {}
+        if (!Number.isFinite(rval) || !Number.isInteger(rval)) return null;
+        return lp * rval;
+      }
+    }
+    return null;
+  }
+
   for (let pass = 0; pass < 8; pass++) {
     let added = 0;
     for (const rawLine of equationLines) {
@@ -4337,20 +4390,44 @@ function _inferMissingVarDims(equationLines) {
         const effectiveRefDim = refDim ?? (hasKnownTerms ? [0,0,0,0,0,0,0] : null);
 
         if (vTerms.length === 1 && effectiveRefDim) {
-          // Single v-term: vDim = effectiveRefDim − partialDim(vTerm with v=zero)
+          // V1.3.39: power-aware inference.
+          // termDim = vDim * vPow + partialDim ⇒  vDim = (refDim − partialDim) / vPow
+          //   where partialDim = evalDimNode(vTerm) with v treated as zero-dim
+          //         vPow       = structural power of v in this term
+          // For vPow=1 this reduces to the classic vDim = refDim − partialDim.
+          // For vPow=2 (e.g. V6^2 in cp*T = V6^2/(2*1000)) we correctly recover
+          // dim(V6) = m/s from dim(V6^2) = kJ/kg by dividing the dim vector by 2.
           const partialDim = evalDimNode(vTerms[0].node).dim;
-          vDim = dimSub(effectiveRefDim, partialDim);
+          const vPow = vPowerInNode(vTerms[0].node, v);
+          if (vPow === 1) {
+            vDim = dimSub(effectiveRefDim, partialDim);
+          } else if (vPow !== null && vPow !== 0) {
+            const diff = dimSub(effectiveRefDim, partialDim);
+            // Each dim component must be cleanly divisible by vPow, else equation
+            // would imply a non-integer dim — treat as inconsistent and skip.
+            if (diff.every(d => d % vPow === 0)) {
+              vDim = diff.map(d => d / vPow);
+            }
+          }
+          // vPow null (e.g. v inside exp(), or v + const)^n) → skip, no inference
         } else if (vTerms.length === 1 && !effectiveRefDim && knownTerms.length === 0) {
           // expr = 0 form with only a v-term (e.g. "Sgen = 0"): can't infer
           // refDim. Leave undefined.
         } else if (vTerms.length > 1 && effectiveRefDim) {
-          // Multiple v-terms, all must share same partialDim shift. Try:
-          //   each vTerm's partialDim must equal effectiveRefDim when v has the right dim.
-          // Harder general case — attempt if all partialDims match AND v appears
-          // in the same multiplicative position in each term.
+          // Multiple v-terms — require all to share the same (partialDim, vPow)
+          // so the equation reduces to:  (Σ signs) * v^vPow * unitCoeff + knowns = refDim
           const partialDims = vTerms.map(t => evalDimNode(t.node).dim);
-          const allMatch = partialDims.every(d => d.every((x,i) => x === partialDims[0][i]));
-          if (allMatch) vDim = dimSub(effectiveRefDim, partialDims[0]);
+          const vPows = vTerms.map(t => vPowerInNode(t.node, v));
+          const allMatchDim = partialDims.every(d => d.every((x,i) => x === partialDims[0][i]));
+          const allMatchPow = vPows.every(p => p === vPows[0]);
+          if (allMatchDim && allMatchPow && vPows[0] !== null && vPows[0] !== 0) {
+            const diff = dimSub(effectiveRefDim, partialDims[0]);
+            if (vPows[0] === 1) {
+              vDim = diff;
+            } else if (diff.every(d => d % vPows[0] === 0)) {
+              vDim = diff.map(d => d / vPows[0]);
+            }
+          }
         }
         // If effectiveRefDim is null (no known terms at all), v is uninferable — no dim.
       } catch(e) {}
@@ -6267,6 +6344,32 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           // Re-run propagation — polluted vars get re-evaluated with the full cache
           buildVarDimCache(rhsMap, null, false);
         } catch(e) {}
+        // Step 6 (V1.3.39): equation-balance entries inferred in Step 4 may also
+        // be stale because they were computed before Step 5 fixed RHS-derived
+        // pollutions. Purge vars NOT in rhsMap and NOT bracket-seeded
+        // (i.e. those that could only have come from _inferMissingVarDims),
+        // then re-run _inferMissingVarDims with the now-correct cache.
+        // Example bug fixed: T3 in turbojet `T3/T2 = (P3/P2)^n_exp` getting
+        // garbage dim because P3 was wrongly cached as dimensionless when
+        // its equation `P3=r_p*P2` ran before P2 was resolved.
+        try {
+          const _bracketVars2 = new Set();
+          _origTxt.split('\n').forEach(line => {
+            const clean = line.replace(/\/\/.*$/, '').trim();
+            const eqIdx = clean.indexOf('=');
+            if (eqIdx < 0) return;
+            const lhs = clean.slice(0, eqIdx).trim();
+            if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+            if (/\[[^\]:]+\]\s*$/.test(clean)) _bracketVars2.add(lhs);
+          });
+          for (const v of Object.keys(_varDimCache)) {
+            if (_bracketVars2.has(v)) continue;          // bracket seed — ground truth
+            if (v in rhsMap) continue;                   // RHS-derived — already fixed by Step 7
+            delete _varDimCache[v];                       // equation-balance-inferred — purge
+          }
+          const _eqLines2 = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
+          _inferMissingVarDims(_eqLines2);
+        } catch(e) {}
 
         const _t0 = performance.now();
         const r=solveSystem(txt,guessOverrides,fixedScope);
@@ -7835,7 +7938,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       return '<div>' + (processedLine || '&#8203;') + '</div>';
     }).join('');
 
-    $hl.innerHTML = highlighted;
+    $hl.innerHTML = '<div class="eq-highlight-inner">' + highlighted + '</div>';
 
     // Sync scroll position with textarea
     $hl.scrollTop = $in.scrollTop;
