@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.40</title>
+<title>EquaSolve V1.3.41</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -627,7 +627,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.40</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.41</div>
       </div>
     </div>
 
@@ -707,7 +707,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.40</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.41</span></div>
       
     </div>
   </div>
@@ -876,7 +876,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.40</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.41</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4270,7 +4270,7 @@ function _inferMissingVarDims(equationLines) {
     return false;
   }
 
-  // V1.3.40: structural power of variable v in a monomial AST node.
+  // V1.3.41: structural power of variable v in a monomial AST node.
   // Returns 0 if v doesn't appear, 1 for linear (e.g. v, v/x, 2*v), n>1 for v^n
   // (e.g. v^2 → 2, v*v → 2, v^2/x → 2), negative for 1/v^n, null if structure
   // can't be reduced to v^n form (additive structure with v, non-integer exponent,
@@ -4390,7 +4390,7 @@ function _inferMissingVarDims(equationLines) {
         const effectiveRefDim = refDim ?? (hasKnownTerms ? [0,0,0,0,0,0,0] : null);
 
         if (vTerms.length === 1 && effectiveRefDim) {
-          // V1.3.40: power-aware inference.
+          // V1.3.41: power-aware inference.
           // termDim = vDim * vPow + partialDim ⇒  vDim = (refDim − partialDim) / vPow
           //   where partialDim = evalDimNode(vTerm) with v treated as zero-dim
           //         vPow       = structural power of v in this term
@@ -5095,30 +5095,75 @@ function preprocessBrackets(txt) {
 function _isUnitNodeSimple(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNodeSimple(nd.R);if(nd.t==='B')return _isUnitNodeSimple(nd.L)&&_isUnitNodeSimple(nd.R);return false;}
 function _evalUnitSISimple(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return -_evalUnitSISimple(nd.R);if(nd.t==='B'){const l=_evalUnitSISimple(nd.L),r=_evalUnitSISimple(nd.R);if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;return Math.pow(l,r);}return 1;}
 
-function solveSystem(raw,userGuesses,fixedScope={}){
-  raw = preprocessBrackets(raw); // convert [unit] brackets to display-unit values
-  const allLines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
-  if(!allLines.length)throw new Error('No equations found.');
-
-  // ── User-defined functions: detect  name(a, b, …) = expr  ──────────
-  const userFunDefs = {};   // name → {params:[], bodyExpr:string}
-  const equationLines = []; // lines that are actual equations (not func defs)
-  const funcDefPat = /^([a-zA-Z_]\w*)\s*\(([^)]+)\)\s*=\s*(.+)$/;
-  for (const line of allLines) {
-    const m = line.match(funcDefPat);
-    if (m) {
-      const [, fname, argsStr, body] = m;
-      const params = argsStr.split(',').map(s=>s.trim()).filter(Boolean);
-      // Only treat as a function def if params are all simple identifiers
-      if (params.every(p=>/^[a-zA-Z_]\w*$/.test(p))) {
-        userFunDefs[fname] = {params, body};
-        continue;
-      }
-    }
-    equationLines.push(line);
+// V1.3.41: solveSystem prep cache. Optimizers (and inner Pareto/multi-fluid
+// sweeps) call solveSystem thousands of times with the SAME equation text and
+// only varying `fixedScope`. The parse-and-analyse work (preprocessBrackets,
+// line cleanup, parsing each line's LHS/RHS into AST, building allVars and
+// _sysLhsNames) is pure of fixedScope/userGuesses and identical across calls.
+// We memoise it keyed on the input text. The cached AST is safe across fluid
+// switches because evalNode looks up function names dynamically from FUNS.
+// Bounded LRU; eviction is FIFO. T0/P0 prescan and userFunDefs registration
+// have side effects and are NOT cached — they run on every call.
+const _solvePrepCache = new Map();
+const _SOLVE_PREP_CACHE_MAX = 8;
+function _solvePrepCacheGet(key) {
+  const v = _solvePrepCache.get(key);
+  if (v) { _solvePrepCache.delete(key); _solvePrepCache.set(key, v); } // mark MRU
+  return v;
+}
+function _solvePrepCacheSet(key, val) {
+  _solvePrepCache.set(key, val);
+  if (_solvePrepCache.size > _SOLVE_PREP_CACHE_MAX) {
+    const oldest = _solvePrepCache.keys().next().value;
+    _solvePrepCache.delete(oldest);
   }
-  // Register user-defined functions into FUNS so they're callable
-  const _userFunNames = Object.keys(userFunDefs);
+}
+
+function solveSystem(raw,userGuesses,fixedScope={}){
+  // V1.3.41: cache prep work (parse + AST + var-set analysis) keyed on input.
+  // The bracket-preprocessed text, line cleanup, parsed AST pairs, allVars, and
+  // _sysLhsNames are pure of (userGuesses, fixedScope) so identical inputs
+  // reuse the cached result. Massive win for optimizer / pareto inner loops.
+  const _rawCacheKey = raw;
+  let _prep = _solvePrepCacheGet(_rawCacheKey);
+  let processedLines, pairs, allVars, _sysLhsNames, _userFunNames, userFunDefs;
+
+  if (_prep) {
+    // Cache hit — reuse prep work. Side effects (userFunDefs registration,
+    // T0/P0 prescan, raw split for error attribution) still run below.
+    raw = _prep.processedRaw;
+    processedLines = _prep.processedLines;
+    pairs = _prep.pairs;
+    allVars = _prep.allVars;
+    _sysLhsNames = _prep.sysLhsNames;
+    _userFunNames = _prep.userFunNames;
+    userFunDefs = _prep.userFunDefs;
+  } else {
+    raw = preprocessBrackets(raw); // convert [unit] brackets to display-unit values
+    const allLines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+    if(!allLines.length)throw new Error('No equations found.');
+
+    // ── User-defined functions: detect  name(a, b, …) = expr  ──────────
+    userFunDefs = {};   // name → {params:[], bodyExpr:string}
+    const equationLines = []; // lines that are actual equations (not func defs)
+    const funcDefPat = /^([a-zA-Z_]\w*)\s*\(([^)]+)\)\s*=\s*(.+)$/;
+    for (const line of allLines) {
+      const m = line.match(funcDefPat);
+      if (m) {
+        const [, fname, argsStr, body] = m;
+        const params = argsStr.split(',').map(s=>s.trim()).filter(Boolean);
+        if (params.every(p=>/^[a-zA-Z_]\w*$/.test(p))) {
+          userFunDefs[fname] = {params, body};
+          continue;
+        }
+      }
+      equationLines.push(line);
+    }
+    _userFunNames = Object.keys(userFunDefs);
+    processedLines = equationLines;
+  }
+
+  // Register user-defined functions into FUNS so they're callable (side effect — always runs)
   for (const [fname, {params, body}] of Object.entries(userFunDefs)) {
     const bodyAST = parse(body);
     FUNS[fname] = (...args) => {
@@ -5129,7 +5174,7 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     KNOWN.add(fname);
   }
 
-  const lines = equationLines;
+  const lines = processedLines;
   if (fixedScope && fixedScope.T0 !== undefined) _exergyDeadState.T0 = fixedScope.T0;
   if (fixedScope && fixedScope.P0 !== undefined) _exergyDeadState.P0 = fixedScope.P0;
   // Pre-scan for T0 and P0 — supports plain numbers AND inline unit expressions
@@ -5170,29 +5215,41 @@ function solveSystem(raw,userGuesses,fixedScope={}){
   // ── V1.3: bare-unit expression preprocessor REMOVED ──────────────────
   // The old  "A = 3 W * 3 s"  syntax (identifiers as unit tokens) has been
   // removed. Use  "A = 3*3 [W*s]"  or  "A = 9 [J]"  with [unit] brackets.
-  const processedLines = lines;
   if(!processedLines.length && _userFunNames.length) {
     return {scope:{}, allVars:[], seqCount:0, nrIter:0, nrRes:0, userFunNames:_userFunNames};
   }
   if(!processedLines.length) throw new Error('No equations found.');
 
-  const pairs=processedLines.map((line,lineIdx)=>{
-  const idx=line.indexOf('=');
-  if(idx<0)throw new Error('Missing "=" in: '+line);
-  try {
-    const la=parse(line.slice(0,idx).trim());
-    const ra=parse(line.slice(idx+1).trim());
-    return{la,ra,line};
-  } catch(pe) {
-    const rawLines = raw.split('\n');
-    const origIdx = rawLines.findIndex(l => l.replace(/\/\/.*/,'').trim() === line.trim());
-    const lineNum = origIdx >= 0 ? origIdx + 1 : lineIdx + 1;
-    throw new Error('Line ' + lineNum + ': ' + pe.message + '|LINE|' + line.trim());
+  if (!_prep) {
+    // Build pairs from scratch
+    pairs=processedLines.map((line,lineIdx)=>{
+    const idx=line.indexOf('=');
+    if(idx<0)throw new Error('Missing "=" in: '+line);
+    try {
+      const la=parse(line.slice(0,idx).trim());
+      const ra=parse(line.slice(idx+1).trim());
+      return{la,ra,line};
+    } catch(pe) {
+      const rawLines = raw.split('\n');
+      const origIdx = rawLines.findIndex(l => l.replace(/\/\/.*/,'').trim() === line.trim());
+      const lineNum = origIdx >= 0 ? origIdx + 1 : lineIdx + 1;
+      throw new Error('Line ' + lineNum + ': ' + pe.message + '|LINE|' + line.trim());
+    }
+  });const allVarSet=new Set();
+    // Pre-scan LHS names so user-assigned variables beat built-in function names (e.g. s_air, h_co2)
+    _sysLhsNames=new Set(pairs.map(p=>{const idx=p.line.indexOf('=');if(idx<0)return null;const lhs=p.line.slice(0,idx).trim();return /^[a-zA-Z_]\w*$/.test(lhs)?lhs:null;}).filter(Boolean));
+    pairs.forEach(({la,ra})=>{collectVars(la,allVarSet,_sysLhsNames);collectVars(ra,allVarSet,_sysLhsNames);});
+    allVars=Array.from(allVarSet);
+    if(!allVars.length)throw new Error('No variables found.');
+    // Save into cache (after we've confirmed it doesn't throw)
+    _solvePrepCacheSet(_rawCacheKey, {
+      processedRaw: raw, processedLines, pairs, allVars,
+      sysLhsNames: _sysLhsNames, userFunNames: _userFunNames, userFunDefs
+    });
+  } else {
+    if(!allVars.length)throw new Error('No variables found.');
   }
-});const allVarSet=new Set();
-// Pre-scan LHS names so user-assigned variables beat built-in function names (e.g. s_air, h_co2)
-const _sysLhsNames=new Set(pairs.map(p=>{const idx=p.line.indexOf('=');if(idx<0)return null;const lhs=p.line.slice(0,idx).trim();return /^[a-zA-Z_]\w*$/.test(lhs)?lhs:null;}).filter(Boolean));
-pairs.forEach(({la,ra})=>{collectVars(la,allVarSet,_sysLhsNames);collectVars(ra,allVarSet,_sysLhsNames);});const allVars=Array.from(allVarSet);if(!allVars.length)throw new Error('No variables found.');const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;
+  const fixedKeys=Object.keys(fixedScope||{}).filter(k=>isFinite(fixedScope[k]));const fixedSet=new Set(fixedKeys);const solveVars=allVars.filter(v=>!fixedSet.has(v));if(solveVars.length!==pairs.length)throw new Error((solveVars.length>pairs.length?'Under':'Over')+'-determined: '+solveVars.length+' vars, '+pairs.length+' eqs.');const scope={...(fixedScope||{})};const solved=new Set(fixedKeys);const unsolved=new Set(pairs.map((_,i)=>i));let seqCount=0,progress=true;
 // Track the last meaningful (non-numerical) error for error attribution
 let _lastPropErr=null, _lastPropLine='';
 while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...unsolved]){const{la,ra,line:eLine}=pairs[ei];const unk=[...new Set([...countUnknowns(la,solved,_sysLhsNames),...countUnknowns(ra,solved,_sysLhsNames)])];if(unk.length===0){unsolved.delete(ei);progress=true;continue;}if(unk.length===1){const vname=unk[0];let val=null;try{val=tryExplicit(la,ra,vname,scope);}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum|exf requires/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}val=null;}if(val===null){const starts=[...((userGuesses&&userGuesses[vname]!==undefined)?[userGuesses[vname]]:[]),1,300,2500,0.1,-1,10,500,0.01,...Array.from({length:6},()=>(M.random()-0.2)*500+1)];let found=false;for(const x0 of starts){try{val=solve1D(la,ra,vname,scope,x0);found=true;break;}catch(e){if(/out of range|domain|inversion failed|cannot compute|above the critical|below the minimum/i.test(e.message)){_lastPropErr=e;_lastPropLine=eLine;}}}if(!found)continue;}scope[vname]=val;solved.add(vname);unsolved.delete(ei);seqCount++;progress=true;}}}let nrIter=0,nrRes=0,nrCondNum=Infinity,nrVarNames=[],nrLoose=false;if(unsolved.size>0){const remEqs=[...unsolved].map(i=>pairs[i]);const remVarSet=new Set();remEqs.forEach(({la,ra})=>{countUnknowns(la,solved,_sysLhsNames).forEach(v=>remVarSet.add(v));countUnknowns(ra,solved,_sysLhsNames).forEach(v=>remVarSet.add(v));});const remVars=Array.from(remVarSet).sort();const residuals=remEqs.map(({la,ra})=>sc=>{const fc={...scope,...sc};return evalNode(la,fc)-evalNode(ra,fc);});const guessStart=remVars.map(v=>(userGuesses&&userGuesses[v]!==undefined)?userGuesses[v]:1);const seeds=[guessStart,remVars.map(()=>1),remVars.map(()=>300),remVars.map(()=>0.1),remVars.map(()=>500),...Array.from({length:Math.max(0,(SOLVER_CFG&&SOLVER_CFG.nrStarts)||14)},()=>remVars.map(()=>(M.random()-0.2)*500+1))];let lastErr,nr=null;for(const s of seeds){try{nr=newtonND(residuals,remVars,s);break;}catch(e){lastErr=e;}}if(!nr){
@@ -5515,12 +5572,51 @@ function updateUnitSummary(){document.getElementById('unit-summary-grid').innerH
 //  GUESSES UI
 // ═══════════════════════════════════════════════════════════════════
 let guessOverrides={},lastKnownVars=[];
-function refreshGuessTable(){const raw=document.getElementById('eq-input').value.trim();if(!raw){document.getElementById('guess-tbody').innerHTML='<tr><td colspan="3" class="ig-empty">No equations.</td></tr>';return;}try{const lines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(l=>l&&!l.includes("'")); // skip ODE prime lines
-const pairs=lines.map(line=>{const idx=line.indexOf('=');if(idx<0)throw new Error();return{la:parse(line.slice(0,idx).trim()),ra:parse(line.slice(idx+1).trim())};});const vs=new Set();pairs.forEach(({la,ra})=>{collectVars(la,vs);collectVars(ra,vs);});lastKnownVars=Array.from(vs).sort();renderGuessTable();updateGuessBadge();}catch(e){document.getElementById('guess-tbody').innerHTML='<tr><td colspan="3" class="ig-empty">Parse error: '+e.message+'</td></tr>';}}
+function refreshGuessTable(){const raw=document.getElementById('eq-input').value.trim();if(!raw){document.getElementById('guess-tbody').innerHTML='<tr><td colspan="3" class="ig-empty">No equations.</td></tr>';return;}
+  // V1.3.41: skip directive / declaration lines that aren't pure equations
+  // (optimizer, sweep, sens, unc, fit, fluid choice) instead of throwing
+  // "Parse error" and showing nothing — the table is still useful for the
+  // remaining equation lines.
+  const _isNotEquation = l =>
+    !l ||
+    l.includes("'") ||                                  // ODE prime
+    /^(minimize|maximize|sens|unc|fit|guess)\b/i.test(l) ||
+    /^fluid\s*=\s*choice\s*\(/i.test(l) ||
+    /(>=|<=|=>|=<|<|>)/.test(l.split('=')[0]||'') ||     // inequality constraint LHS
+    /^[^=]+(>=|<=|<|>)/.test(l) ||                       // inequality constraint (no = before op)
+    /^\s*[a-zA-Z_]\w*\s*=\s*free\s*[\(\[]/.test(l) ||    // = free(...) or = free
+    /^\s*[a-zA-Z_]\w*\s*=\s*\[[^\]]*:[^\]]*\]/.test(l);   // = [a:b] sweep / bound range
+  try{
+    const lines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').trim()).filter(l => l && !_isNotEquation(l));
+    const vs=new Set();
+    for (const line of lines) {
+      const idx=line.indexOf('=');
+      if (idx < 0) continue;
+      try {
+        const la=parse(line.slice(0,idx).trim());
+        const ra=parse(line.slice(idx+1).trim());
+        collectVars(la, vs);
+        collectVars(ra, vs);
+      } catch(pe) { /* skip lines that fail to parse — don't abort the whole refresh */ }
+    }
+    lastKnownVars=Array.from(vs).sort();
+    renderGuessTable();
+    updateGuessBadge();
+  }catch(e){document.getElementById('guess-tbody').innerHTML='<tr><td colspan="3" class="ig-empty">Parse error: '+e.message+'</td></tr>';}
+}
 function renderGuessTable(){const tbody=document.getElementById('guess-tbody');if(!lastKnownVars.length){tbody.innerHTML='<tr><td colspan="3" class="ig-empty">No variables.</td></tr>';return;}tbody.innerHTML=lastKnownVars.map(v=>{const ov=guessOverrides[v],isSet=ov!==undefined&&ov!=='';return`<tr data-varname="${v}"><td><span class="ig-var-name">${v}</span></td><td><input class="ig-input${isSet?' overridden':''}" type="number" step="any" placeholder="auto" value="${isSet?ov:''}"></td><td><span class="ig-status${isSet?' set':''}">${isSet?'▶ override':'auto'}</span></td></tr>`;}).join('');}
 function setGuess(vname,input){const val=input.value.trim();if(val===''||isNaN(parseFloat(val))){delete guessOverrides[vname];input.classList.remove('overridden');}else{guessOverrides[vname]=parseFloat(val);input.classList.add('overridden');}const row=input.closest('tr'),sc=row.querySelector('.ig-status');if(sc){sc.textContent=guessOverrides[vname]!==undefined?'▶ override':'auto';sc.className='ig-status'+(guessOverrides[vname]!==undefined?' set':'');}updateGuessBadge();}
 function clearAllGuesses(){guessOverrides={};renderGuessTable();updateGuessBadge();}
-function updateGuessBadge(){const n=Object.keys(guessOverrides).length;const b=document.getElementById('guess-badge');b.textContent=n||'0';b.style.background=n>0?'rgba(240,136,62,.2)':'';b.style.color=n>0?'var(--accent)':'';}
+function updateGuessBadge(){
+  // V1.3.41: count only overrides whose variable is currently in the equation set,
+  // not stale overrides left over from previous edits.
+  const _knownSet = new Set(lastKnownVars);
+  const n = Object.keys(guessOverrides).filter(k => _knownSet.size === 0 || _knownSet.has(k)).length;
+  const b = document.getElementById('guess-badge');
+  b.textContent = n || '0';
+  b.style.background = n > 0 ? 'rgba(240,136,62,.2)' : '';
+  b.style.color = n > 0 ? 'var(--accent)' : '';
+}
 
 // ── Plot line colors (must be before main IIFE) ──
 const LINE_COLORS = ['#5b9bd4','#f4a261','#57b994','#e76f51','#a8dadc','#e9c46a','#c77dff','#ff6b9d','#06d6a0'];
@@ -6344,7 +6440,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           // Re-run propagation — polluted vars get re-evaluated with the full cache
           buildVarDimCache(rhsMap, null, false);
         } catch(e) {}
-        // Step 6 (V1.3.40): equation-balance entries inferred in Step 4 may also
+        // Step 6 (V1.3.41): equation-balance entries inferred in Step 4 may also
         // be stale because they were computed before Step 5 fixed RHS-derived
         // pollutions. Purge vars NOT in rhsMap and NOT bracket-seeded
         // (i.e. those that could only have come from _inferMissingVarDims),
@@ -7883,7 +7979,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     sliderState={}; sliderDefs=[]; pendingParamSelection=null;
     renderSliderZone([]);
     _lastSolveText = null;
-    // V1.3.40: drop fit-plot redraw hook — its canvas is about to disappear
+    // V1.3.41: drop fit-plot redraw hook — its canvas is about to disappear
     window._drawFitPlot = null;
     if (typeof hideDiagPanel === 'function') hideDiagPanel();
   }
@@ -9973,7 +10069,7 @@ function initPlotColorSwatches() {
     if (window._getOdeResult?.()) refreshODEPlot();
     refreshDiagram();
     window._drawSweepPlot?.();
-    // V1.3.40: redraw regression fit plot and 3D surface plot to pick up new theme colors
+    // V1.3.41: redraw regression fit plot and 3D surface plot to pick up new theme colors
     if (typeof window._drawFitPlot === 'function') {
       const ok = window._drawFitPlot();
       if (ok === false) window._drawFitPlot = null;  // canvas gone, drop the ref
@@ -11461,6 +11557,22 @@ function _runOptimizerSync(txt, direction) {
 
   const PENALTY = parseFloat(document.getElementById('opt-penalty')?.value) || 1e6;
 
+  // V1.3.41: pre-parse constants used inside the NM hot loop. Without this
+  // we re-parse objExpr and every constraint's LHS/RHS on every objective(x)
+  // call — 3+ parse() calls × thousands of NM iterations × N fluids.
+  // Each parse() is tokenize + recursive-descent; cumulatively significant.
+  const _objAst = parse(objExpr);
+  const _eqConAsts  = eqConstraints.map(c => {
+    try { return {lhsAst: parse(c.lhs), rhsAst: parse(c.rhs)}; }
+    catch(_) { return null; }
+  });
+  const _ineqConAsts = ineqConstraints.map(c => {
+    try { return {op: c.op, lhsAst: parse(c.lhs), rhsAst: parse(c.rhs)}; }
+    catch(_) { return null; }
+  });
+  const _eqTxt = eqLines.join('\n');
+  const _eqTxtNonempty = _eqTxt.trim().length > 0;
+
   function objective(x) {
     const fixedScope = {};
     freeVars.forEach((v, i) => {
@@ -11476,21 +11588,22 @@ function _runOptimizerSync(txt, direction) {
     });
     let scope;
     try {
-      const eqTxt = eqLines.join('\n');
-      scope = eqTxt.trim() ? solveSystem(eqTxt, {}, fixedScope).scope : {...fixedScope};
+      scope = _eqTxtNonempty ? solveSystem(_eqTxt, {}, fixedScope).scope : {...fixedScope};
     } catch(e) { return 1e12 + penalty; }
-    eqConstraints.forEach(c => {
-      try { penalty += PENALTY * Math.pow(evalNode(parse(c.lhs), scope) - evalNode(parse(c.rhs), scope), 2); } catch(e) {}
-    });
-    ineqConstraints.forEach(c => {
+    for (let i = 0; i < _eqConAsts.length; i++) {
+      const c = _eqConAsts[i]; if (!c) continue;
+      try { penalty += PENALTY * Math.pow(evalNode(c.lhsAst, scope) - evalNode(c.rhsAst, scope), 2); } catch(e) {}
+    }
+    for (let i = 0; i < _ineqConAsts.length; i++) {
+      const c = _ineqConAsts[i]; if (!c) continue;
       try {
-        const lv = evalNode(parse(c.lhs), scope), rv = evalNode(parse(c.rhs), scope);
+        const lv = evalNode(c.lhsAst, scope), rv = evalNode(c.rhsAst, scope);
         const viol = (c.op==='>='||c.op==='>') ? Math.max(0, rv-lv) : Math.max(0, lv-rv);
         penalty += PENALTY * viol * viol;
       } catch(e) {}
-    });
+    }
     try {
-      const objVal = evalNode(parse(objExpr), scope);
+      const objVal = evalNode(_objAst, scope);
       return isFinite(objVal) ? direction * objVal + penalty : 1e12 + penalty;
     } catch(e) { return 1e12 + penalty; }
   }
@@ -12575,7 +12688,7 @@ function runRegression(txt) {
       $body.innerHTML = `<div class="var-grid">${paramCards}</div>${extraHtml}${statsHtml}${corrHtml}${plotHtml}${useModelHtml}`;
 
       // ── Draw fit plot ─────────────────────────────────────────────────────
-      // V1.3.40: stash the draw function on window so the theme toggle can
+      // V1.3.41: stash the draw function on window so the theme toggle can
       // re-call it after switching light/dark.
       const drawFitPlot = () => {
         const canvas = document.getElementById(plotId);
@@ -13011,7 +13124,7 @@ function runParetoSweep(txt) {
 
         if (!feasible.length) throw new Error('No feasible solutions found across the constraint range.');
 
-        // V1.3.40: clear any leftover 3D surface state from a prior 2D sweep,
+        // V1.3.41: clear any leftover 3D surface state from a prior 2D sweep,
         // otherwise the wheel handler on #sweep-canvas (wired by render2DPlot)
         // is still live and will redraw the old surface over this Pareto plot.
         if (typeof _surf3d !== 'undefined') _surf3d.xSweep = null;
@@ -13359,7 +13472,7 @@ function render2DPlot(xSweep, ySweep, grid, selVar, rhsMap) {
     canvas.style.cursor = 'grab';
 
     canvas.addEventListener('mousedown', e => {
-      if (!_surf3d.xSweep) return;     // V1.3.40: not currently in surface mode
+      if (!_surf3d.xSweep) return;     // V1.3.41: not currently in surface mode
       _surf3d.dragging = true; _surf3d.lastX = e.clientX; _surf3d.lastY = e.clientY;
       canvas.style.cursor = 'grabbing';
     });
@@ -13375,7 +13488,7 @@ function render2DPlot(xSweep, ySweep, grid, selVar, rhsMap) {
 
     // Mouse wheel zoom
     canvas.addEventListener('wheel', e => {
-      if (!_surf3d.xSweep) return;     // V1.3.40: ignore wheel if no active surface
+      if (!_surf3d.xSweep) return;     // V1.3.41: ignore wheel if no active surface
       e.preventDefault();
       _surf3d.zoom = Math.max(0.3, Math.min(4.0, _surf3d.zoom * (e.deltaY > 0 ? 0.92 : 1.09)));
       _drawSurface3D();
@@ -13398,7 +13511,7 @@ function render2DPlot(xSweep, ySweep, grid, selVar, rhsMap) {
     }, {passive: false});
 
     canvas.addEventListener('touchmove', e => {
-      if (!_surf3d.xSweep) return;     // V1.3.40: ignore touchmove if no active surface
+      if (!_surf3d.xSweep) return;     // V1.3.41: ignore touchmove if no active surface
       if (e.touches.length === 1 && _surf3d.dragging) {
         const dx = e.touches[0].clientX - _surf3d.lastX;
         const dy = e.touches[0].clientY - _surf3d.lastY;
