@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.41</title>
+<title>EquaSolve V1.3.42</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -627,7 +627,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.41</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.42</div>
       </div>
     </div>
 
@@ -707,7 +707,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.41</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.42</span></div>
       
     </div>
   </div>
@@ -876,7 +876,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.41</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.42</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3323,6 +3323,21 @@ const FUNS_base={
 };
 const FUNS={...FUNS_base};
 for(const[alias,key]of Object.entries(FLUID_ALIASES)){const fl=FLUIDS[key];if(!fl)continue;for(const[prefix,fn]of PROP_FUNS)FUNS[prefix+'_'+alias]=(...args)=>fn(fl,...args);}
+// V1.3.42: register h_PT_alias / h_TP_alias aliases for all (P,T)-input properties.
+// PROP_FUNS uses prefix 'h' → FUNS['h_air'], but users write h_PT_air(P,T) per help docs.
+// _PT_ = same (P,T) arg order; _TP_ = reversed (T,P) convenience alias.
+{
+  const _PT_PREFIXES = ['h','s','v','u','cp'];
+  for(const[alias,key]of Object.entries(FLUID_ALIASES)){
+    const fl=FLUIDS[key];if(!fl)continue;
+    for(const[prefix,fn]of PROP_FUNS){
+      if(!_PT_PREFIXES.includes(prefix))continue;
+      FUNS[prefix+'_PT_'+alias]=(...args)=>fn(fl,...args);           // h_PT_air(P,T)
+      FUNS[prefix+'_TP_'+alias]=(T,P,...r)=>fn(fl,P,T,...r);        // h_TP_air(T,P)
+    }
+  }
+  // Water / active-fluid bare _PT and _TP forms are already in FUNS_base (lines ~3067/3115).
+}
 let ACTIVE_FLUID_KEY=null;
 function setActiveFunctions(){
   const src=ACTIVE_FLUID_KEY?FLUIDS[ACTIVE_FLUID_KEY]:null;
@@ -3361,7 +3376,13 @@ function setActiveFunctions(){
       FUNS[prefix]=bound;
       FUNS[prefix+'_f']=bound;
     }
-  }
+    // V1.3.42: also register _PT_f / _TP_f for active fluid
+    const _PT_PREFIXES_f = ['h','s','v','u','cp'];
+    for(const[prefix,fn]of PROP_FUNS){
+      if(!_PT_PREFIXES_f.includes(prefix))continue;
+      FUNS[prefix+'_PT_f']=(...args)=>fn(src,...args);
+      FUNS[prefix+'_TP_f']=(T,P,...r)=>fn(src,P,T,...r);
+    }
 }
 setActiveFunctions();
 // ── Internal unit conversion factors for >> operator and [unit] brackets ──
@@ -4187,11 +4208,16 @@ function _seedBracketDimsFromText(rawTxt) {
     'm/s':[0,1,-1,0,0,0,0], 'km/h':[0,1,-1,0,0,0,0],
     'ft/s':[0,1,-1,0,0,0,0], 'mph':[0,1,-1,0,0,0,0],
     // ── Mass flow rate ────────────────────────────────────────
-    'kg/s':[1,0,-1,0,0,0,0], 'kg/min':[1,0,-1,0,0,0,0],
+    'kg/s':[1,0,-1,0,0,0,0], 'kg/min':[1,0,-1,0,0,0,0], 'kg/min_t':[1,0,-1,0,0,0,0],
     'kg/h':[1,0,-1,0,0,0,0], 'g/s':[1,0,-1,0,0,0,0],
+    'g/min':[1,0,-1,0,0,0,0], 'g/min_t':[1,0,-1,0,0,0,0],
+    'lb/min':[1,0,-1,0,0,0,0], 'lb/min_t':[1,0,-1,0,0,0,0],
     // ── Volume flow rate ──────────────────────────────────────
     'm3/s':[0,3,-1,0,0,0,0], 'L/s':[0,3,-1,0,0,0,0],
     'm3/h':[0,3,-1,0,0,0,0], 'L/min':[0,3,-1,0,0,0,0],
+    // V1.3.42: min_t canonical variants + missing m3/min
+    'm3/min':[0,3,-1,0,0,0,0], 'm3/min_t':[0,3,-1,0,0,0,0],
+    'L/min_t':[0,3,-1,0,0,0,0], 'gal/min':[0,3,-1,0,0,0,0], 'gal/min_t':[0,3,-1,0,0,0,0],
     // ── Specific energy [kJ/kg] ───────────────────────────────
     'kJ/kg':[0,2,-2,0,0,0,0], 'J/kg':[0,2,-2,0,0,0,0],
     'MJ/kg':[0,2,-2,0,0,0,0], 'BTU/lb':[0,2,-2,0,0,0,0],
@@ -4481,7 +4507,12 @@ const _UNIT_SI_FACTORS = {
   'W/(m·K)':1, 'W/m·K':1, 'W/mK':1,
   'kW/(m·K)':1e3,
   // Mass flow (kg/s)
-  'kg/s':1, 'kg/min':1/60, 'kg/h':1/3600, 'g/s':1e-3, 'lb/s':0.453592,
+  'kg/s':1, 'kg/min':1/60, 'kg/min_t':1/60, 'kg/h':1/3600, 'g/s':1e-3, 'lb/s':0.453592,
+  'g/min':1e-3/60, 'g/min_t':1e-3/60, 'lb/min':0.453592/60, 'lb/min_t':0.453592/60,
+  // Volume flow (m3/s) — V1.3.42: add m3/min + min_t canonical variants
+  'm3/s':1, 'm3/min':1/60, 'm3/min_t':1/60, 'm3/h':1/3600,
+  'L/s':1e-3, 'L/min':1e-3/60, 'L/min_t':1e-3/60, 'L/h':1e-3/3600,
+  'gal/min':3.78541e-3/60, 'gal/min_t':3.78541e-3/60,
   // Velocity
   'm/s':1, 'km/h':1/3.6, 'mph':0.44704, 'ft/s':0.3048,
   // Angular
@@ -4582,7 +4613,8 @@ function buildCompoundTable() {
       // ── Velocity [display vel unit] ───────────────────────────────
       'm/s':1/V, 'km/h':(1/3.6)/V, 'm/h':(1/3600)/V, 'ft/s':0.3048/V,
       'ft/h':(0.3048/3600)/V, 'km/s':1000/V, 'mm/s':0.001/V, 'cm/s':0.01/V,
-      'm/min':(1/60)/V, 'km/min':(1000/60)/V, 'ft/min':(0.3048/60)/V,
+      'm/min':(1/60)/V, 'm/min_t':(1/60)/V, 'km/min':(1000/60)/V, 'km/min_t':(1000/60)/V,
+      'ft/min':(0.3048/60)/V, 'ft/min_t':(0.3048/60)/V,
       // ── Acceleration [display len / s²] ──────────────────────────
       'm/s2':1/L, 'ft/s2':0.3048/L, 'cm/s2':0.01/L, 'km/s2':1000/L,
       // ── Dynamic viscosity [Pa·s] — stored in SI Pa·s ─────────────
@@ -4630,10 +4662,17 @@ function buildCompoundTable() {
       'kg/s':1/M, 'kg/min':(1/60)/M, 'kg/h':(1/3600)/M,
       'g/s':1e-3/M, 'lb/s':0.453592/M, 'lb/min':(0.453592/60)/M,
       'tonne/h':(1000/3600)/M,
+      // V1.3.42: min_t canonical variants
+      'kg/min_t':(1/60)/M, 'g/min':(1e-3/60)/M, 'g/min_t':(1e-3/60)/M,
+      'lb/min_t':(0.453592/60)/M,
       // ── Volume flow rate [m³/s] — display vol / s ─────────────────
       'm3/s':1/V3, 'L/s':1e-3/V3, 'L/min':(1e-3/60)/V3,
       'L/h':(1e-3/3600)/V3, 'm3/h':(1/3600)/V3,
       'gal/min':(3.78541e-3/60)/V3,
+      // V1.3.42: _canonUnit maps 'min'→'min_t' inside compound strings, so add both spellings
+      'm3/min':(1/60)/V3, 'm3/min_t':(1/60)/V3,
+      'L/min_t':(1e-3/60)/V3,
+      'gal/min_t':(3.78541e-3/60)/V3,
     };
   }
 function tryCompoundMatch(raw, k, table) {
