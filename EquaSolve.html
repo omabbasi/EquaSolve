@@ -3376,10 +3376,13 @@ function setActiveFunctions(){
       FUNS[prefix]=bound;
       FUNS[prefix+'_f']=bound;
     }
-    // V1.3.42: also register _PT_f / _TP_f for active fluid
+    // V1.3.42: also register _PT_f / _TP_f for active fluid, AND override bare _PT/_TP
+    // so h_PT() respects the active fluid (FUNS_base hardwires h_PT to IF97/water)
     const _PT_PREFIXES_f = ['h','s','v','u','cp'];
     for(const[prefix,fn]of PROP_FUNS){
       if(!_PT_PREFIXES_f.includes(prefix))continue;
+      FUNS[prefix+'_PT']=(...args)=>fn(src,...args);          // bare h_PT → active fluid
+      FUNS[prefix+'_TP']=(T,P,...r)=>fn(src,P,T,...r);       // bare h_TP → active fluid
       FUNS[prefix+'_PT_f']=(...args)=>fn(src,...args);
       FUNS[prefix+'_TP_f']=(T,P,...r)=>fn(src,P,T,...r);
     }
