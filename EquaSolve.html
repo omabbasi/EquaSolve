@@ -4900,7 +4900,7 @@ function _replaceNumericBracketValuesInLine(line){
   const re=/(^|[^A-Za-z0-9_.\]])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\[([^\]]+)\]/g;
   const out=body.replace(re,(m,prefix,num,unitRaw)=>{
     const unit=_canonUnit(unitRaw);
-    if(!_knownBracketUnit(unit)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in: '+line.trim());
+    if(!_knownBracketUnit(unitRaw)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in: '+line.trim());
     const cv=_bracketConvert(parseFloat(num),unit);
     if(cv===null||!isFinite(cv)) throw new Error('Cannot convert unit ['+unitRaw.trim()+'] in: '+line.trim());
     return prefix+cv;
@@ -5081,7 +5081,7 @@ function preprocessBrackets(txt) {
     if (icBm) {
       const [, valExpr, unitStrRaw] = icBm;
       const unitStr = _canonUnit(unitStrRaw);
-      if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw.trim()+'] in: '+line.trim());
+      if (!_knownBracketUnit(unitStrRaw)) throw new Error('Unknown unit ['+unitStrRaw.trim()+'] in: '+line.trim());
       try {
         const ast = parse(valExpr.trim());
         if (_isUnitNodeSimple(ast)) {
@@ -5102,7 +5102,7 @@ function preprocessBrackets(txt) {
     if (!bm) return _replaceNumericBracketValuesInLine(line);
     const valExpr = bm[1].trim(), unitStrRaw = bm[2].trim();
     const unitStr = _canonUnit(unitStrRaw);
-    if (!_knownBracketUnit(unitStr)) throw new Error('Unknown unit ['+unitStrRaw+'] in: '+line.trim());
+    if (!_knownBracketUnit(unitStrRaw)) throw new Error('Unknown unit ['+unitStrRaw+'] in: '+line.trim());
     try {
       const ast = parse(valExpr);
       // Only convert pure numeric/constant expressions
