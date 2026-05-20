@@ -2556,7 +2556,19 @@ function createFluid(data){
   function rawS(T,P,ph){const{Z}=getZ(T,P,ph);return(S_ig(T,P*1e6)+S_dep(Z,T,P))/MW;}
   function rawV(T,P,ph){const{Z}=getZ(T,P,ph);return Z*R_J*T/(P*1e6)/(MW/1000);}
   let h_off=0,s_off=0;
-  if(refT&&refH!==undefined){try{const Ps=Psat(refT);if(!isNaN(Ps)&&Ps>0){h_off=refH-rawH(refT,Ps,'liq');s_off=refS-rawS(refT,Ps,'liq');}}catch(e){}}
+  if(refT&&refH!==undefined){
+    try{
+      const Ps=Psat(refT);
+      if(!isNaN(Ps)&&Ps>0){
+        // Subcritical ref (refrigerants): anchor to saturated liquid
+        h_off=refH-rawH(refT,Ps,'liq'); s_off=refS-rawS(refT,Ps,'liq');
+      } else {
+        // Supercritical ref (air, N₂, O₂ …): Psat undefined — anchor to ideal-gas phase at 0.1 MPa
+        const Pref_MPa=0.1;
+        h_off=refH-rawH(refT,Pref_MPa,'vap'); s_off=refS-rawS(refT,Pref_MPa,'vap');
+      }
+    }catch(e){}
+  }
   function ph_of(T,P){const Ps=Psat(T);return isNaN(Ps)||P>=Ps?'liq':'vap';}
   const h=(P,T)=>rawH(T,P,ph_of(T,P))+h_off;
   const s=(P,T)=>rawS(T,P,ph_of(T,P))+s_off;
@@ -2821,17 +2833,20 @@ const FLUID_DB_RAW={
 
   nitrogen:{name:'Nitrogen',formula:'N₂',category:'gas',catLabel:'Gas',
     MW:28.014,Tc:126.19,Pc:3.3958,omega:0.03700,Tmin:63.15,
-    cp0:[28.98,-1.854,9.765,-4.37],refT:298.15,refH:0,refS:0,
+    cp0:[28.98,-1.854,9.765,-4.37],
+    refT:298.15,refH:309.49,refS:1.9335, // Cengel Table A-18: h=0 at 0 K → h≈309.49, s°≈1.9335 at 298.15 K
     description:'Inert gas, cryogenic cooling'},
 
   oxygen:{name:'Oxygen',formula:'O₂',category:'gas',catLabel:'Gas',
     MW:31.999,Tc:154.60,Pc:5.0430,omega:0.02200,Tmin:54.36,
-    cp0:[31.32,-20.23,57.87,-36.5],refT:298.15,refH:0,refS:0,
+    cp0:[31.32,-20.23,57.87,-36.5],
+    refT:298.15,refH:282.15,refS:1.6988, // Cengel Table A-19: h=0 at 0 K → h≈282.15, s°≈1.6988 at 298.15 K
     description:'Combustion oxidizer'},
 
   air:{name:'Air',formula:'N₂+O₂+Ar',category:'gas',catLabel:'Gas',
     MW:28.966,Tc:132.45,Pc:3.7740,omega:0.03400,Tmin:60.0,
-    cp0:[28.11,1.967,4.802,-1.966],refT:298.15,refH:0,refS:0,
+    cp0:[28.11,1.967,4.802,-1.966],
+    refT:298.15,refH:298.18,refS:1.6956, // Cengel Table A-17: h=0 at 0 K → h≈298.18, s°≈1.6956 at 298.15 K
     description:'Dry air (pseudo-pure)'},
 
   co2:{name:'Carbon Dioxide',formula:'CO₂',category:'gas',catLabel:'Gas',
@@ -2841,7 +2856,8 @@ const FLUID_DB_RAW={
 
   hydrogen:{name:'Hydrogen',formula:'H₂',category:'gas',catLabel:'Gas',
     MW:2.016,Tc:33.19,Pc:1.3130,omega:-0.21600,Tmin:13.95,
-    cp0:[33.07,-11.36,11.43,-2.77],refT:298.15,refH:0,refS:0,
+    cp0:[33.07,-11.36,11.43,-2.77],
+    refT:298.15,refH:4198.18,refS:64.2640, // Cengel Table A-22: h=0 at 0 K → h≈4198 kJ/kg, s°≈64.26 at 298.15 K
     description:'Fuel cells, rocket propellant'},
 
   water:{name:'Water/Steam',formula:'H₂O',category:'iapws',catLabel:'IAPWS',
