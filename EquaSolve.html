@@ -3383,6 +3383,7 @@ function setActiveFunctions(){
       FUNS[prefix+'_PT_f']=(...args)=>fn(src,...args);
       FUNS[prefix+'_TP_f']=(T,P,...r)=>fn(src,P,T,...r);
     }
+  }
 }
 setActiveFunctions();
 // ── Internal unit conversion factors for >> operator and [unit] brackets ──
