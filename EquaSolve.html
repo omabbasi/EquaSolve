@@ -4288,6 +4288,38 @@ function _seedBracketDimsFromText(rawTxt) {
   });
 }
 
+// V1.3.42: dim signature of property-function arguments, derived from the suffix.
+// Maps a single letter (in the _XY_ suffix of property function names) to the
+// expected dim of the corresponding argument. Used by _inferMissingVarDims to
+// infer dims of bare-variable arguments like T2s in h_PT_air(P_H, T2s).
+const _PROP_ARG_DIM = {
+  'p': [1,-1,-2,0,0,0,0],   // pressure (Pa)
+  't': [0,0,0,0,1,0,0],     // temperature (K)
+  'h': [0,2,-2,0,0,0,0],    // specific enthalpy (J/kg)
+  's': [0,2,-2,0,-1,0,0],   // specific entropy (J/(kg·K))
+  'v': [-1,3,0,0,0,0,0],    // specific volume (m³/kg)
+  'u': [0,2,-2,0,0,0,0],    // specific internal energy (J/kg)
+  'x': [0,0,0,0,0,0,0],     // quality (dimensionless)
+};
+// Returns array of [dim] for each positional argument of a known property fn,
+// or null if function name doesn't encode arg signature.
+//   e.g. 'h_PT_air'    → [P_dim, T_dim]
+//        's_TP_R134a'  → [T_dim, P_dim]
+//        'T_Ph_water'  → [P_dim, h_dim]
+//        'h_PT_f'      → [P_dim, T_dim]   (active fluid)
+//        'h_PT'        → [P_dim, T_dim]   (bare alias)
+function _propFunArgDims(fnName) {
+  const m = String(fnName).toLowerCase().match(/^[a-z]_([phtsvux]{2,3})(?:_[a-z0-9_]+)?$/);
+  if (!m) return null;
+  const sig = m[1];
+  const out = [];
+  for (const ch of sig) {
+    if (!(ch in _PROP_ARG_DIM)) return null;
+    out.push(_PROP_ARG_DIM[ch].slice());
+  }
+  return out;
+}
+
 function _inferMissingVarDims(equationLines) {
   const _zero = [0,0,0,0,0,0,0];
 
@@ -4496,7 +4528,35 @@ function _inferMissingVarDims(equationLines) {
               }
             }
           }
-          // vPow null with no recoverable additive structure → skip, no inference
+          // vPow null with no recoverable additive structure.
+          // V1.3.42: last-resort, infer dim from a property-function call argument.
+          // Pattern: v appears as a bare-variable argument to a known property fn
+          // (e.g. T2s in h_PT_air(P_H, T2s)). Walk all function calls in the
+          // equation and pick the first signature match.
+          if (vDim === undefined) {
+            function _seedFromCall(node) {
+              if (!node || vDim !== undefined) return;
+              if (node.t === 'F') {
+                const argDims = _propFunArgDims(node.fn);
+                if (argDims && node.args) {
+                  for (let ai = 0; ai < node.args.length && ai < argDims.length; ai++) {
+                    const a = node.args[ai];
+                    if (a && a.t === 'V' && a.n === v) {
+                      vDim = argDims[ai];
+                      return;
+                    }
+                  }
+                  // Recurse into args even if v isn't the bare arg — it could be nested
+                  for (const a of node.args) _seedFromCall(a);
+                  return;
+                }
+              }
+              if (node.t === 'B') { _seedFromCall(node.L); _seedFromCall(node.R); }
+              else if (node.t === 'U') { _seedFromCall(node.R); }
+              else if (node.t === 'F' && node.args) { for (const a of node.args) _seedFromCall(a); }
+            }
+            _seedFromCall(lhsAst); _seedFromCall(rhsAst);
+          }
         } else if (vTerms.length === 1 && !effectiveRefDim && knownTerms.length === 0) {
           // expr = 0 form with only a v-term (e.g. "Sgen = 0"): can't infer
           // refDim. Leave undefined.
