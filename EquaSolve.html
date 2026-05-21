@@ -1179,8 +1179,8 @@ textarea.eq-ta::placeholder{color:var(--mute)}
           <div style="margin-top:6px;color:var(--mute);font-size:9px;">Use <code style="color:var(--blue)">*</code> or <code style="color:var(--blue)">.</code> to separate unit parts: <code style="color:var(--blue)">Pa*s</code> or <code style="color:var(--blue)">Pa.s</code> (dot between letters = multiply). Middle dot · also accepted.</div>
           <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
             <div style="color:var(--hi);font-weight:600;margin:6px 0 2px">Time (→ s)</div>
-            <code style="color:var(--blue)">s  sec  ms  min_t  hr  hour  day  yr</code>
-            <div style="color:var(--mute);font-size:9px;margin-top:2px">Note: <code>s</code> and <code>h</code> work as time units in unit expressions (3 W*s, 5 kW*h) but remain free variables in equations without unit context</div>
+            <code style="color:var(--blue)">s  sec  ms  min  hr  hour  day  yr</code>
+            <div style="color:var(--mute);font-size:9px;margin-top:2px">Note: <code>s</code>, <code>min</code>, and <code>h</code> work as time units inside <code>[unit]</code> brackets (e.g. <code>[m3/min]</code>, <code>[kW*h]</code>) but remain free variables in equations without bracket context</div>
             <div style="color:var(--hi);font-weight:600;margin:6px 0 2px">Angle / Other</div>
             <code style="color:var(--blue)">deg  rpm  kg  ft  mm  cm</code>
           </div>
