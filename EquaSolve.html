@@ -4454,8 +4454,49 @@ function _inferMissingVarDims(equationLines) {
             if (diff.every(d => d % vPow === 0)) {
               vDim = diff.map(d => d / vPow);
             }
+          } else if (vPow === null && effectiveRefDim) {
+            // vPow null: v appears inside an additive sub-expression.
+            // Pattern:   factor1 * factor2 * ... * (v ± a ± b) = rhs
+            // Within the additive sub-expression, every additive term has the same dim.
+            // So dim(v) = dim_of_sub-expr = effectiveRefDim − Σ dim(factors not containing v).
+            // _stripVfreeFactors returns {inner, factorDim} — the sub-expression and the
+            // accumulated dim of the (signed) v-free outer factors that were peeled.
+            function _stripVfreeFactors(node, factorDim) {
+              if (node.t !== 'B' || (node.op !== '*' && node.op !== '/')) {
+                return {inner: node, factorDim};
+              }
+              const lHasV = vAppearsIn(node.L, v), rHasV = vAppearsIn(node.R, v);
+              if (node.op === '*') {
+                if (!lHasV && rHasV) { try { factorDim = dimAdd(factorDim, evalDimNode(node.L).dim); } catch(e){} return _stripVfreeFactors(node.R, factorDim); }
+                if (lHasV && !rHasV) { try { factorDim = dimAdd(factorDim, evalDimNode(node.R).dim); } catch(e){} return _stripVfreeFactors(node.L, factorDim); }
+              } else { // '/'
+                if (lHasV && !rHasV) { try { factorDim = dimSub(factorDim, evalDimNode(node.R).dim); } catch(e){} return _stripVfreeFactors(node.L, factorDim); }
+              }
+              return {inner: node, factorDim};
+            }
+            const {inner, factorDim} = _stripVfreeFactors(vTerms[0].node, _zero.slice());
+            // After stripping, `inner` should be an additive expr containing v (with v-power 1 once unwrapped).
+            if (inner.t === 'B' && (inner.op === '+' || inner.op === '-') && vAppearsIn(inner, v)) {
+              // Inside the additive expression: confirm v appears linearly in exactly one term.
+              const innerTerms = [];
+              collectAdditiveTerms(inner, +1, innerTerms);
+              const vSub = innerTerms.filter(t => vAppearsIn(t.node, v));
+              if (vSub.length === 1 && vPowerInNode(vSub[0].node, v) === 1) {
+                // Each additive term has dim = (effectiveRefDim − factorDim).
+                // dim(v) is therefore (effectiveRefDim − factorDim) minus any dim attached
+                // to v in its own term (e.g. coefficient like 2*v has factor 2 dimensionless).
+                let subDim = dimSub(effectiveRefDim, factorDim);
+                try {
+                  // Subtract the dim of v's own term computed with v zero-dim:
+                  // for (k*v) where k has dim Dk, term dim = Dk + dim(v), so dim(v) = subDim - Dk.
+                  const vTermPartial = evalDimNode(vSub[0].node).dim;
+                  subDim = dimSub(subDim, vTermPartial);
+                } catch(e) {}
+                vDim = subDim;
+              }
+            }
           }
-          // vPow null (e.g. v inside exp(), or v + const)^n) → skip, no inference
+          // vPow null with no recoverable additive structure → skip, no inference
         } else if (vTerms.length === 1 && !effectiveRefDim && knownTerms.length === 0) {
           // expr = 0 form with only a v-term (e.g. "Sgen = 0"): can't infer
           // refDim. Leave undefined.
@@ -4529,10 +4570,13 @@ const _UNIT_SI_FACTORS = {
   // Mass flow (kg/s)
   'kg/s':1, 'kg/min':1/60, 'kg/min_t':1/60, 'kg/h':1/3600, 'g/s':1e-3, 'lb/s':0.453592,
   'g/min':1e-3/60, 'g/min_t':1e-3/60, 'lb/min':0.453592/60, 'lb/min_t':0.453592/60,
-  // Volume flow (m3/s) — V1.3.42: add m3/min + min_t canonical variants
+  'tonne/h':1000/3600,
+  // Volume flow (m3/s) — V1.3.42: add m3/min + min_t canonical variants + Unicode m³ aliases
   'm3/s':1, 'm3/min':1/60, 'm3/min_t':1/60, 'm3/h':1/3600,
+  'm³/s':1, 'm³/min':1/60, 'm³/h':1/3600,
   'L/s':1e-3, 'L/min':1e-3/60, 'L/min_t':1e-3/60, 'L/h':1e-3/3600,
   'gal/min':3.78541e-3/60, 'gal/min_t':3.78541e-3/60,
+  'ft³/min':0.0283168/60, 'ft3/min':0.0283168/60,
   // Velocity
   'm/s':1, 'km/h':1/3.6, 'mph':0.44704, 'ft/s':0.3048,
   // Angular
@@ -4571,6 +4615,12 @@ const _UNIT_DIM_GROUP = {
   'W/(m²·K)':'htc','W/m²·K':'htc','W/m²K':'htc','W/m2·K':'htc','W/m2K':'htc','kW/(m²·K)':'htc','kW/m²·K':'htc','kW/m²K':'htc',
   'W/(m·K)':'thk','W/m·K':'thk','W/mK':'thk','kW/(m·K)':'thk',
   'kg/s':'mflow','kg/min':'mflow','kg/h':'mflow','g/s':'mflow','lb/s':'mflow',
+  // V1.3.42: extra flow-rate entries (incl. Unicode m³ and lb/min) so _tryUnitConvert
+  // can convert between display label ('m³/s') and bracket label ('m³/min', etc.)
+  'lb/min':'mflow','tonne/h':'mflow','g/min':'mflow',
+  'm³/s':'vflow','m3/s':'vflow','m³/min':'vflow','m3/min':'vflow',
+  'm³/h':'vflow','m3/h':'vflow','L/s':'vflow','L/min':'vflow','L/h':'vflow',
+  'gal/min':'vflow','ft³/min':'vflow','ft3/min':'vflow',
   'm/s':'vel','km/h':'vel','mph':'vel','ft/s':'vel',
   'N':'force','kN':'force','MN':'force','lbf':'force',
   'Pa·s':'visc','Pa.s':'visc','mPa·s':'visc','cP':'visc',
@@ -4920,7 +4970,7 @@ function _replaceNumericBracketValuesInLine(line){
   const out=body.replace(re,(m,prefix,num,unitRaw)=>{
     const unit=_canonUnit(unitRaw);
     if(!_knownBracketUnit(unitRaw)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in: '+line.trim());
-    const cv=_bracketConvert(parseFloat(num),unit);
+    const cv=_bracketConvert(parseFloat(num),unitRaw);
     if(cv===null||!isFinite(cv)) throw new Error('Cannot convert unit ['+unitRaw.trim()+'] in: '+line.trim());
     return prefix+cv;
   });
@@ -5106,7 +5156,7 @@ function preprocessBrackets(txt) {
         if (_isUnitNodeSimple(ast)) {
           const numVal = _evalUnitSISimple(ast);
           if (isFinite(numVal)) {
-            const cv = _bracketConvert(numVal, unitStr);
+            const cv = _bracketConvert(numVal, unitStrRaw);
             if (cv !== null && isFinite(cv)) {
               const comment = line.slice(line.indexOf(clean) + clean.length);
               return lhs + ' = ' + cv + comment;
@@ -5128,7 +5178,7 @@ function preprocessBrackets(txt) {
       if (_isUnitNodeSimple(ast)) {
         const numVal = _evalUnitSISimple(ast);
         if (isFinite(numVal)) {
-          const cv = _bracketConvert(numVal, unitStr);
+          const cv = _bracketConvert(numVal, unitStrRaw);
           if (cv !== null && isFinite(cv)) {
             // Record original value & unit for result display (e.g. 300 K, not 26.85 °C)
             _bracketDisplayMap[lhs] = { val: numVal, unit: _normDisplayUnit(unitStr) };
