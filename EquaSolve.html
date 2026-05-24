@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.43</title>
+<title>EquaSolve V1.3.54</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -94,7 +94,7 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
   #type-badge{flex-shrink:0;}
   #solve-status{font-size:10px;white-space:nowrap;flex-shrink:1;max-width:80px;overflow:hidden;text-overflow:ellipsis;}
   /* ── Editor ── */
-  textarea.eq-ta{min-height:120px;font-size:12px;line-height:20px;height:40dvh;overflow-y:scroll !important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;color:var(--hi) !important;}
+  textarea.eq-ta{min-height:120px;font-size:12px;line-height:20px;height:40dvh;overflow-y:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;color:var(--hi) !important;}
   .eq-highlight{font-size:12px;line-height:20px;height:40dvh;overflow-y:hidden !important;white-space:pre;}
   .ed-wrap{overflow:visible;}
 
@@ -126,7 +126,12 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
 .ed-wrap{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border2);transition:border-color .2s;flex-shrink:0}.ed-wrap:focus-within{border-color:var(--accent)}
 .eq-highlight{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;padding:12px 12px 12px 44px;font-size:13px;line-height:22px;font-family:inherit;white-space:pre;pointer-events:none;color:transparent;overflow:hidden;box-sizing:border-box;border:none;background:transparent;z-index:2;}
 .eq-highlight-inner{display:inline-block;min-width:100%;vertical-align:top;}
-.hl-comment{color:#6e7681;background:transparent;}
+/* V1.3.45: comment span has solid bg matching textarea, so it visually masks
+   the textarea text behind it. This eliminates the dual-rendering ghosting
+   that V1.3.43/44 originally tried to fix with color:transparent on textarea
+   — that approach inadvertently broke mobile scrolling on long pasted code. */
+.hl-comment{color:#6e7681;background:var(--bg);}
+.light .hl-comment{background:#f6f8fa;}
 .hl-error-line{background:rgba(248,81,73,.15);border-radius:2px;display:block;white-space:pre;}
 .hl-err-tok{background:rgba(248,81,73,.45);border-radius:2px;outline:1px solid rgba(248,81,73,.8);color:transparent;}
 .hl-err-eof{border-right:2px solid #f85149;margin-right:-2px;animation:blink-caret .9s step-end infinite;}
@@ -627,7 +632,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.43</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.54</div>
       </div>
     </div>
 
@@ -707,7 +712,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.43</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.54</span></div>
       
     </div>
   </div>
@@ -728,6 +733,8 @@ textarea.eq-ta::placeholder{color:var(--mute)}
     <button class="ex-btn" data-ex="6">R744: (v,u) State</button>
     <button class="ex-btn" data-ex="7">NH₃: (v,s) State</button>
     <button class="ex-btn" data-ex="8">Rankine Full</button>
+    <button class="ex-btn" data-ex="43">Combust: CH₄ Flame Temp</button>
+    <button class="ex-btn" data-ex="44">Combust: Octane(l) Flame Temp</button>
   </div>
   <div class="s-sec">
     <div class="s-lbl">Live Parameters — Examples</div>
@@ -876,7 +883,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.43</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.54</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1432,6 +1439,83 @@ textarea.eq-ta::placeholder{color:var(--mute)}
           <div class="help-row"><code>hf_f(x)  hg_f(x)</code><span>active fluid shorthand · uses currently selected fluid</span></div>
           <div class="help-row"><code>Psat_R134a(T)  Tsat_R134a(P)</code><span>fluid-specific Psat / Tsat</span></div>
         </div>
+      </div>
+
+      <div class="help-card">
+        <div class="help-card-title">🔥 Combustion Property Functions</div>
+
+        <div class="help-section-label">Unified h_X / s_X — argument count selects the model</div>
+        <div class="help-row" style="margin-bottom:8px">
+          <span><code>h_X(T)</code> and <code>s_X(T)</code> return <strong>ideal-gas molar properties</strong> (kJ/kmol, kJ/kmol·K) on the Cengel A-26 reference: h°f + Δh̄(T), s°(T) at 1 atm. <code>h_X(P,T)</code> and <code>s_X(P,T)</code> route to the existing PR-EOS real-fluid model where one exists. Argument units honor your input unit setting just like <code>h_PT</code>.</span>
+        </div>
+        <div class="help-section-label">Products and Diatomics — Valid to 6000 K</div>
+        <div class="pair-grid">
+          <span class="pair-tag">N2</span><span class="pair-tag">O2</span><span class="pair-tag">H2</span>
+          <span class="pair-tag">CO</span><span class="pair-tag">CO2</span><span class="pair-tag">H2O</span>
+          <span class="pair-tag">OH</span><span class="pair-tag">NO</span><span class="pair-tag">NO2</span>
+        </div>
+        <div class="help-section-label">Gaseous Fuels — Valid 273–1500 K (CH4 to 6000 K)</div>
+        <div class="pair-grid">
+          <span class="pair-tag">CH4</span><span class="pair-tag">C2H6</span><span class="pair-tag">C3H8</span>
+          <span class="pair-tag">C4H10</span><span class="pair-tag">C2H2</span><span class="pair-tag">C2H4</span>
+          <span class="pair-tag">C8H18</span>
+        </div>
+        <div class="help-table">
+          <div class="help-row"><code>h_CO2(T)  h_H2O(T)  h_N2(T)</code><span>Absolute molar enthalpy h°f + Δh̄(T) [kJ/kmol]</span></div>
+          <div class="help-row"><code>s_CO2(T)  s_H2O(T)  s_N2(T)</code><span>Absolute molar entropy s°(T) at 1 atm [kJ/(kmol·K)]</span></div>
+          <div class="help-row"><code>h_CO2(298.15) = -393520</code><span>= hf at standard state</span></div>
+          <div class="help-row"><code>s_CO2(298.15) = 213.80</code><span>= s°(298.15 K) from Cengel A-26</span></div>
+          <div class="help-row"><code>h_CO2(P, T)  s_CO2(P, T)</code><span>2 args → PR-EOS real fluid (kJ/kg, kJ/(kg·K))</span></div>
+        </div>
+        <div class="help-section-label">Formula ↔ word-form aliases (CO2, CH4, C2H6, C3H8, C4H10, N2, O2, H2)</div>
+        <div class="help-table">
+          <div class="help-row"><code>h_CH4(T)  ≡  h_methane(T)</code><span>Both spellings route to the same dispatcher</span></div>
+          <div class="help-row"><code>h_N2(P, T)  ≡  h_nitrogen(P, T)</code><span>2-arg form → PR-EOS nitrogen</span></div>
+        </div>
+        <div class="help-section-label">Partial-pressure entropy correction (Dalton's law)</div>
+        <div class="help-block">
+<pre style="margin:0;font-family:var(--mono);font-size:11px;line-height:1.5">R_u = 8.314           // kJ/(kmol·K)
+P_ref = 101.325 [kPa]
+y_CO2 = N_CO2 / N_total
+
+s_CO2_partial = s_CO2(T) - R_u * ln(y_CO2 * P_total / P_ref)</pre>
+          <div class="hb-desc">For ideal-gas mixtures, partial-pressure entropy is s_i = s°_i(T) − R·ln(P_i/P_ref). Apply this when computing entropy generation across a combustion reactor.</div>
+        </div>
+        <div class="help-section-label">Liquid Fuel Formation Enthalpies (kJ/kmol at 298.15 K)</div>
+        <div class="help-row" style="margin-bottom:8px">
+          <span>For combustion problems with <strong>liquid fuels entering at 25 °C</strong>, use these built-in constants directly on the RHS — at inlet T = T_ref, sensible Δh̄ = 0 so only the formation enthalpy contributes:</span>
+        </div>
+        <div class="help-table">
+          <div class="help-row"><code>hf_C8H18l  ≡  hf_octane_l</code><span>n-Octane: −249,950 (Cengel A-26)</span></div>
+          <div class="help-row"><code>hf_C7H16l  ≡  hf_heptane_l</code><span>n-Heptane: −224,430</span></div>
+          <div class="help-row"><code>hf_C12H26l ≡  hf_dodecane_l</code><span>n-Dodecane (Diesel surrogate): −347,830</span></div>
+          <div class="help-row"><code>hf_C6H6l   ≡  hf_benzene_l</code><span>Benzene: <strong>+49,030</strong> (positive hf)</span></div>
+          <div class="help-row"><code>hf_C6H14l  ≡  hf_hexane_l</code><span>n-Hexane: −198,700 (NIST)</span></div>
+          <div class="help-row"><code>hf_C5H12l  ≡  hf_pentane_l</code><span>n-Pentane: −173,500 (NIST)</span></div>
+          <div class="help-row"><code>hf_CH3OHl  ≡  hf_methanol_l</code><span>Methanol: −238,660</span></div>
+          <div class="help-row"><code>hf_C2H5OHl ≡  hf_ethanol_l</code><span>Ethanol: −277,690</span></div>
+        </div>
+        <div class="help-section-label">Liquid Fuel Example — Cengel 15-8(a): C8H18(l) + 100% air</div>
+        <div class="help-block">
+<pre style="margin:0;font-family:var(--mono);font-size:11px;line-height:1.5">// C8H18(l) + 12.5(O2 + 3.76 N2) → 8 CO2 + 9 H2O + 47 N2
+N_CO2 = 8
+N_H2O = 9
+N_N2  = 47
+
+N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = hf_C8H18l</pre>
+          <div class="hb-desc">Solves to T_prod ≈ 2394 K (Cengel textbook: 2395 K). Reactants at 25 °C so the liquid fuel contributes only its formation enthalpy. For preheated liquid fuels, add a sensible-heating term: <code>hf_C8H18l + Cp_C8H18l*(T_in - 298.15)</code> using a manually declared liquid Cp.</div>
+        </div>
+
+        <div class="help-section-label">Adiabatic Flame Temperature — CH4 + 100% air</div>
+        <div class="help-block">
+<pre style="margin:0;font-family:var(--mono);font-size:11px;line-height:1.5">N_CO2 = 1
+N_H2O = 2
+N_N2  = 2 * 3.76
+
+N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</pre>
+          <div class="hb-desc">T_prod is auto-recognized as a temperature variable (dimension inference) and displayed in your preferred unit. Solves to ~2326 K for T_react = 298.15 K.</div>
+        </div>
+        <div class="help-row" style="margin-top:8px;color:var(--mute);font-size:11px"><span>Note: combustion molar properties (1 arg) and PR-EOS specific properties (2 args) have different units (kJ/kmol vs kJ/kg) — keep your energy-balance accounting consistent.</span></div>
       </div>
 
       <div class="help-card">
@@ -3354,6 +3438,173 @@ for(const[alias,key]of Object.entries(FLUID_ALIASES)){const fl=FLUIDS[key];if(!f
   }
   // Water / active-fluid bare _PT and _TP forms are already in FUNS_base (lines ~3067/3115).
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// V1.3.48: Combustion ideal-gas molar enthalpy functions h_X(T)
+// ───────────────────────────────────────────────────────────────────
+// Returns absolute molar enthalpy h̄(T) = h°f + Δh̄(T) in kJ/kmol,
+// referenced to elements at 298.15 K standard state — matching the
+// convention of Cengel Table A-26. Lets users write combustion energy
+// balances directly:
+//   N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = hf_fuel
+//
+// Data: NIST WebBook Shomate equations + Cengel A-26 hf values.
+// Validity ranges vary by species; out-of-range calls throw an error.
+// Coefficient format: Cp° = A + B·t + C·t² + D·t³ + E/t²    (t = T_K/1000)
+//                     Δh̄ = (A·t + B/2·t² + C/3·t³ + D/4·t⁴ − E/t + FmH)·1000
+// ═══════════════════════════════════════════════════════════════════
+const COMB_DB = {
+  // ── Elements & diatomics (hf = 0) ─────────────────────────────────
+  N2:  {formula:'N₂',  name:'Nitrogen',         MW:28.014, hf:0,        s_ref:191.61, ranges:[
+    {Tmin:100,  Tmax:500,  A:28.98641, B:1.853978,   C:-9.647459, D:16.63537,  E:0.000117,  FmH:-8.671914},
+    {Tmin:500,  Tmax:2000, A:19.50583, B:19.88705,   C:-8.598535, D:1.369784,  E:0.527601,  FmH:-4.935202},
+    {Tmin:2000, Tmax:6000, A:35.51872, B:1.128728,   C:-0.196103, D:0.014662,  E:-4.553760, FmH:-18.97091}]},
+  O2:  {formula:'O₂',  name:'Oxygen',           MW:31.999, hf:0,        s_ref:205.04, ranges:[
+    {Tmin:100,  Tmax:700,  A:31.32234, B:-20.23531,  C:57.86644,  D:-36.50624, E:-0.007374, FmH:-8.903471},
+    {Tmin:700,  Tmax:2000, A:30.03235, B:8.772972,   C:-3.988133, D:0.788313,  E:-0.741599, FmH:-11.32468},
+    {Tmin:2000, Tmax:6000, A:20.91111, B:10.72071,   C:-2.020498, D:0.146449,  E:9.245722,  FmH:5.337651}]},
+  H2:  {formula:'H₂',  name:'Hydrogen',         MW:2.016,  hf:0,        s_ref:130.68, ranges:[
+    {Tmin:298,  Tmax:1000, A:33.066178, B:-11.363417, C:11.432816, D:-2.772874, E:-0.158558, FmH:-9.980797},
+    {Tmin:1000, Tmax:2500, A:18.563083, B:12.257357,  C:-2.859786, D:0.268238,  E:1.977990,  FmH:-1.147438},
+    {Tmin:2500, Tmax:6000, A:43.413560, B:-4.293079,  C:1.272428,  D:-0.096876, E:-20.533862,FmH:-38.515158}]},
+  // ── Major combustion products ─────────────────────────────────────
+  CO:  {formula:'CO',  name:'Carbon Monoxide',  MW:28.011, hf:-110530,  s_ref:197.65, ranges:[
+    {Tmin:298,  Tmax:1300, A:25.56759, B:6.096130,   C:4.054656,  D:-2.671301, E:0.131021,  FmH:-7.4818},
+    {Tmin:1300, Tmax:6000, A:35.15070, B:1.300095,   C:-0.205921, D:0.013550,  E:-3.282780, FmH:-17.3104}]},
+  CO2: {formula:'CO₂', name:'Carbon Dioxide',   MW:44.010, hf:-393520,  s_ref:213.80, ranges:[
+    {Tmin:298,  Tmax:1200, A:24.99735, B:55.18696,   C:-33.69137, D:7.948387,  E:-0.136638, FmH:-10.0851},
+    {Tmin:1200, Tmax:6000, A:58.16639, B:2.720074,   C:-0.492289, D:0.038844,  E:-6.447293, FmH:-32.3962}]},
+  H2O: {formula:'H₂O', name:'Water Vapor',      MW:18.015, hf:-241826,  s_ref:188.83, ranges:[
+    {Tmin:298,  Tmax:1700, A:30.09200, B:6.832514,   C:6.793435,  D:-2.534480, E:0.082139,  FmH:-9.0546},
+    {Tmin:1700, Tmax:6000, A:41.96426, B:8.622053,   C:-1.499780, D:0.098119,  E:-11.15764, FmH:-30.3533}]},
+  // ── Reactive intermediates ────────────────────────────────────────
+  OH:  {formula:'OH',  name:'Hydroxyl Radical', MW:17.008, hf:38987,    s_ref:183.70, ranges:[
+    {Tmin:298,  Tmax:1300, A:32.27768, B:-11.36291,  C:13.60545,  D:-3.846486, E:-0.001335, FmH:-7.52487},
+    {Tmin:1300, Tmax:6000, A:28.74701, B:4.714489,   C:-0.814725, D:0.054748,  E:-2.747829, FmH:-10.86181}]},
+  NO:  {formula:'NO',  name:'Nitric Oxide',     MW:30.006, hf:90291,    s_ref:210.76, ranges:[
+    {Tmin:298,  Tmax:1200, A:23.83491, B:12.58878,   C:-1.139011, D:-1.497459, E:0.214194,  FmH:-6.93331},
+    {Tmin:1200, Tmax:6000, A:35.99169, B:0.957170,   C:-0.148032, D:0.009974,  E:-3.004088, FmH:-17.18327}]},
+  NO2: {formula:'NO₂', name:'Nitrogen Dioxide', MW:46.006, hf:33100,    s_ref:240.06, ranges:[
+    {Tmin:298,  Tmax:1200, A:16.10857, B:75.89525,   C:-54.38740, D:14.30777,  E:0.239423,  FmH:-6.92038},
+    {Tmin:1200, Tmax:6000, A:56.82541, B:0.738053,   C:-0.144721, D:0.009777,  E:-5.459911, FmH:-30.24857}]},
+  // ── Gaseous fuels ─────────────────────────────────────────────────
+  CH4: {formula:'CH₄', name:'Methane',          MW:16.043, hf:-74850,   s_ref:186.16, ranges:[
+    {Tmin:298,  Tmax:1300, A:-0.703029, B:108.4773, C:-42.52157, D:5.862788, E:0.678565,  FmH:-1.97066},
+    {Tmin:1300, Tmax:6000, A:85.81217,  B:11.26467, C:-2.114146, D:0.138190, E:-26.42221, FmH:-78.65960}]},
+  C2H6:{formula:'C₂H₆',name:'Ethane',           MW:30.070, hf:-84680,   s_ref:229.49, ranges:[
+    {Tmin:298, Tmax:1500, A:6.900833, B:172.7393, C:-64.50217, D:7.292437, E:0.075574, FmH:-16.68470}]},
+  C2H2:{formula:'C₂H₂',name:'Acetylene',        MW:26.038, hf:226730,   s_ref:200.85, ranges:[
+    {Tmin:298, Tmax:1100, A:40.68697, B:40.73279, C:-16.17840, D:3.669741, E:-0.658411, FmH:-12.1061}]},
+  C2H4:{formula:'C₂H₄',name:'Ethylene',         MW:28.054, hf:52280,    s_ref:219.83, ranges:[
+    {Tmin:298, Tmax:1200, A:-6.387880, B:184.4019, C:-112.9718, D:28.49593, E:0.315540, FmH:-4.29362}]},
+  // Higher hydrocarbons — Cengel A-2c polynomial fits, 273–1500 K
+  C3H8:{formula:'C₃H₈',name:'Propane',          MW:44.097, hf:-103850,  s_ref:269.91, ranges:[
+    {Tmin:273, Tmax:1500, A:-4.04, B:304.8, C:-157.2, D:31.74, E:0, FmH:-11.017}]},
+  C4H10:{formula:'C₄H₁₀',name:'n-Butane',       MW:58.123, hf:-126150,  s_ref:310.12, ranges:[
+    {Tmin:273, Tmax:1500, A:3.96, B:371.5, C:-183.4, D:35.00, E:0, FmH:-16.141}]},
+  C8H18:{formula:'C₈H₁₈',name:'n-Octane (gas)', MW:114.231,hf:-208450,  s_ref:466.514,ranges:[
+    {Tmin:273, Tmax:1500, A:-6.096, B:771.0, C:-394.0, D:80.0, E:0, FmH:-29.127}]},
+};
+// Polynomial evaluators
+//   Δh̄ = (A·t + B/2·t² + C/3·t³ + D/4·t⁴ − E/t + FmH)·1000   kJ/kmol  (t = T_K/1000)
+//   s°(poly) = A·ln(t) + B·t + C/2·t² + D/3·t³ − E/(2·t²)            (J/mol·K + species G)
+function _shomate_dh(seg,T_K){
+  const t=T_K/1000;
+  return seg.A*t + seg.B/2*t*t + seg.C/3*t*t*t + seg.D/4*t*t*t*t - seg.E/t + seg.FmH;
+}
+function _shomate_s_poly(seg,T_K){
+  const t=T_K/1000;
+  return seg.A*Math.log(t) + seg.B*t + seg.C/2*t*t + seg.D/3*t*t*t - seg.E/(2*t*t);
+}
+// Per-species precomputation:
+//   _dhRef    — Shomate Δh̄ poly value at 298.15 K (offset so h_X(298.15) = hf exactly)
+//   range._G  — entropy reference constant computed so s_X(298.15) = s_ref and
+//               s°(T) is continuous across all range boundaries
+for(const sp of Object.values(COMB_DB)){
+  const refSeg = sp.ranges.find(r=>298.15>=r.Tmin && 298.15<=r.Tmax) || sp.ranges[0];
+  sp._dhRef = _shomate_dh(refSeg, 298.15);
+  // Compute G for the 298.15-containing range
+  const idx0 = sp.ranges.indexOf(refSeg);
+  sp.ranges[idx0]._G = sp.s_ref - _shomate_s_poly(refSeg, 298.15);
+  // Propagate forward
+  for(let i=idx0+1; i<sp.ranges.length; i++){
+    const Tb = sp.ranges[i-1].Tmax;
+    const sb_prev = _shomate_s_poly(sp.ranges[i-1], Tb) + sp.ranges[i-1]._G;
+    sp.ranges[i]._G = sb_prev - _shomate_s_poly(sp.ranges[i], Tb);
+  }
+  // Propagate backward
+  for(let i=idx0-1; i>=0; i--){
+    const Tb = sp.ranges[i].Tmax;
+    const sb_next = _shomate_s_poly(sp.ranges[i+1], Tb) + sp.ranges[i+1]._G;
+    sp.ranges[i]._G = sb_next - _shomate_s_poly(sp.ranges[i], Tb);
+  }
+}
+function h_idg_eval(species,T_K){
+  const sp=COMB_DB[species];
+  if(!sp)throw new Error('Unknown combustion species: '+species);
+  const r0=sp.ranges[0],rN=sp.ranges[sp.ranges.length-1];
+  if(T_K<r0.Tmin||T_K>rN.Tmax)
+    throw new Error('h_'+species+': T='+T_K.toFixed(1)+' K outside ['+r0.Tmin+', '+rN.Tmax+'] K');
+  const seg=sp.ranges.find(r=>T_K<=r.Tmax)||rN;
+  return sp.hf + (_shomate_dh(seg,T_K) - sp._dhRef)*1000;  // kJ/kmol
+}
+function s_idg_eval(species,T_K){
+  const sp=COMB_DB[species];
+  if(!sp)throw new Error('Unknown combustion species: '+species);
+  const r0=sp.ranges[0],rN=sp.ranges[sp.ranges.length-1];
+  if(T_K<r0.Tmin||T_K>rN.Tmax)
+    throw new Error('s_'+species+': T='+T_K.toFixed(1)+' K outside ['+r0.Tmin+', '+rN.Tmax+'] K');
+  const seg=sp.ranges.find(r=>T_K<=r.Tmax)||rN;
+  return _shomate_s_poly(seg,T_K) + seg._G;  // kJ/(kmol·K) at 1 atm reference
+}
+// Mapping COMB_DB formula → FLUID_ALIASES key (where the species has a PR-EOS counterpart)
+const _COMB_TO_PR = {
+  CO2:'co2', CH4:'methane', C2H6:'ethane', C3H8:'propane', C4H10:'butane',
+  N2:'nitrogen', O2:'oxygen', H2:'hydrogen',
+};
+// Build unified h_X / s_X dispatchers that route by argument count, and add
+// formula↔word cross-form aliases (h_CH4 ↔ h_methane, etc.). Called both at
+// initial load AND at the end of setActiveFunctions() because the latter
+// re-binds FUNS['h_co2'] etc. via the FLUID_ALIASES loop, which would otherwise
+// overwrite our unified dispatchers.
+function applyCombustionFunctions(){
+  for(const sp of Object.keys(COMB_DB)){
+    const prAlias = _COMB_TO_PR[sp];
+    // Capture original PR-EOS functions BEFORE overriding (avoids infinite recursion)
+    const h_pr = prAlias ? FUNS['h_'+prAlias] : null;
+    const s_pr = prAlias ? FUNS['s_'+prAlias] : null;
+    // Unified h: 1 arg → combustion ideal-gas (kJ/kmol), 2 args → PR-EOS real fluid (kJ/kg)
+    const h_disp = function(){
+      if(arguments.length===1) return h_idg_eval(sp, toK(arguments[0]));
+      if(arguments.length===2){
+        if(h_pr) return h_pr(arguments[0], arguments[1]);
+        throw new Error('h_'+sp+': no real-fluid PR-EOS model — use h_'+sp+'(T) for combustion ideal-gas');
+      }
+      throw new Error('h_'+sp+': expected 1 arg (T) for combustion or 2 args (P,T) for real fluid; got '+arguments.length);
+    };
+    FUNS['h_'+sp] = h_disp;
+    if(prAlias) FUNS['h_'+prAlias] = h_disp;
+    // Unified s: 1 arg → combustion s°(T) at 1 atm (kJ/kmol·K), 2 args → PR-EOS s(P,T) (kJ/kg·K)
+    const s_disp = function(){
+      if(arguments.length===1) return s_idg_eval(sp, toK(arguments[0]));
+      if(arguments.length===2){
+        if(s_pr) return s_pr(arguments[0], arguments[1]);
+        throw new Error('s_'+sp+': no real-fluid PR-EOS model — use s_'+sp+'(T) for combustion ideal-gas s°');
+      }
+      throw new Error('s_'+sp+': expected 1 arg (T) or 2 args (P,T); got '+arguments.length);
+    };
+    FUNS['s_'+sp] = s_disp;
+    if(prAlias) FUNS['s_'+prAlias] = s_disp;
+    // Formula → word-form aliases for prefixes that have only PR-EOS path
+    if(prAlias){
+      for(const prefix of ['v','u','cp','T_Ph','h_Ps','T_Ps']){
+        if(FUNS[prefix+'_'+prAlias]) FUNS[prefix+'_'+sp] = FUNS[prefix+'_'+prAlias];
+      }
+    }
+  }
+}
+applyCombustionFunctions();
+
 let ACTIVE_FLUID_KEY=null;
 function setActiveFunctions(){
   const src=ACTIVE_FLUID_KEY?FLUIDS[ACTIVE_FLUID_KEY]:null;
@@ -3403,6 +3654,10 @@ function setActiveFunctions(){
       FUNS[prefix+'_TP_f']=(T,P,...r)=>fn(src,P,T,...r);
     }
   }
+  // V1.3.49: re-apply combustion dispatchers on top of any PR-EOS re-binding
+  // (the FLUID_ALIASES loop above re-creates FUNS['h_co2'] etc., which would
+  //  clobber the unified h_X/s_X dispatchers if we didn't re-install them here)
+  if (typeof applyCombustionFunctions === 'function') applyCombustionFunctions();
 }
 setActiveFunctions();
 // ── Internal unit conversion factors for >> operator and [unit] brackets ──
@@ -3413,6 +3668,36 @@ const _OP_CONSTS = {};
 const CONSTS={
   pi:M.PI, PI:M.PI, e:M.E, E:M.E,
 };
+// V1.3.53: Liquid fuel formation enthalpies (kJ/kmol at 298.15 K, Cengel A-26)
+// For combustion problems with liquid fuels entering at 25 °C, use these
+// directly on the RHS — at T_in = T_ref, sensible Δh̄ = 0:
+//   8*h_CO2(T_prod) + 9*h_H2O(T_prod) + 47*h_N2(T_prod) = hf_C8H18l
+// Each fuel is registered under formula notation (`hf_C8H18l`) and a
+// word-form alias (`hf_octane_l`) — both spellings work.
+const LIQUID_FUEL_HF = {
+  C5H12l:  {hf: -173500, name: 'n-Pentane',  alias: 'pentane_l'},
+  C6H6l:   {hf:  +49030, name: 'Benzene',    alias: 'benzene_l'},
+  C6H14l:  {hf: -198700, name: 'n-Hexane',   alias: 'hexane_l'},
+  C7H16l:  {hf: -224430, name: 'n-Heptane',  alias: 'heptane_l'},
+  C8H18l:  {hf: -249950, name: 'n-Octane',   alias: 'octane_l'},
+  C12H26l: {hf: -347830, name: 'n-Dodecane', alias: 'dodecane_l'},
+  CH3OHl:  {hf: -238660, name: 'Methanol',   alias: 'methanol_l'},
+  C2H5OHl: {hf: -277690, name: 'Ethanol',    alias: 'ethanol_l'},
+};
+// Dim tags for dimensional constants. evalDimNode consults this for V-nodes
+// that are in CONSTS so the engine treats hf_C8H18l, etc. as molar energy
+// rather than dimensionless. Without this, an equation like
+// "LHS_kJ/kmol = hf_C8H18l" would flag a dim mismatch.
+const CONSTS_DIMS = {};
+const _MOL_E_DIM = [1,2,-2,0,0,-1,0];  // kJ/kmol
+for (const [formula, sp] of Object.entries(LIQUID_FUEL_HF)) {
+  CONSTS['hf_' + formula]      = sp.hf;
+  CONSTS_DIMS['hf_' + formula] = _MOL_E_DIM.slice();
+  if (sp.alias) {
+    CONSTS['hf_' + sp.alias]      = sp.hf;
+    CONSTS_DIMS['hf_' + sp.alias] = _MOL_E_DIM.slice();
+  }
+}
 const KNOWN=new Set([...Object.keys(FUNS),...Object.keys(CONSTS)]);
 
 // ── Exergy functions ──────────────────────────────────────────────────────
@@ -3881,6 +4166,11 @@ function evalDimNode(nd) {
     if (_varDimCache && nd.n in _varDimCache) {
       return {val: 1, dim: _varDimCache[nd.n].slice()};
     }
+    // V1.3.53: dimensional constants in CONSTS (hf_C8H18l etc.) carry tagged
+    // dims via CONSTS_DIMS so equations like "LHS_kJ/kmol = hf_C8H18l" balance.
+    if (typeof CONSTS_DIMS !== 'undefined' && nd.n in CONSTS_DIMS) {
+      return {val: 1, dim: CONSTS_DIMS[nd.n].slice()};
+    }
     // V1.3: bare identifiers are ALWAYS user variables — never consulted against
     // UNIT_DIM (avoids W/m/h/s/K name clashes) and never name-guessed.
     // Dimensionless placeholder until the variable is bracket-declared or
@@ -3894,10 +4184,36 @@ function evalDimNode(nd) {
   if (nd.t === 'F') {
     // Known thermodynamic functions carry specific dimensions
     const fn = nd.fn.toLowerCase();
+    const nargs = nd.args ? nd.args.length : 0;
     const _specE  = [0,2,-2,0,0,0,0];  // J/kg  (specific energy: h, u, ex, exf)
     const _specS  = [0,2,-2,0,-1,0,0]; // J/(kg·K) (specific entropy: s_PT etc.)
     const _specV  = [0,3,-0,0,0,0,-1]; // actually m³/kg = [-1,3,0,0,0,0,0]
     const _specVo = [-1,3,0,0,0,0,0];  // m³/kg (specific volume: v_PT)
+    const _molE   = [1,2,-2,0,0,-1,0]; // J/mol (molar energy: combustion h_X(T))
+    const _molS   = [1,2,-2,0,-1,-1,0];// J/(mol·K) (molar entropy: combustion s_X(T))
+    // V1.3.51: Combustion ideal-gas h_X(T) / s_X(T) → molar dims (kJ/kmol).
+    // Must come BEFORE the generic ^h_ / ^s_ regex below, which would otherwise
+    // mis-classify 1-arg combustion calls as mass-specific kJ/kg. 2-arg
+    // h_X(P,T) / s_X(P,T) calls fall through to the mass-specific path —
+    // that's correct since they route to PR-EOS real-fluid models.
+    const combMatch = nd.fn.match(/^([hs])_([A-Za-z][A-Za-z0-9]*)$/);
+    if (combMatch && nargs === 1) {
+      const sp = combMatch[2];
+      const isCombSp = (typeof COMB_DB !== 'undefined') && (COMB_DB[sp] || COMB_DB[sp.toUpperCase()]);
+      // Word-form alias (h_methane → CH4 via _COMB_TO_PR)
+      let isCrossForm = false;
+      if (!isCombSp && typeof _COMB_TO_PR !== 'undefined') {
+        const spLower = sp.toLowerCase();
+        for (const prKey of Object.values(_COMB_TO_PR)) {
+          if (prKey === spLower) { isCrossForm = true; break; }
+        }
+      }
+      if (isCombSp || isCrossForm) {
+        return combMatch[1] === 's'
+          ? {val: 1e3, dim: _molS.slice()}    // kJ/(kmol·K)
+          : {val: 1e3, dim: _molE.slice()};   // kJ/kmol
+      }
+    }
     // Enthalpy / internal energy / exergy → kJ/kg (specific energy)
     if (/^(h_|hf(?:_|$)|hg(?:_|$)|hfg(?:_|$)|h_f(?:_|$)|h_g(?:_|$)|u_|uf(?:_|$)|ug(?:_|$)|ufg(?:_|$)|ex|exf|exflow|phi|psi|exergy|h_pt|h_px|h_tx|h_ps|h_pv|h_pu|h_tp|u_pt|u_tp|h_tv|h_ts|h_hs|h_vs|u_hs|u_tv|u_vs)/.test(fn) && !/^(h_conv|h_darcy|hf_darcy|h_loss|h_pipe|h_cyl|h_flat|h_sphere|h_boil|h_cond)/.test(fn)) return {val:1e3, dim:_specE.slice()};
     // HT convection coefficient → W/(m²·K)
@@ -3975,6 +4291,8 @@ function dimToLabel(dim) {
   if (eq([1,1,-3,0,-1,0,0]))     return 'W/(m·K)';    // thermal conductivity
   if (eq([1,0,-3,0,-1,0,0]))     return 'W/(m²·K)';   // heat transfer coeff
   if (eq([0,2,-2,0,0,0,0]))      return 'kJ/kg';      // specific energy
+  if (eq([1,2,-2,0,0,-1,0]))     return 'kJ/kmol';    // molar energy (combustion h_X)
+  if (eq([1,2,-2,0,-1,-1,0]))    return 'kJ/(kmol·K)';// molar entropy (combustion s_X)
   if (eq([1,0,-2,0,0,0,0]))      return 'N/m';        // surface tension
   if (eq([1,-1,-2,0,0,0,0]))     return UNITS.pres;   // pressure (= Pa)
   if (eq([1,1,-2,0,0,0,0]))      return 'N·m';        // torque
@@ -4308,16 +4626,72 @@ const _PROP_ARG_DIM = {
 //        'T_Ph_water'  → [P_dim, h_dim]
 //        'h_PT_f'      → [P_dim, T_dim]   (active fluid)
 //        'h_PT'        → [P_dim, T_dim]   (bare alias)
-function _propFunArgDims(fnName) {
+// V1.3.49: also handle unified h_X / s_X for combustion species or PR-EOS aliases
+//   (h_CO2(T) / h_CO2(P,T), h_methane(T) / h_methane(P,T), etc.) — arg-count dispatch
+function _propFunArgDims(fnName, nargs) {
   const m = String(fnName).toLowerCase().match(/^[a-z]_([phtsvux]{2,3})(?:_[a-z0-9_]+)?$/);
-  if (!m) return null;
-  const sig = m[1];
-  const out = [];
-  for (const ch of sig) {
-    if (!(ch in _PROP_ARG_DIM)) return null;
-    out.push(_PROP_ARG_DIM[ch].slice());
+  if (m) {
+    const sig = m[1];
+    const out = [];
+    for (const ch of sig) {
+      if (!(ch in _PROP_ARG_DIM)) return null;
+      out.push(_PROP_ARG_DIM[ch].slice());
+    }
+    return out;
   }
-  return out;
+  // V1.3.49: h_X / s_X — combustion ideal-gas (1 arg) or PR-EOS real fluid (2 args)
+  const m2 = String(fnName).match(/^[hs]_([A-Za-z][A-Za-z0-9]*)$/);
+  if (m2) {
+    const sp = m2[1];
+    const isComb = (typeof COMB_DB !== 'undefined') && (COMB_DB[sp] || COMB_DB[sp.toUpperCase()]);
+    const isPR = (typeof FLUID_ALIASES !== 'undefined') && (FLUID_ALIASES[sp] || FLUID_ALIASES[sp.toLowerCase()]);
+    if (isComb || isPR) {
+      const tDim = _PROP_ARG_DIM.t.slice();
+      const pDim = _PROP_ARG_DIM.p.slice();
+      if (nargs === 1) return [tDim];
+      if (nargs === 2) return [pDim, tDim];
+    }
+  }
+  return null;
+}
+
+// V1.3.49: Seed _varDimCache from bare-variable arguments to property functions.
+// Runs BEFORE buildVarDimCache's RHS propagation so that variables like T_prod
+// in `h_CO2(T_prod) + ... = h_CH4(T_react)` get tagged as temperatures even
+// when they also appear in simple assignments like `T_prod = 2327.238` that
+// would otherwise mark them as dimensionless via RHS propagation.
+function _seedDimsFromCalls(rawTxt) {
+  if (!rawTxt) return;
+  function walk(node) {
+    if (!node) return;
+    if (node.t === 'F') {
+      const argDims = _propFunArgDims(node.fn, node.args ? node.args.length : 0);
+      if (argDims && node.args) {
+        for (let ai = 0; ai < node.args.length && ai < argDims.length; ai++) {
+          const a = node.args[ai];
+          if (a && a.t === 'V' && !(a.n in _varDimCache) && !(a.n in CONSTS)) {
+            _varDimCache[a.n] = argDims[ai].slice();
+          }
+        }
+      }
+      if (node.args) for (const a of node.args) walk(a);
+    } else if (node.t === 'B') { walk(node.L); walk(node.R); }
+    else if (node.t === 'U') { walk(node.R); }
+  }
+  for (const rawLine of rawTxt.split('\n')) {
+    const line = rawLine.replace(/\/\/.*$/, '').trim();
+    if (!line) continue;
+    // Strip [unit] brackets so the rest parses cleanly as an expression
+    const clean = line.replace(/\[[^\]]*\]/g, '');
+    const idx = clean.indexOf('=');
+    if (idx < 0) continue;
+    const lhs = clean.slice(0, idx).trim();
+    const rhs = clean.slice(idx + 1).trim();
+    for (const part of [lhs, rhs]) {
+      if (!part) continue;
+      try { walk(parse(part)); } catch(e) {}
+    }
+  }
 }
 
 function _inferMissingVarDims(equationLines) {
@@ -4537,7 +4911,7 @@ function _inferMissingVarDims(equationLines) {
             function _seedFromCall(node) {
               if (!node || vDim !== undefined) return;
               if (node.t === 'F') {
-                const argDims = _propFunArgDims(node.fn);
+                const argDims = _propFunArgDims(node.fn, node.args ? node.args.length : 0);
                 if (argDims && node.args) {
                   for (let ai = 0; ai < node.args.length && ai < argDims.length; ai++) {
                     const a = node.args[ai];
@@ -5562,7 +5936,30 @@ r_data   = [0.0052, 0.0132, 0.03, 0.00495, 0.00742, 0.00525, 0.0181, 0.0147, 0.0
 r_CH4 = (k_CH4 * PCO * PH2^0.5) / (1 + K_H2 * PH2)
 fit(r_data, r_CH4, PCO_data=PCO, PH2_data=PH2)
 k_CH4 = free(0.01, 0.001, 1)
-K_H2  = free(1.5, 0.01, 10)`}
+K_H2  = free(1.5, 0.01, 10)`},
+  // ── Combustion examples ──────────────────────────────────────────────────
+  {text:`// Adiabatic Flame Temp — CH4 + 400% theoretical air
+// Reactants at 298.15 K → find product temperature T_prod
+// Energy balance per kmol of CH4 (excess O2 = 4·2 − 2 = 6 mol)
+T_react = 298.15 [K]
+
+N_CO2 = 1
+N_H2O = 2
+N_O2  = 6
+N_N2  = 30.08          // 4·2·3.76
+
+// H_products(T_prod) = H_reactants(T_react)
+N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)`},
+  {text:`// Adiabatic Flame Temp — Liquid octane + 100% theoretical air
+// Cengel Ex 15-8(a):  C8H18(l) + 12.5(O2 + 3.76 N2) → 8 CO2 + 9 H2O + 47 N2
+// hf_C8H18l is a built-in dimensional constant (kJ/kmol at 298.15 K)
+
+N_CO2 = 8
+N_H2O = 9
+N_N2  = 47
+
+// Reactants at 298.15 K: O2, N2 contribute 0 → only fuel hf on RHS
+N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = hf_C8H18l`}
 
 ];
 
@@ -6559,6 +6956,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         _varDimCache = {}; // clear the dims that pass populated with wrong values
         // Step 2: seed dims from [unit] brackets — these are ground truth
         _seedBracketDimsFromText(_origTxt);
+        // Step 2b (V1.3.49): seed dims from bare-variable args to property
+        // functions BEFORE RHS propagation — otherwise a trivial assignment
+        // like `T_prod = 2327.238` would lock T_prod in as dimensionless and
+        // the energy balance `h_CO2(T_prod) + ... = ...` would never get to
+        // tag it as a temperature.
+        _seedDimsFromCalls(_origTxt);
         // Step 3: propagate dims from RHS (reset=false preserves bracket seeds)
         //         Now implicit-equation vars get correct dims since their
         //         dependencies (m, Q, T0, …) are already seeded. Some vars
@@ -6632,6 +7035,13 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
             if (v in rhsMap) continue;                   // RHS-derived — already fixed by Step 7
             delete _varDimCache[v];                       // equation-balance-inferred — purge
           }
+          // V1.3.52: re-seed from property-function call arguments BEFORE
+          // re-running equation-balance inference. Step 6 just purged any var
+          // not in rhsMap and not bracket-seeded — that includes vars tagged
+          // by _seedDimsFromCalls in Step 2b (like T_prod when it only appears
+          // inside h_CO2(T_prod) and has no own assignment line). Without this
+          // re-seed, T_prod's K tag is lost and the display falls back to no unit.
+          _seedDimsFromCalls(_origTxt);
           const _eqLines2 = _origTxt.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean);
           _inferMissingVarDims(_eqLines2);
         } catch(e) {}
@@ -6648,6 +7058,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const _tempInWasOverridden = (UNITS.tempIn !== _savedTempIn);
         r.scope.__tempInWasK = _tempInWasOverridden ||
           UNITS.tempIn === 'K' || UNITS.tempIn === '°R' || UNITS.tempIn === 'degR';
+        // V1.3.47: stash the effective input temperature unit so the renderer can
+        // correctly convert scope T-values to whatever the user later picks as the
+        // display unit, even when input and display units differ (e.g. input °C, display K).
+        r.scope.__solveTempIn = _tempInWasOverridden ? 'K' : UNITS.tempIn;
         UNITS.tempIn = _savedTempIn;
         const _solveMs = performance.now() - _t0;
         if(sliderDefs.length)renderSliderZone(sliderDefs); // keep sliders visible after re-solve
@@ -6714,17 +7128,27 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           } else {
             // Computed or un-bracketed variable: use dim inference only
             unitLabel = _bestUnitLabel(v, rhsMap[v]);
-            // V1.3.3/V1.3.13: if scope temperatures are in Kelvin (either because
-            // the user pre-set UNITS.tempIn='K' in settings, or because the [K]
-            // bracket auto-override fired), convert K → display unit for cards.
-            // Use r.scope.__tempInWasK (set at solve time) — NOT _tempInWasOverridden
-            // which is false when tempIn=K was pre-set rather than auto-triggered.
+            // V1.3.47: convert temperature scope values from their input unit
+            // (UNITS.tempIn at solve time, saved as __solveTempIn) to the current
+            // display unit (UNITS.temp). Handles all combinations: input °C → display K,
+            // input K → display °C, etc. Previously only handled "input was K → display
+            // is C/F" via the __tempInWasK flag, which left "input C → display K" broken
+            // (value stayed as °C number but was relabeled K).
             const _dimK = [0,0,0,0,1,0,0];
             const _isTemp = !_dimConflictVars.has(v) && !_rhs_has_dim_conflict(rhsMap[v]) &&
                             _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
             let rawShown = raw;
-            if (r.scope.__tempInWasK && _isTemp && isFinite(raw)) {
-              rawShown = fromK(raw);         // K → display temperature unit
+            if (_isTemp && isFinite(raw)) {
+              // First: scope value → K, using the temperature unit that was in effect at solve time.
+              const solveTempIn = r.scope.__solveTempIn || UNITS.tempIn || UNITS.temp;
+              let kVal;
+              switch (solveTempIn) {
+                case '°C':  kVal = raw + 273.15; break;
+                case '°F':  kVal = (raw - 32) * 5/9 + 273.15; break;
+                case '°R':  kVal = raw * 5/9; break;
+                default:    kVal = raw; // 'K'
+              }
+              rawShown = fromK(kVal);  // K → current display unit (UNITS.temp)
               if (!unitLabel) unitLabel = UNITS.temp;
             }
             const tagUnit = varUnitOverrides[v] || '';
@@ -7279,11 +7703,23 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         unitLabel = bde.unit || '';
       } else {
         unitLabel = _bestUnitLabel(v, snap.rhsMap[v]);
-        // Apply K → display conversion for computed temperature vars
-        // when the [K]-override was active during the solve
+        // V1.3.47: generalized temperature conversion — handles all input/display
+        // unit combinations, not just "input was K → display C/F".
         const _dimK = [0,0,0,0,1,0,0];
         const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
-        dispVal = (snap.scope.__tempInWasK && _isTemp) ? fromK(raw) : raw;
+        if (_isTemp && isFinite(raw)) {
+          const solveTempIn = snap.scope.__solveTempIn || UNITS.tempIn || UNITS.temp;
+          let kVal;
+          switch (solveTempIn) {
+            case '°C':  kVal = raw + 273.15; break;
+            case '°F':  kVal = (raw - 32) * 5/9 + 273.15; break;
+            case '°R':  kVal = raw * 5/9; break;
+            default:    kVal = raw;
+          }
+          dispVal = fromK(kVal);
+        } else {
+          dispVal = raw;
+        }
         // Honor explicit [unit] override on RHS
         const tagUnit = (snap.varUnitOverrides && snap.varUnitOverrides[v]) || '';
         if (tagUnit && tagUnit !== unitLabel) {
@@ -7454,6 +7890,37 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       {n:'Psat_R134a',a:'(T)'}, {n:'Tsat_R134a',a:'(P)'}, {n:'h_Ps_R134a',a:'(P,s)'},
     ];
     r134a.forEach(f => items.push({name:f.n, args:f.a, cat:'R134a', insert:f.n+f.a, cursorBack:f.a.split(',').length===1?1:f.a.length-1}));
+
+    // ── Combustion ideal-gas molar h_X(T), s_X(T) → kJ/kmol, kJ/(kmol·K) ─────
+    // (2-arg call routes to PR-EOS real fluid where available)
+    const combFns = [
+      {n:'h_N2',   a:'(T)'}, {n:'h_O2',   a:'(T)'}, {n:'h_H2',   a:'(T)'},
+      {n:'h_CO',   a:'(T)'}, {n:'h_CO2',  a:'(T)'}, {n:'h_H2O',  a:'(T)'},
+      {n:'h_OH',   a:'(T)'}, {n:'h_NO',   a:'(T)'}, {n:'h_NO2',  a:'(T)'},
+      {n:'h_CH4',  a:'(T)'}, {n:'h_C2H6', a:'(T)'}, {n:'h_C2H2', a:'(T)'},
+      {n:'h_C2H4', a:'(T)'}, {n:'h_C3H8', a:'(T)'}, {n:'h_C4H10',a:'(T)'},
+      {n:'h_C8H18',a:'(T)'},
+      {n:'s_N2',   a:'(T)'}, {n:'s_O2',   a:'(T)'}, {n:'s_H2',   a:'(T)'},
+      {n:'s_CO',   a:'(T)'}, {n:'s_CO2',  a:'(T)'}, {n:'s_H2O',  a:'(T)'},
+      {n:'s_OH',   a:'(T)'}, {n:'s_NO',   a:'(T)'}, {n:'s_NO2',  a:'(T)'},
+      {n:'s_CH4',  a:'(T)'}, {n:'s_C2H6', a:'(T)'}, {n:'s_C2H2', a:'(T)'},
+      {n:'s_C2H4', a:'(T)'}, {n:'s_C3H8', a:'(T)'}, {n:'s_C4H10',a:'(T)'},
+      {n:'s_C8H18',a:'(T)'},
+    ];
+    combFns.forEach(f => items.push({name:f.n, args:f.a, cat:'Combustion', insert:f.n+f.a, cursorBack:1}));
+
+    // ── Liquid fuel formation enthalpies (kJ/kmol) ──────────────────────────
+    const liqFuels = [
+      {n:'hf_C8H18l',  d:'n-Octane (l)'},     {n:'hf_octane_l',   d:'n-Octane (l)'},
+      {n:'hf_C7H16l',  d:'n-Heptane (l)'},    {n:'hf_heptane_l',  d:'n-Heptane (l)'},
+      {n:'hf_C12H26l', d:'n-Dodecane (l)'},   {n:'hf_dodecane_l', d:'n-Dodecane (l)'},
+      {n:'hf_C6H6l',   d:'Benzene (l)'},      {n:'hf_benzene_l',  d:'Benzene (l)'},
+      {n:'hf_C6H14l',  d:'n-Hexane (l)'},     {n:'hf_hexane_l',   d:'n-Hexane (l)'},
+      {n:'hf_C5H12l',  d:'n-Pentane (l)'},    {n:'hf_pentane_l',  d:'n-Pentane (l)'},
+      {n:'hf_CH3OHl',  d:'Methanol (l)'},     {n:'hf_methanol_l', d:'Methanol (l)'},
+      {n:'hf_C2H5OHl', d:'Ethanol (l)'},      {n:'hf_ethanol_l',  d:'Ethanol (l)'},
+    ];
+    liqFuels.forEach(f => items.push({name:f.n, args:'', cat:'Liquid Fuel hf', insert:f.n, cursorBack:0}));
 
     // ── Psychrometrics ─────────────────────────────────────────────────────
     const psychro = [
