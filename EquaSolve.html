@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.54</title>
+<title>EquaSolve V1.3.55</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -632,7 +632,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.54</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.55</div>
       </div>
     </div>
 
@@ -712,7 +712,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.54</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.55</span></div>
       
     </div>
   </div>
@@ -883,7 +883,7 @@ textarea.eq-ta::placeholder{color:var(--mute)}
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.54</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.55</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1978,20 +1978,31 @@ const M = Math;
 // ═══════════════════════════════════════════════════════════════════
 
 // 1D: find T such that propFn(T) = target, given a list of initial guesses
+// V1.3.55: Inversion temperature ceiling fix for low-Tc gases.
+// Upper temperature bound for inversion. For high-Tc fluids (water, refrigerants)
+// the search naturally lives near/below Tc, so Tcrit*1.499 is fine. But gas-phase
+// fluids have low Tc (air 132 K, N2 126 K, H2 33 K) yet operate far above it in
+// power cycles (300-2000 K). Capping at Tcrit*1.499 made every (P,s)/(P,h)/(h,s)
+// inversion for these fluids fail. Use a generous absolute floor so single-phase
+// gases can reach combustion-level temperatures while keeping near-critical
+// resolution for condensable fluids.
+function _invTup(Tcrit) { return M.max(Tcrit * 1.499, 3000); }
+
 function invertT(target, propFn, derivFn, guesses, Tmin, Tcrit) {
+  const Tup = _invTup(Tcrit);
   let bestT = null, bestErr = Infinity;
   for (const T0 of guesses) {
-    let T = M.min(M.max(T0, Tmin + 0.5), Tcrit * 1.499);
+    let T = M.min(M.max(T0, Tmin + 0.5), Tup);
     for (let i = 0; i < 150; i++) {
       let f, df;
       try {
         f = propFn(T) - target;
         df = derivFn(T);
-      } catch(e) { T = M.min(T + 10, Tcrit * 1.4); continue; }
-      if (!isFinite(f) || !isFinite(df) || M.abs(df) < 1e-25) { T = M.min(T + 10, Tcrit * 1.4); continue; }
+      } catch(e) { T = M.min(T + 10, Tup); continue; }
+      if (!isFinite(f) || !isFinite(df) || M.abs(df) < 1e-25) { T = M.min(T + 10, Tup); continue; }
       if (M.abs(f) < 1e-8) { return T; }
       const step = M.min(M.max(f / df, -50), 50);
-      T = M.min(M.max(T - step, Tmin + 0.5), Tcrit * 1.499);
+      T = M.min(M.max(T - step, Tmin + 0.5), Tup);
     }
     try { const err = M.abs(propFn(T) - target); if (err < bestErr) { bestErr = err; bestT = T; } } catch(e) {}
   }
@@ -2023,9 +2034,10 @@ function invertP(target, propFn, guesses) {
 
 // 2D Newton: find (T, P) such that fn1(P,T)=t1 AND fn2(P,T)=t2
 function invert2D(fn1, fn2, t1, t2, seeds, Tmin, Tcrit) {
+  const Tup = _invTup(Tcrit);
   let bestTP = null, bestErr = Infinity;
   for (const [T0, P0] of seeds) {
-    let T = M.min(M.max(T0, Tmin + 0.5), Tcrit * 1.499);
+    let T = M.min(M.max(T0, Tmin + 0.5), Tup);
     let P = M.max(P0, 1e-8);
     for (let i = 0; i < 200; i++) {
       let f1, f2, df1dT, df1dP, df2dT, df2dP;
@@ -2036,15 +2048,15 @@ function invert2D(fn1, fn2, t1, t2, seeds, Tmin, Tcrit) {
         df1dP = (fn1(P + dP, T) - fn1(P - dP, T)) / (2 * dP);
         df2dT = (fn2(P, T + dT) - fn2(P, T - dT)) / (2 * dT);
         df2dP = (fn2(P + dP, T) - fn2(P - dP, T)) / (2 * dP);
-      } catch(e) { T = M.min(T + 5, Tcrit * 1.4); P *= 1.1; continue; }
+      } catch(e) { T = M.min(T + 5, Tup); P *= 1.1; continue; }
       const det = df1dT * df2dP - df1dP * df2dT;
-      if (!isFinite(f1) || !isFinite(f2) || M.abs(det) < 1e-25) { T = M.min(T + 5, Tcrit * 1.4); P *= 1.1; continue; }
+      if (!isFinite(f1) || !isFinite(f2) || M.abs(det) < 1e-25) { T = M.min(T + 5, Tup); P *= 1.1; continue; }
       // Relative convergence: each residual normalised by its target magnitude
       const s1 = M.max(M.abs(t1), 1e-10), s2 = M.max(M.abs(t2), 1e-10);
       if (M.abs(f1)/s1 < 1e-7 && M.abs(f2)/s2 < 1e-7) { return { T, P }; }
       const dT_s = M.min(M.max((f1 * df2dP - f2 * df1dP) / det, -30), 30);
       const dP_s = M.min(M.max((f2 * df1dT - f1 * df2dT) / det, -P * 0.8), P * 2);
-      T = M.min(M.max(T - dT_s, Tmin + 0.5), Tcrit * 1.499);
+      T = M.min(M.max(T - dT_s, Tmin + 0.5), Tup);
       P = M.max(P - dP_s, 1e-8);
     }
     try {
@@ -2681,7 +2693,13 @@ function createFluid(data){
   const vf=T=>{return satProps(T).vf;};
   const vg=T=>{return satProps(T).vg;};
   // Guess helpers
-  const Tgs=(P)=>{const Ts=Tsat(P);return isNaN(Ts)?[Tc*0.8,300,200,Tc*0.5]:[Ts+20,Ts+100,Ts-10,Tc*0.8,300];};
+  // Initial-guess temperatures for inversion. For supercritical pressure (Tsat=NaN,
+  // e.g. air/N2/H2 in a gas cycle) seed a broad ladder from cryogenic up to
+  // combustion temperatures so Newton can converge anywhere in 60-2500 K. Without
+  // the high seeds, low-Tc gases could not reach turbine/combustor states.
+  const Tgs=(P)=>{const Ts=Tsat(P);return isNaN(Ts)
+    ?[300,Tc*0.8,200,Tc*0.5,500,800,1200,1600,2000,2400]
+    :[Ts+20,Ts+100,Ts-10,Tc*0.8,300,500,800];};
   const Pgs=(T)=>{const Ps=Psat(T);return isNaN(Ps)?[0.1,1,5]:[Ps*0.8,Ps*1.2,0.1,Ps*3];};
   // ── (P, v) ──
   function T_Pv(P,vt){return invertT(vt,T=>v(P,T),T=>{const dT=0.1;return(v(P,T+dT)-v(P,T-dT))/(2*dT);},Tgs(P),Tmin,Tc);}
@@ -2695,7 +2713,9 @@ function createFluid(data){
   function TP_hs(ht,st){
     const Psc=Psat(Tc*0.85)||Pc*0.7;
     const seeds=[[Tc*0.8,Psc],[300,0.1],[400,1],[500,5],[Tc*0.6,0.5],[250,0.05],
-      [Tc*1.1,Pc*1.2],[Tc*1.3,Pc*1.5],[Tc*1.6,Pc*2],[Tc*2,Pc*3]
+      [Tc*1.1,Pc*1.2],[Tc*1.3,Pc*1.5],[Tc*1.6,Pc*2],[Tc*2,Pc*3],
+      // High-T seeds for low-Tc gases (air/N2/H2) in power cycles
+      [600,0.1],[800,0.5],[1200,1],[1800,2],[2400,3]
     ].filter(([T,P])=>isFinite(T)&&isFinite(P)&&T>Tmin);
     return invert2D(h,s,ht,st,seeds,Tmin,Tc*2);
   }
