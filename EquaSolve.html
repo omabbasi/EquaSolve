@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.70</title>
+<title>EquaSolve V1.3.73</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -94,7 +94,7 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
   #type-badge{flex-shrink:0;}
   #solve-status{font-size:10px;white-space:nowrap;flex-shrink:1;max-width:80px;overflow:hidden;text-overflow:ellipsis;}
   /* ── Editor ── */
-  textarea.eq-ta{min-height:120px;font-size:12px;line-height:20px;height:40dvh;overflow-y:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;color:var(--hi) !important;}
+  textarea.eq-ta{min-height:120px;font-size:12px;line-height:20px;height:40dvh;overflow-y:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;color:transparent !important;-webkit-text-fill-color:transparent !important;caret-color:var(--hi) !important;}
   .eq-highlight{font-size:12px;line-height:20px;height:40dvh;overflow-y:hidden !important;white-space:pre;}
   .ed-wrap{overflow:visible;}
 
@@ -636,7 +636,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.70</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.73</div>
       </div>
     </div>
 
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.70</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.73</span></div>
       
     </div>
   </div>
@@ -887,7 +887,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.70</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.73</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3797,7 +3797,7 @@ function _a17_vr(T){return _a17_lerp(_A17_T,_A17_vr,toK(T));}
 function _a17_so(T){return _a17_lerp(_A17_T,_A17_so,toK(T));}
 // Inverse: property → T (returned in display units via fromK).
 // _A17_h, _A17_Pr, _A17_so are all monotonic increasing in T → invert by interpolating with axes swapped.
-// V1.3.70: Air inverse functions must return in UNITS.tempIn (the solver's
+// V1.3.73: Air inverse functions must return in UNITS.tempIn (the solver's
 // working temperature unit), NOT UNITS.temp (the display unit). Using fromK()
 // was correct when tempIn===temp, but breaks when the [K] bracket auto-override
 // sets tempIn='K' while display remains °C: the function would return a °C
@@ -4706,18 +4706,20 @@ function _seedBracketDimsFromText(rawTxt) {
     'MJ/kg':[0,2,-2,0,0,0,0], 'BTU/lb':[0,2,-2,0,0,0,0],
     // ── Specific heat / entropy [kJ/(kg·K)] ──────────────────
     'kJ/kg.K':[0,2,-2,0,-1,0,0], 'kJ/kg/K':[0,2,-2,0,-1,0,0],
-    'kJ/(kg.K)':[0,2,-2,0,-1,0,0], 'kJ/(kg·K)':[0,2,-2,0,-1,0,0],
+    'kJ/(kg.K)':[0,2,-2,0,-1,0,0], 'kJ/(kg·K)':[0,2,-2,0,-1,0,0], 'kJ/(kg*K)':[0,2,-2,0,-1,0,0],
     'J/kg.K':[0,2,-2,0,-1,0,0], 'J/kg/K':[0,2,-2,0,-1,0,0],
     'J/(kg·K)':[0,2,-2,0,-1,0,0], 'BTU/lb/F':[0,2,-2,0,-1,0,0],
     // ── Density [kg/m³] ──────────────────────────────────────
     'kg/m3':[1,-3,0,0,0,0,0], 'kg/m^3':[1,-3,0,0,0,0,0],
     'g/cm3':[1,-3,0,0,0,0,0], 'g/L':[1,-3,0,0,0,0,0],
     // ── Thermal conductivity [W/(m·K)] ────────────────────────
-    'W/m/K':[1,1,-3,0,-1,0,0], 'W/m.K':[1,1,-3,0,-1,0,0],
-    'W/(m·K)':[1,1,-3,0,-1,0,0],
+    'W/m/K':[1,1,-3,0,-1,0,0], 'W/m.K':[1,1,-3,0,-1,0,0], 'W/m*K':[1,1,-3,0,-1,0,0],
+    'W/(m·K)':[1,1,-3,0,-1,0,0], 'W/(m*K)':[1,1,-3,0,-1,0,0], 'W/(m.K)':[1,1,-3,0,-1,0,0],
+    'kW/m/K':[1,1,-3,0,-1,0,0], 'kW/(m·K)':[1,1,-3,0,-1,0,0], 'kW/(m*K)':[1,1,-3,0,-1,0,0],
     // ── Heat transfer coefficient [W/(m²·K)] ─────────────────
-    'W/m2/K':[1,0,-3,0,-1,0,0], 'W/m^2/K':[1,0,-3,0,-1,0,0],
-    'W/(m2·K)':[1,0,-3,0,-1,0,0], 'kW/m2/K':[1,0,-3,0,-1,0,0],
+    'W/m2/K':[1,0,-3,0,-1,0,0], 'W/m^2/K':[1,0,-3,0,-1,0,0], 'W/m2*K':[1,0,-3,0,-1,0,0],
+    'W/(m2·K)':[1,0,-3,0,-1,0,0], 'W/(m2*K)':[1,0,-3,0,-1,0,0], 'W/(m²*K)':[1,0,-3,0,-1,0,0],
+    'kW/m2/K':[1,0,-3,0,-1,0,0], 'kW/(m2*K)':[1,0,-3,0,-1,0,0],
     // ── Dynamic viscosity [Pa·s] ──────────────────────────────
     'Pa.s':[1,-1,-1,0,0,0,0], 'Pa*s':[1,-1,-1,0,0,0,0],
     'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
@@ -5148,16 +5150,22 @@ const _UNIT_SI_FACTORS = {
   // Specific volume (m³/kg)
   'm³/kg':1, 'm3/kg':1, 'L/kg':1e-3, 'ft³/lb':0.0624280,
   // Specific entropy (J/(kg·K))
-  'J/(kg·K)':1, 'J/kg·K':1, 'J/kgK':1, 'kJ/(kg·K)':1e3, 'kJ/kg·K':1e3, 'kJ/kgK':1e3,
+  'J/(kg·K)':1, 'J/kg·K':1, 'J/kgK':1, 'J/(kg*K)':1, 'kJ/(kg·K)':1e3, 'kJ/kg·K':1e3, 'kJ/kgK':1e3, 'kJ/(kg*K)':1e3,
   'BTU/(lb·°F)':4186.8, 'BTU/lb·°F':4186.8,
   // Heat capacity rate (W/K)
   'W/K':1, 'kW/K':1e3, 'MW/K':1e6,
   // Heat transfer coeff (W/(m²·K))
   'W/(m²·K)':1, 'W/m²·K':1, 'W/m²K':1, 'W/m2·K':1, 'W/m2K':1,
+  'W/(m²*K)':1, 'W/m²*K':1, 'W/(m2*K)':1, 'W/m2*K':1,
+  'W/(m².K)':1, 'W/m².K':1, 'W/(m2.K)':1, 'W/m2.K':1,
   'kW/(m²·K)':1e3, 'kW/m²·K':1e3, 'kW/m²K':1e3, 'kW/m2·K':1e3, 'kW/m2K':1e3,
+  'kW/(m²*K)':1e3, 'kW/m²*K':1e3, 'kW/(m2*K)':1e3, 'kW/m2*K':1e3,
   // Thermal conductivity (W/(m·K))
-  'W/(m·K)':1, 'W/m·K':1, 'W/mK':1,
-  'kW/(m·K)':1e3,
+  'W/(m·K)':1, 'W/m·K':1, 'W/mK':1, 'W/(m*K)':1, 'W/m*K':1, 'W/(m.K)':1, 'W/m.K':1,
+  'kW/(m·K)':1e3, 'kW/(m*K)':1e3, 'kW/m*K':1e3, 'kW/(m.K)':1e3,
+  // BTU specific heat
+  'BTU/(lb·°F)':4186.8, 'BTU/lb·°F':4186.8,
+  'BTU/(lb*°F)':4186.8, 'BTU/lb*°F':4186.8, 'BTU/(lb.°F)':4186.8,
   // Mass flow (kg/s)
   'kg/s':1, 'kg/min':1/60, 'kg/min_t':1/60, 'kg/h':1/3600, 'g/s':1e-3, 'lb/s':0.453592,
   'g/min':1e-3/60, 'g/min_t':1e-3/60, 'lb/min':0.453592/60, 'lb/min_t':0.453592/60,
@@ -5175,7 +5183,7 @@ const _UNIT_SI_FACTORS = {
   // Force
   'N':1, 'kN':1e3, 'MN':1e6, 'lbf':4.44822,
   // Viscosity
-  'Pa·s':1, 'Pa.s':1, 'mPa·s':1e-3, 'mPa.s':1e-3, 'cP':1e-3,
+  'Pa·s':1, 'Pa.s':1, 'Pa*s':1, 'mPa·s':1e-3, 'mPa.s':1e-3, 'mPa*s':1e-3, 'cP':1e-3,
   // Dimensionless (ratios)
   '%':0.01, 'ppm':1e-6,
 };
@@ -5201,10 +5209,16 @@ const _UNIT_DIM_GROUP = {
   'm²':'area','m2':'area','cm²':'area','ft²':'area',
   'm³':'vol','m3':'vol','L':'vol','l':'vol','mL':'vol','ft³':'vol','gal':'vol',
   'm³/kg':'specV','m3/kg':'specV','L/kg':'specV','ft³/lb':'specV',
-  'J/(kg·K)':'specS','J/kg·K':'specS','J/kgK':'specS','kJ/(kg·K)':'specS','kJ/kg·K':'specS','kJ/kgK':'specS',
+  'J/(kg·K)':'specS','J/kg·K':'specS','J/kgK':'specS','J/(kg*K)':'specS','J/(kg.K)':'specS',
+  'kJ/(kg·K)':'specS','kJ/kg·K':'specS','kJ/kgK':'specS','kJ/(kg*K)':'specS','kJ/(kg.K)':'specS',
   'W/K':'hcr','kW/K':'hcr','MW/K':'hcr',
-  'W/(m²·K)':'htc','W/m²·K':'htc','W/m²K':'htc','W/m2·K':'htc','W/m2K':'htc','kW/(m²·K)':'htc','kW/m²·K':'htc','kW/m²K':'htc',
-  'W/(m·K)':'thk','W/m·K':'thk','W/mK':'thk','kW/(m·K)':'thk',
+  'W/(m²·K)':'htc','W/m²·K':'htc','W/m²K':'htc','W/m2·K':'htc','W/m2K':'htc',
+  'W/(m²*K)':'htc','W/m²*K':'htc','W/(m2*K)':'htc','W/m2*K':'htc',
+  'W/(m².K)':'htc','W/m².K':'htc','W/(m2.K)':'htc','W/m2.K':'htc',
+  'kW/(m²·K)':'htc','kW/m²·K':'htc','kW/m²K':'htc','kW/(m²*K)':'htc','kW/m²*K':'htc',
+  'kW/m2·K':'htc','kW/m2K':'htc','kW/(m2*K)':'htc','kW/m2*K':'htc',
+  'W/(m·K)':'thk','W/m·K':'thk','W/mK':'thk','W/(m*K)':'thk','W/m*K':'thk','W/(m.K)':'thk','W/m.K':'thk',
+  'kW/(m·K)':'thk','kW/(m*K)':'thk','kW/m*K':'thk','kW/(m.K)':'thk',
   'kg/s':'mflow','kg/min':'mflow','kg/h':'mflow','g/s':'mflow','lb/s':'mflow',
   // V1.3.42: extra flow-rate entries (incl. Unicode m³ and lb/min) so _tryUnitConvert
   // can convert between display label ('m³/s') and bracket label ('m³/min', etc.)
@@ -5214,7 +5228,7 @@ const _UNIT_DIM_GROUP = {
   'gal/min':'vflow','ft³/min':'vflow','ft3/min':'vflow',
   'm/s':'vel','km/h':'vel','mph':'vel','ft/s':'vel',
   'N':'force','kN':'force','MN':'force','lbf':'force',
-  'Pa·s':'visc','Pa.s':'visc','mPa·s':'visc','cP':'visc',
+  'Pa·s':'visc','Pa.s':'visc','Pa*s':'visc','mPa·s':'visc','mPa.s':'visc','mPa*s':'visc','cP':'visc',
 };
 
 function _tryUnitConvert(rawVal, inferredUnitStr, targetUnitStr) {
@@ -5292,16 +5306,25 @@ function buildCompoundTable() {
       ...(()=>{const SV={'m³/kg':1,'L/kg':1e3,'ft³/lb':16.0185}[UNITS.vol]||1;
         return {'m3/kg':SV,'m³/kg':SV,'L/kg':1e-3*SV,'ft3/lb':(1/16.0185)*SV,'ft³/lb':(1/16.0185)*SV};})(),
       // ── Thermal conductivity [W/(m·K)] — stored in SI ────────────
-      'W/m/K':1, 'W/m*K':1, 'kW/m/K':1000, 'W/cm/K':100, 'W/mm/K':1000,
-      'W/m/C':1,  // per °C same factor as per K
+      'W/m/K':1, 'W/m*K':1, 'W/m.K':1, 'W/(m*K)':1, 'W/(m.K)':1,
+      'kW/m/K':1000, 'kW/m*K':1000, 'kW/m.K':1000, 'kW/(m*K)':1000, 'kW/(m.K)':1000,
+      'W/cm/K':100, 'W/cm.K':100, 'W/cm*K':100,
+      'W/mm/K':1000, 'W/mm.K':1000, 'W/mm*K':1000,
+      'W/m/C':1, 'W/m*C':1, 'W/m.C':1, 'W/(m*C)':1, 'W/(m.C)':1,
       // ── Heat transfer coefficient [W/(m²·K)] ─────────────────────
-      'W/m2/K':1, 'W/m^2/K':1, 'kW/m2/K':1000, 'W/cm2/K':10000,
-      'W/m2/C':1, 'W/m^2/C':1,
+      'W/m2/K':1, 'W/m^2/K':1, 'W/m2*K':1, 'W/m2.K':1,
+      'W/(m2*K)':1, 'W/(m2.K)':1, 'W/(m²*K)':1, 'W/m²*K':1, 'W/m².K':1,
+      'kW/m2/K':1000, 'kW/m^2/K':1000, 'kW/m2*K':1000, 'kW/(m2*K)':1000,
+      'W/m2/C':1, 'W/m^2/C':1, 'W/m2*C':1, 'W/(m2*C)':1,
       // ── Specific heat [kJ/(kg·K)] — stored in display energy/mass ─
       'kJ/kg/K':1/E*M, 'J/kg/K':1e-3/E*M, 'kJ/kg/C':1/E*M, 'J/kg/C':1e-3/E*M,
       'kJ/kg.K':1/E*M, 'J/kg.K':1e-3/E*M, 'kJ/kg.C':1/E*M,
-      'kJ/(kg.K)':1/E*M, 'kJ/(kg·K)':1/E*M, 'J/(kg·K)':1e-3/E*M,
+      'kJ/(kg.K)':1/E*M, 'kJ/(kg·K)':1/E*M, 'kJ/(kg*K)':1/E*M,
+      'kJ/(kg.C)':1/E*M, 'kJ/(kg*C)':1/E*M,
+      'J/(kg·K)':1e-3/E*M, 'J/(kg.K)':1e-3/E*M, 'J/(kg*K)':1e-3/E*M,
       'BTU/lb/F':4.1868/E*M, 'BTU/lb/R':4.1868/E*M,
+      'BTU/(lb*F)':4.1868/E*M, 'BTU/(lb.F)':4.1868/E*M, 'BTU/lb*F':4.1868/E*M,
+      'BTU/(lb*R)':4.1868/E*M, 'BTU/(lb.R)':4.1868/E*M,
       // ── Specific energy [kJ/kg] ───────────────────────────────────
       'kJ/kg':1/E*M, 'J/kg':1e-3/E*M, 'MJ/kg':1000/E*M,
       'BTU/lb':2.326/E*M, 'kcal/kg':4.1868/E*M,
