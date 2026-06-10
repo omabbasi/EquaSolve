@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.73</title>
+<title>EquaSolve V1.3.74</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -636,7 +636,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.73</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.74</div>
       </div>
     </div>
 
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.73</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.74</span></div>
       
     </div>
   </div>
@@ -887,7 +887,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.73</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.74</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3797,7 +3797,7 @@ function _a17_vr(T){return _a17_lerp(_A17_T,_A17_vr,toK(T));}
 function _a17_so(T){return _a17_lerp(_A17_T,_A17_so,toK(T));}
 // Inverse: property → T (returned in display units via fromK).
 // _A17_h, _A17_Pr, _A17_so are all monotonic increasing in T → invert by interpolating with axes swapped.
-// V1.3.73: Air inverse functions must return in UNITS.tempIn (the solver's
+// V1.3.74: Air inverse functions must return in UNITS.tempIn (the solver's
 // working temperature unit), NOT UNITS.temp (the display unit). Using fromK()
 // was correct when tempIn===temp, but breaks when the [K] bracket auto-override
 // sets tempIn='K' while display remains °C: the function would return a °C
@@ -6192,20 +6192,24 @@ N_O2     = a - 2                 // excess O2 (zero at 100%)
 N_N2     = 3.76 * a
 
 N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)`},
-  {text:`// Adiabatic Flame Temp — CH4 + variable % theoretical air (rich, < 100%)
-// CH4 + a(O2 + 3.76 N2) → (a-1) CO2 + (2-a) CO + 2 H2O + 3.76a N2
-// Valid for 50% < pct_air < 100%  (below 50% H2/soot appear)
+  {text:`// Adiabatic Flame Temp — CH4 + variable theoretical air
+// CH4 + a(O2 + 3.76 N2) → products (complete combustion, no dissociation)
+// Rich (50–100%):  (a-1) CO2 + (2-a) CO + 2 H2O + 3.76a N2
+// Lean (>100%):    CO2 + 2 H2O + (a-2) O2 + 3.76a N2
+// min/max select the regime; carbon stays conserved across pct_air=100
 T_react  = 298.15 [K]
-pct_air  = 80            // % theoretical air (50 to 100 for rich)
+pct_air  = 180           // % theoretical air (>=50)
 
-a        = (pct_air / 100) * 2   // actual O2 supplied per kmol CH4
+lambda   = pct_air / 100
+a        = 2 * lambda     // actual O2 supplied per kmol CH4
 
-N_CO2    = a - 1
-N_CO     = 2 - a
+N_CO2    = min(1, a - 1)
+N_CO     = max(0, 2 - a)
 N_H2O    = 2
+N_O2     = max(0, a - 2)
 N_N2     = 3.76 * a
 
-N_CO2*h_CO2(T_prod) + N_CO*h_CO(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)`},
+N_CO2*h_CO2(T_prod) + N_CO*h_CO(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react) + a*h_O2(T_react) + N_N2*h_N2(T_react)`},
   {text:`// Adiabatic Flame Temp — Liquid octane + 100% theoretical air
 // C8H18(l) + 12.5(O2 + 3.76 N2) → 8 CO2 + 9 H2O + 47 N2
 // hf_C8H18l is a built-in dimensional constant (kJ/kmol at 298.15 K)
