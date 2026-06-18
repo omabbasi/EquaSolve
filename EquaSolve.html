@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.74</title>
+<title>EquaSolve V1.3.78</title>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -386,6 +386,14 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   .diag-legend{font-size:10px!important;color:#333!important;padding:6px 10px!important;}
   .diag-legend-item{color:#111!important;}
   canvas{max-width:100%!important;display:block;}
+  /* V1.3.76: chart canvases carry inline px sizes from the SCREEN layout
+     (style.width/height set at draw time). In print the wraps change size
+     (sweep 200px, ODE 220px, diagram 300px), so the stale inline geometry
+     overflowed the card and the plot was CLIPPED at the right/bottom.
+     !important stylesheet rules beat inline styles — force the element to
+     exactly fill its wrap so clipping is impossible, regardless of when
+     (or whether) a print-time redraw fired. */
+  #sweep-canvas,#ode-canvas,#diag-canvas{width:100%!important;height:100%!important;}
   /* Force white behind canvases in case JS redraw hasn't fired yet */
   canvas{background:#fff!important;}
   #ode-canvas,#sweep-canvas,#diag-canvas,#moody-canvas,#psychro-canvas{background:#fff!important;}
@@ -636,7 +644,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.74</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.78</div>
       </div>
     </div>
 
@@ -716,7 +724,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.74</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.78</span></div>
       
     </div>
   </div>
@@ -737,8 +745,9 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
     <button class="ex-btn" data-ex="6">R744: (v,u) State</button>
     <button class="ex-btn" data-ex="7">NH₃: (v,s) State</button>
     <button class="ex-btn" data-ex="8">Rankine Full</button>
-    <button class="ex-btn" data-ex="43">Combust: CH₄ Flame Temp</button>
-    <button class="ex-btn" data-ex="44">Combust: Octane(l) Flame Temp</button>
+    <button class="ex-btn" data-ex="43">Combust: CH₄ Flame (lean)</button>
+    <button class="ex-btn" data-ex="44">Combust: CH₄ Flame (50–200% air)</button>
+    <button class="ex-btn" data-ex="45">Combust: Octane(l) Flame Temp</button>
   </div>
   <div class="s-sec">
     <div class="s-lbl">Live Parameters — Examples</div>
@@ -887,7 +896,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.74</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.78</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3725,7 +3734,7 @@ function setActiveFunctions(){
   if (typeof applyCombustionFunctions === 'function') applyCombustionFunctions();
 }
 setActiveFunctions();
-// ── Internal unit conversion factors for >> operator and [unit] brackets ──
+// ── Internal unit conversion factors for [unit] brackets ──
 // NOT in CONSTS/KNOWN — unit names are not usable as bare variables.
 // Populated by updateUnitConsts() based on current display unit settings.
 const _OP_CONSTS = {};
@@ -4250,26 +4259,25 @@ const UNIT_DIM = {
   s:{si:1,        dim:_D.s},  ms:{si:1e-3,   dim:_D.s},
   min_t:{si:60,   dim:_D.s},  hr:{si:3600,   dim:_D.s},
   hour:{si:3600,  dim:_D.s},
-  s:{si:1,        dim:_D.s},  // s = second in dimensional context only (not in CONSTS — reserved for entropy)
-  sec:{si:1,      dim:_D.s},
+  sec:{si:1,      dim:_D.s},  // s/sec = second in dimensional context only (not in CONSTS — reserved for entropy)
   h_t:{si:3600,   dim:_D.s},  // h = hour in dimensional context (not in CONSTS — reserved for enthalpy)
   day:{si:86400,  dim:_D.s},  yr:{si:31536000,dim:_D.s},
   // ── Temperature ───────────────────────────────────────────────
   K:{si:1,        dim:_D.K},   // K = Kelvin — in UNIT_DIM only, not CONSTS (avoid variable clash)
   K_unit:{si:1,   dim:_D.K},
-  // Temperature offset aliases for >> operator
+  // Temperature aliases (ΔT scale — offsets handled in the [unit] bracket pipeline)
   degC:{si:1,     dim:_D.K},
   degF:{si:1,     dim:_D.K},
   degR:{si:9/5,   dim:_D.K},
   // ── Force ─────────────────────────────────────────────────────
-  N:{si:1,        dim:_D.N},  newton:{si:1,  dim:_D.N},  kN:{si:1e3,     dim:_D.N},
+  N:{si:1,        dim:_D.N},  newton:{si:1,  dim:_D.N},
   kN:{si:1e3,     dim:_D.N},  MN:{si:1e6,   dim:_D.N},
   lbf:{si:4.44822,dim:_D.N},  kip:{si:4448.22,dim:_D.N},
   // ── Pressure ──────────────────────────────────────────────────
   Pa:{si:1,       dim:_D.Pa}, kPa:{si:1e3,  dim:_D.Pa},
   MPa:{si:1e6,    dim:_D.Pa}, GPa:{si:1e9,  dim:_D.Pa},
   bar:{si:1e5,    dim:_D.Pa}, mbar:{si:100, dim:_D.Pa},
-  atm:{si:101325, dim:_D.Pa}, psia:{si:6894.757,dim:_D.Pa},
+  atm:{si:101325, dim:_D.Pa}, psia:{si:6894.757,dim:_D.Pa}, psi:{si:6894.757,dim:_D.Pa},
   mmHg:{si:133.322,dim:_D.Pa},torr:{si:133.322,dim:_D.Pa},
   // ── Energy ────────────────────────────────────────────────────
   J:{si:1,        dim:_D.J},  joule:{si:1,  dim:_D.J},
@@ -4325,7 +4333,6 @@ function evalDimNode(nd) {
     const nargs = nd.args ? nd.args.length : 0;
     const _specE  = [0,2,-2,0,0,0,0];  // J/kg  (specific energy: h, u, ex, exf)
     const _specS  = [0,2,-2,0,-1,0,0]; // J/(kg·K) (specific entropy: s_PT etc.)
-    const _specV  = [0,3,-0,0,0,0,-1]; // actually m³/kg = [-1,3,0,0,0,0,0]
     const _specVo = [-1,3,0,0,0,0,0];  // m³/kg (specific volume: v_PT)
     const _molE   = [1,2,-2,0,0,-1,0]; // J/mol (molar energy: combustion h_X(T))
     const _molS   = [1,2,-2,0,-1,-1,0];// J/(mol·K) (molar entropy: combustion s_X(T))
@@ -4423,7 +4430,7 @@ function dimToLabel(dim) {
   if (eq(_D.J))                  return UNITS.energy;
   if (eq(_D.W))                  return UNITS.power;
   if (eq([0,3,0,0,0,0,0]))       return ({m3:'m³',L:'L',liter:'L',cm3:'cm³',ft3:'ft³',gallon:'gal',gal:'gal'}[UNITS.volAbs])||'m³';  // volume
-  if (eq([0,2,0,0,0,0,0]))       return 'm²';         // area
+  if (eq([0,2,0,0,0,0,0]))       return ({m:'m²',cm:'cm²',mm:'mm²',ft:'ft²',inch:'in²'}[UNITS.len])||'m²';  // area (display len²)
   if (eq([0,1,-1,0,0,0,0]))      return UNITS.vel;    // velocity m/s
   if (eq([0,1,-2,0,0,0,0]))      return 'm/s²';       // acceleration
   if (eq([1,-1,-1,0,0,0,0]))     return 'Pa·s';       // dynamic viscosity
@@ -4723,6 +4730,10 @@ function _seedBracketDimsFromText(rawTxt) {
     // ── Dynamic viscosity [Pa·s] ──────────────────────────────
     'Pa.s':[1,-1,-1,0,0,0,0], 'Pa*s':[1,-1,-1,0,0,0,0],
     'mPa.s':[1,-1,-1,0,0,0,0], 'cP':[1,-1,-1,0,0,0,0],
+    // ── V1.3.75: no-separator spellings (single tokens, parser can't split)
+    'kJ/kgK':[0,2,-2,0,-1,0,0], 'J/kgK':[0,2,-2,0,-1,0,0],
+    'W/mK':[1,1,-3,0,-1,0,0], 'kW/mK':[1,1,-3,0,-1,0,0], 'W/cmK':[1,1,-3,0,-1,0,0],
+    'W/m2K':[1,0,-3,0,-1,0,0], 'kW/m2K':[1,0,-3,0,-1,0,0],
   };
   // Use _origTxt (pre-preprocessing, brackets intact) not txt (already stripped)
   // V1.3.2: once a '/' appears, subsequent '*' or '·' are treated as denominator
@@ -4749,7 +4760,15 @@ function _seedBracketDimsFromText(rawTxt) {
       : (Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.toLowerCase())
          || Object.keys(bracketDimMap).find(k => k.toLowerCase() === u.replace(/\./g,'/').toLowerCase())
          || u);
-    if (bracketDimMap[uNorm]) _varDimCache[lhs] = bracketDimMap[uNorm].slice();
+    if (bracketDimMap[uNorm]) { _varDimCache[lhs] = bracketDimMap[uNorm].slice(); return; }
+    // V1.3.75: compositional fallback — derive the dim from the same parser
+    // that powers value conversion, so EVERY convertible bracket unit also
+    // seeds the dimensional engine (previously m³/kg, gal, hr, W/(m²*K) and
+    // ~100 other valid spellings converted fine but left the variable
+    // dimension-blind). Dimensionless units ([%], [rad]) seed nothing, same
+    // as before.
+    const _pd = _parseUnitToSI(bm[1].trim());
+    if (_pd && _pd.dim.some(x => x !== 0)) _varDimCache[lhs] = _pd.dim.slice();
   });
 }
 
@@ -5163,8 +5182,7 @@ const _UNIT_SI_FACTORS = {
   // Thermal conductivity (W/(m·K))
   'W/(m·K)':1, 'W/m·K':1, 'W/mK':1, 'W/(m*K)':1, 'W/m*K':1, 'W/(m.K)':1, 'W/m.K':1,
   'kW/(m·K)':1e3, 'kW/(m*K)':1e3, 'kW/m*K':1e3, 'kW/(m.K)':1e3,
-  // BTU specific heat
-  'BTU/(lb·°F)':4186.8, 'BTU/lb·°F':4186.8,
+  // BTU specific heat (extra separator spellings)
   'BTU/(lb*°F)':4186.8, 'BTU/lb*°F':4186.8, 'BTU/(lb.°F)':4186.8,
   // Mass flow (kg/s)
   'kg/s':1, 'kg/min':1/60, 'kg/min_t':1/60, 'kg/h':1/3600, 'g/s':1e-3, 'lb/s':0.453592,
@@ -5237,16 +5255,29 @@ function _tryUnitConvert(rawVal, inferredUnitStr, targetUnitStr) {
   try {
     const si_i = _UNIT_SI_FACTORS[inferredUnitStr] ?? _LABEL_SI[inferredUnitStr];
     const si_t = _UNIT_SI_FACTORS[targetUnitStr] ?? _LABEL_SI[targetUnitStr];
-    if (si_i == null || si_t == null) return {val: rawVal, converted: false};
-    // Dimensional safety: only convert within same unit group
     const grp_i = _UNIT_DIM_GROUP[inferredUnitStr];
     const grp_t = _UNIT_DIM_GROUP[targetUnitStr];
-    if (!grp_i || !grp_t || grp_i !== grp_t) return {val: rawVal, converted: false};
-    if (!isFinite(si_i) || !isFinite(si_t) || si_t === 0) return {val: rawVal, converted: false};
-    if (Math.abs(si_i / si_t - 1) < 1e-9) return {val: rawVal, converted: false};
-    const result = rawVal * si_i / si_t;
-    if (!isFinite(result)) return {val: rawVal, converted: false};
-    return {val: result, converted: true};
+    if (si_i != null && si_t != null && grp_i && grp_t && grp_i === grp_t &&
+        isFinite(si_i) && isFinite(si_t) && si_t !== 0) {
+      if (Math.abs(si_i / si_t - 1) < 1e-9) return {val: rawVal, converted: false};
+      const result = rawVal * si_i / si_t;
+      if (isFinite(result)) return {val: result, converted: true};
+    }
+    // V1.3.75: compositional fallback for spellings absent from the legacy
+    // group tables. Both unit strings must parse AND share the same dim
+    // vector ("only convert within same group", generalised). Pure
+    // temperatures are excluded — they need offset handling, not a scale.
+    const _pi = _parseUnitToSI(inferredUnitStr);
+    const _pt = _parseUnitToSI(targetUnitStr);
+    if (_pi && _pt && _pi.dim.every((v,i)=>v===_pt.dim[i])) {
+      const _isPureTemp = _pi.dim.every((v,i)=> i===4 ? v===1 : v===0);
+      if (!_isPureTemp && isFinite(_pi.si) && isFinite(_pt.si) && _pt.si !== 0) {
+        if (Math.abs(_pi.si / _pt.si - 1) < 1e-9) return {val: rawVal, converted: false};
+        const result = rawVal * _pi.si / _pt.si;
+        if (isFinite(result)) return {val: result, converted: true};
+      }
+    }
+    return {val: rawVal, converted: false};
   } catch(e) {
     return {val: rawVal, converted: false};
   }
@@ -5357,6 +5388,12 @@ function buildCompoundTable() {
       'm3/min':(1/60)/V3, 'm3/min_t':(1/60)/V3,
       'L/min_t':(1e-3/60)/V3,
       'gal/min_t':(3.78541e-3/60)/V3,
+      'ft3/min':(0.0283168/60)/V3, 'ft3/min_t':(0.0283168/60)/V3,
+      // ── V1.3.75: no-separator spellings (kgK / mK / m2K are single tokens,
+      // so the compositional parser cannot split them — exact keys required)
+      'kJ/kgK':1/E*M, 'J/kgK':1e-3/E*M, 'kJ/kgC':1/E*M, 'J/kgC':1e-3/E*M,
+      'W/mK':1, 'kW/mK':1000, 'W/cmK':100, 'W/mmK':1000, 'W/mC':1,
+      'W/m2K':1, 'kW/m2K':1000, 'W/m2C':1,
     };
   }
 function tryCompoundMatch(raw, k, table) {
@@ -5525,18 +5562,216 @@ const _UNIT_CANONICAL = {
   'l':'L','liter':'liter','litre':'liter','ml':'mL','cl':'cL','gal':'gal','gallon':'gallon',
   's':'s','sec':'sec','second':'sec','seconds':'sec',
   'ms':'ms','min':'min_t','min_t':'min_t','hr':'hr','hour':'hour','day':'day','yr':'yr',
-  'deg':'deg','rad':'rad','rpm':'rpm','%':'%','ppm':'ppm','cp':'cP'
+  'deg':'deg','rad':'rad','rpm':'rpm','%':'%','ppm':'ppm','cp':'cP',
+  // V1.3.75 additions
+  '\u00b0':'deg','knot':'knot','knots':'knot','kt':'knot','rev':'rev',
+  'hz':'Hz','khz':'kHz','mwh':'MWh',
+  'mol':'mol','kmol':'kmol','lbmol':'lbmol',
+  'in2':'inch2','in3':'inch3','psi':'psi','mg':'mg','m2':'m2','m3':'m3'
 };
+// V1.3.75: exact-spelling tokens — preserved verbatim, NEVER case-folded.
+// Without this, the per-token lowercase fold turned 'mPa·s' (millipascal-
+// second, a common viscosity unit) into 'MPa·s' — a silent 10⁹ conversion
+// error. Bare 'C'/'F'/'R' are intentionally absent so the single-letter
+// temperature shorthands keep canonicalising to degC/degF/degR.
+const _UNIT_EXACT = new Set(['mPa','mN','mW','mJ']);
 function _canonUnit(u){
   let s=String(u||'').trim().replace(/\s+/g,'');
   if(!s) return s;
-  s=s.replace(/\u00B7/g,'\u00b7').replace(/m\^3/g,'m3').replace(/m\^2/g,'m2')
-     .replace(/cm\^3/g,'cm3').replace(/cm\^2/g,'cm2')
-     .replace(/ft\^3/g,'ft3').replace(/ft\^2/g,'ft2')
-     .replace(/\u00b0c/gi,'\u00b0C').replace(/\u00b0f/gi,'\u00b0F').replace(/\u00b0r/gi,'\u00b0R');
+  // V1.3.75: Unicode superscripts and exponent carets → plain digits, so every
+  // downstream table needs only ONE spelling (m2/m3), and ²/³ variants of ANY
+  // unit (m³/min, cm³, W/m²·K …) resolve instead of erroring.
+  s=s.replace(/\u00B2/g,'2').replace(/\u00B3/g,'3').replace(/\^(\d)/g,'$1');
+  // V1.3.75: all multiplication-dot spellings (·, ⋅, •, and '.' between unit
+  // letters) → '*'. One canonical separator; the denominator rule ('*' after
+  // the first '/' acts as another '/') is applied by the consumers.
+  s=s.replace(/[\u00B7\u22C5\u2022]/g,'*')
+     .replace(/([A-Za-z\u00b0])\.(?=[A-Za-z\u00b0])/g,'$1*');
+  s=s.replace(/\u00b0c/gi,'\u00b0C').replace(/\u00b0f/gi,'\u00b0F').replace(/\u00b0r/gi,'\u00b0R');
   const low=s.toLowerCase();
-  if(_UNIT_CANONICAL[low]) return _UNIT_CANONICAL[low];
-  return s.replace(/[A-Za-z\u00b0][A-Za-z0-9\u00b0]*/g,t=>_UNIT_CANONICAL[t.toLowerCase()]||t);
+  let out;
+  if(_UNIT_CANONICAL[low] && !_UNIT_EXACT.has(s)) out=_UNIT_CANONICAL[low];
+  // V1.3.75: token char class now includes '_' so canonical names like 'min_t'
+  // survive (previously 'kg/min_t' re-canonicalised to 'kg/min_t_t' → unknown).
+  else out=s.replace(/[A-Za-z\u00b0][A-Za-z0-9_\u00b0]*/g,
+        t=>_UNIT_EXACT.has(t)?t:(_UNIT_CANONICAL[t.toLowerCase()]||t));
+  // V1.3.75: inside compound strings, temperature tokens act as ΔT — map
+  // degC/°C → C (etc.) so compound-table keys like 'W/m/C' and 'BTU/(lb*F)'
+  // are reachable. Standalone temperatures are untouched (offset handling).
+  if(/[*/]/.test(out)) out=out.replace(/\u00b0([CFR])/g,'$1').replace(/\bdeg([CFR])\b/g,'$1');
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  V1.3.75 — COMPOSITIONAL UNIT PARSER (single source of truth)
+//  Parses ANY bracket unit built from known atoms with * / ^ ( ) into
+//  {si, dim}. Sits UNDER the legacy exact-match tables as a universal
+//  fallback, so a missing table entry can no longer produce
+//  "Unknown unit" / "Cannot convert" for a physically valid unit
+//  (kJ/kmol, N*m/s, BTU/hr/ft2/R, kg/kmol, 1/K, …).
+//  Atoms carry SI value + 7-dim vector [kg, m, s, A, K, mol, cd].
+//  Temperature atoms are ΔT (scale only); absolute offsets are handled
+//  earlier in _bracketConvert.
+// ═══════════════════════════════════════════════════════════════════
+const _UNIT_ATOMS = (()=>{
+  const D=(kg,m,s,A,K,mol,cd)=>[kg,m,s,A,K,mol,cd];
+  const none=D(0,0,0,0,0,0,0);
+  return {
+    // mass
+    kg:{si:1,dim:D(1,0,0,0,0,0,0)}, g:{si:1e-3,dim:D(1,0,0,0,0,0,0)}, mg:{si:1e-6,dim:D(1,0,0,0,0,0,0)},
+    tonne:{si:1e3,dim:D(1,0,0,0,0,0,0)}, lb:{si:0.453592,dim:D(1,0,0,0,0,0,0)}, lbm:{si:0.453592,dim:D(1,0,0,0,0,0,0)},
+    slug:{si:14.5939,dim:D(1,0,0,0,0,0,0)},
+    // length / area / volume (digit-suffixed atoms; _canonUnit folds ²³ and ^N)
+    m:{si:1,dim:D(0,1,0,0,0,0,0)}, mm:{si:1e-3,dim:D(0,1,0,0,0,0,0)}, cm:{si:0.01,dim:D(0,1,0,0,0,0,0)},
+    km:{si:1e3,dim:D(0,1,0,0,0,0,0)}, ft:{si:0.3048,dim:D(0,1,0,0,0,0,0)}, inch:{si:0.0254,dim:D(0,1,0,0,0,0,0)},
+    yd:{si:0.9144,dim:D(0,1,0,0,0,0,0)}, mi:{si:1609.344,dim:D(0,1,0,0,0,0,0)},
+    m2:{si:1,dim:D(0,2,0,0,0,0,0)}, cm2:{si:1e-4,dim:D(0,2,0,0,0,0,0)}, mm2:{si:1e-6,dim:D(0,2,0,0,0,0,0)},
+    km2:{si:1e6,dim:D(0,2,0,0,0,0,0)}, ft2:{si:0.09290304,dim:D(0,2,0,0,0,0,0)}, inch2:{si:6.4516e-4,dim:D(0,2,0,0,0,0,0)},
+    m3:{si:1,dim:D(0,3,0,0,0,0,0)}, cm3:{si:1e-6,dim:D(0,3,0,0,0,0,0)}, mm3:{si:1e-9,dim:D(0,3,0,0,0,0,0)},
+    ft3:{si:0.0283168,dim:D(0,3,0,0,0,0,0)}, inch3:{si:1.6387064e-5,dim:D(0,3,0,0,0,0,0)},
+    L:{si:1e-3,dim:D(0,3,0,0,0,0,0)}, liter:{si:1e-3,dim:D(0,3,0,0,0,0,0)}, mL:{si:1e-6,dim:D(0,3,0,0,0,0,0)},
+    cL:{si:1e-5,dim:D(0,3,0,0,0,0,0)}, gal:{si:3.78541e-3,dim:D(0,3,0,0,0,0,0)}, gallon:{si:3.78541e-3,dim:D(0,3,0,0,0,0,0)},
+    // time (h = hour is unambiguous INSIDE a bracket unit string)
+    s:{si:1,dim:D(0,0,1,0,0,0,0)}, sec:{si:1,dim:D(0,0,1,0,0,0,0)}, ms:{si:1e-3,dim:D(0,0,1,0,0,0,0)},
+    min_t:{si:60,dim:D(0,0,1,0,0,0,0)}, h:{si:3600,dim:D(0,0,1,0,0,0,0)}, hr:{si:3600,dim:D(0,0,1,0,0,0,0)},
+    hour:{si:3600,dim:D(0,0,1,0,0,0,0)}, day:{si:86400,dim:D(0,0,1,0,0,0,0)}, yr:{si:31536000,dim:D(0,0,1,0,0,0,0)},
+    s2:{si:1,dim:D(0,0,2,0,0,0,0)}, s3:{si:1,dim:D(0,0,3,0,0,0,0)},
+    // temperature (ΔT scale factors; offsets handled before the parser runs)
+    K:{si:1,dim:D(0,0,0,0,1,0,0)}, C:{si:1,dim:D(0,0,0,0,1,0,0)},
+    F:{si:5/9,dim:D(0,0,0,0,1,0,0)}, R:{si:5/9,dim:D(0,0,0,0,1,0,0)},
+    degC:{si:1,dim:D(0,0,0,0,1,0,0)}, degF:{si:5/9,dim:D(0,0,0,0,1,0,0)}, degR:{si:5/9,dim:D(0,0,0,0,1,0,0)},
+    '\u00b0C':{si:1,dim:D(0,0,0,0,1,0,0)}, '\u00b0F':{si:5/9,dim:D(0,0,0,0,1,0,0)}, '\u00b0R':{si:5/9,dim:D(0,0,0,0,1,0,0)},
+    // amount of substance
+    mol:{si:1,dim:D(0,0,0,0,0,1,0)}, kmol:{si:1e3,dim:D(0,0,0,0,0,1,0)}, lbmol:{si:453.592,dim:D(0,0,0,0,0,1,0)},
+    // force
+    N:{si:1,dim:D(1,1,-2,0,0,0,0)}, kN:{si:1e3,dim:D(1,1,-2,0,0,0,0)}, MN:{si:1e6,dim:D(1,1,-2,0,0,0,0)},
+    mN:{si:1e-3,dim:D(1,1,-2,0,0,0,0)}, newton:{si:1,dim:D(1,1,-2,0,0,0,0)},
+    lbf:{si:4.44822,dim:D(1,1,-2,0,0,0,0)}, kip:{si:4448.22,dim:D(1,1,-2,0,0,0,0)},
+    // pressure
+    Pa:{si:1,dim:D(1,-1,-2,0,0,0,0)}, kPa:{si:1e3,dim:D(1,-1,-2,0,0,0,0)}, MPa:{si:1e6,dim:D(1,-1,-2,0,0,0,0)},
+    GPa:{si:1e9,dim:D(1,-1,-2,0,0,0,0)}, mPa:{si:1e-3,dim:D(1,-1,-2,0,0,0,0)},
+    bar:{si:1e5,dim:D(1,-1,-2,0,0,0,0)}, mbar:{si:100,dim:D(1,-1,-2,0,0,0,0)}, atm:{si:101325,dim:D(1,-1,-2,0,0,0,0)},
+    psi:{si:6894.757,dim:D(1,-1,-2,0,0,0,0)}, psia:{si:6894.757,dim:D(1,-1,-2,0,0,0,0)}, psf:{si:47.8803,dim:D(1,-1,-2,0,0,0,0)},
+    mmHg:{si:133.322,dim:D(1,-1,-2,0,0,0,0)}, torr:{si:133.322,dim:D(1,-1,-2,0,0,0,0)},
+    // energy
+    J:{si:1,dim:D(1,2,-2,0,0,0,0)}, kJ:{si:1e3,dim:D(1,2,-2,0,0,0,0)}, MJ:{si:1e6,dim:D(1,2,-2,0,0,0,0)},
+    GJ:{si:1e9,dim:D(1,2,-2,0,0,0,0)}, mJ:{si:1e-3,dim:D(1,2,-2,0,0,0,0)}, joule:{si:1,dim:D(1,2,-2,0,0,0,0)},
+    BTU:{si:1055.056,dim:D(1,2,-2,0,0,0,0)}, cal:{si:4.1868,dim:D(1,2,-2,0,0,0,0)}, kcal:{si:4186.8,dim:D(1,2,-2,0,0,0,0)},
+    Wh:{si:3600,dim:D(1,2,-2,0,0,0,0)}, kWh:{si:3.6e6,dim:D(1,2,-2,0,0,0,0)}, MWh:{si:3.6e9,dim:D(1,2,-2,0,0,0,0)},
+    // power
+    W:{si:1,dim:D(1,2,-3,0,0,0,0)}, kW:{si:1e3,dim:D(1,2,-3,0,0,0,0)}, MW:{si:1e6,dim:D(1,2,-3,0,0,0,0)},
+    GW:{si:1e9,dim:D(1,2,-3,0,0,0,0)}, mW:{si:1e-3,dim:D(1,2,-3,0,0,0,0)}, hp:{si:745.7,dim:D(1,2,-3,0,0,0,0)},
+    // composite velocity spellings used as single tokens
+    mph:{si:0.44704,dim:D(0,1,-1,0,0,0,0)}, kmh:{si:1/3.6,dim:D(0,1,-1,0,0,0,0)}, knot:{si:0.514444,dim:D(0,1,-1,0,0,0,0)},
+    // viscosity
+    cP:{si:1e-3,dim:D(1,-1,-1,0,0,0,0)},
+    // frequency / rotation
+    Hz:{si:1,dim:D(0,0,-1,0,0,0,0)}, kHz:{si:1e3,dim:D(0,0,-1,0,0,0,0)}, rpm:{si:Math.PI/30,dim:D(0,0,-1,0,0,0,0)},
+    // dimensionless
+    rad:{si:1,dim:none}, deg:{si:Math.PI/180,dim:none}, rev:{si:2*Math.PI,dim:none},
+    '%':{si:0.01,dim:none}, ppm:{si:1e-6,dim:none},
+  };
+})();
+
+// Parse a canonicalised unit string into {si, dim} or null.
+// Honors parentheses, '^N' exponents, and the engineering denominator rule:
+// at top level, every '*' AFTER the first '/' acts as another '/'
+// (kJ/kg*K ≡ kJ/kg/K), while parenthesised groups parse mathematically
+// (kJ/(kg*K) divides by both). Atoms with digit suffixes (m2, m3, s2) are
+// single tokens, so no exponent grammar is needed for the common cases.
+function _parseUnitToSI(unitStr){
+  try{
+    let u=_canonUnit(unitStr);
+    if(!u) return null;
+    // top-level denominator rule
+    let s='',depth=0,seenSlash=false;
+    for(const ch of u){
+      if(ch==='('){depth++;s+=ch;continue;}
+      if(ch===')'){depth=Math.max(0,depth-1);s+=ch;continue;}
+      if(ch==='/'&&depth===0)seenSlash=true;
+      if(ch==='*'&&depth===0&&seenSlash){s+='/';continue;}
+      s+=ch;
+    }
+    const toks=[];let i=0;
+    while(i<s.length){
+      const c=s[i];
+      if(/[A-Za-z\u00b0%]/.test(c)){let t='';while(i<s.length&&/[A-Za-z0-9_\u00b0%]/.test(s[i]))t+=s[i++];toks.push({t:'u',v:t});continue;}
+      if(/[0-9]/.test(c)){let t='';while(i<s.length&&/[0-9]/.test(s[i]))t+=s[i++];toks.push({t:'n',v:parseInt(t,10)});continue;}
+      if(c==='-'&&/[0-9]/.test(s[i+1]||'')){i++;let t='';while(i<s.length&&/[0-9]/.test(s[i]))t+=s[i++];toks.push({t:'n',v:-parseInt(t,10)});continue;}
+      if('*/^()'.includes(c)){toks.push({t:'o',v:c});i++;continue;}
+      return null;
+    }
+    if(!toks.length) return null;
+    let p=0;
+    const applyPow=(base)=>{
+      if(toks[p]&&toks[p].v==='^'){p++;const e=toks[p];if(!e||e.t!=='n')return null;p++;
+        return {si:Math.pow(base.si,e.v),dim:base.dim.map(d=>d*e.v)};}
+      return base;
+    };
+    function atom(){
+      const tk=toks[p];
+      if(!tk)return null;
+      if(tk.t==='o'&&tk.v==='('){p++;const r=chain();if(!r)return null;if(!toks[p]||toks[p].v!==')')return null;p++;return applyPow(r);}
+      if(tk.t==='u'){p++;const a=_UNIT_ATOMS[tk.v];if(!a)return null;return applyPow({si:a.si,dim:a.dim.slice()});}
+      if(tk.t==='n'&&tk.v===1){p++;return {si:1,dim:[0,0,0,0,0,0,0]};} // '1/s' style numerator
+      return null;
+    }
+    function chain(){
+      let Lh=atom();if(!Lh)return null;
+      while(toks[p]&&toks[p].t==='o'&&(toks[p].v==='*'||toks[p].v==='/')){
+        const op=toks[p].v;p++;const Rh=atom();if(!Rh)return null;
+        Lh = op==='*'
+          ? {si:Lh.si*Rh.si,dim:Lh.dim.map((d,j)=>d+Rh.dim[j])}
+          : {si:Lh.si/Rh.si,dim:Lh.dim.map((d,j)=>d-Rh.dim[j])};
+      }
+      return Lh;
+    }
+    const r=chain();
+    if(!r||p!==toks.length)return null;
+    if(!isFinite(r.si)||r.si<=0)return null;
+    return r;
+  }catch(e){return null;}
+}
+
+// Map a dim vector to "SI units per internal display unit" — i.e. the basis
+// the solver stores that quantity in. Anchored to EXACTLY the same bases the
+// legacy buildCompoundTable uses (pressure → display pres, specific energy →
+// display energy/mass, HTC/conductivity/heat-flux → SI, viscosity → display
+// pres·s, molar quantities → kJ/kmol, …) so parser-converted values land in
+// the same internal frame as table-converted ones. Unmatched dims fall back
+// to a generic composition over [kg, m, s, A, K, kmol, cd].
+function _dimDisplayBasisSI(dim){
+  const P=(()=>{const p={kPa:1e3,MPa:1e6,bar:1e5,psia:6894.757};return p[UNITS.pres]||1e6;})();
+  const E=(ENERGY_TO_KJ[UNITS.energy]||1)*1e3;          // J per display energy unit
+  const PW=(POWER_TO_W[UNITS.power]||1e3);              // W per display power unit
+  const Mk=MASS_TO_KG[UNITS.mass]||1;
+  const Lm=LEN_TO_M[UNITS.len]||1;
+  const V3=VOL_TO_M3[UNITS.volAbs]||1;
+  const Vms=VEL_TO_MS[UNITS.vel]||1;
+  const Fn=FORCE_TO_N[UNITS.force]||1;
+  const SV={'m\u00b3/kg':1,'L/kg':1e3,'ft\u00b3/lb':16.0185}[UNITS.vol]||1; // display units per m³/kg
+  const A=[
+    [[1,0,0,0,0,0,0],Mk],            [[0,1,0,0,0,0,0],Lm],
+    [[0,0,1,0,0,0,0],1],             [[0,0,0,0,1,0,0],1],
+    [[0,0,0,0,0,1,0],1e3],           // amount: kmol basis
+    [[0,2,0,0,0,0,0],Lm*Lm],         [[0,3,0,0,0,0,0],V3],
+    [[0,1,-1,0,0,0,0],Vms],          [[0,1,-2,0,0,0,0],Lm],
+    [[1,1,-2,0,0,0,0],Fn],           [[1,-1,-2,0,0,0,0],P],
+    [[1,2,-2,0,0,0,0],E],            [[1,2,-3,0,0,0,0],PW],
+    [[0,2,-2,0,0,0,0],E/Mk],         [[0,2,-2,0,-1,0,0],E/Mk],
+    [[-1,3,0,0,0,0,0],1/SV],         [[1,-3,0,0,0,0,0],Mk/V3],
+    [[1,0,-1,0,0,0,0],Mk],           [[0,3,-1,0,0,0,0],V3],
+    [[1,2,-2,0,-1,0,0],E],           [[1,2,-3,0,-1,0,0],PW],
+    [[1,1,-3,0,-1,0,0],1],           [[1,0,-3,0,-1,0,0],1],
+    [[1,0,-3,0,0,0,0],1],            [[1,-1,-3,0,0,0,0],1],
+    [[1,-1,-1,0,0,0,0],P],           [[1,0,-2,0,0,0,0],P],
+    [[1,2,-2,0,0,-1,0],1],           [[1,2,-2,0,-1,-1,0],1],
+    [[1,0,0,0,0,-1,0],1e-3],         // molar mass: kg/kmol basis
+  ];
+  for(const[d,f]of A){if(dim.every((v,i)=>v===d[i]))return f;}
+  const bases=[Mk,Lm,1,1,1,1e3,1];
+  let f=1;dim.forEach((e,i)=>{if(e)f*=Math.pow(bases[i],e);});
+  return f;
 }
 function _knownBracketUnit(unitStr){
   const u=_canonUnit(unitStr);
@@ -5551,6 +5786,8 @@ function _knownBracketUnit(unitStr){
     const slashIdx=u.indexOf('/');
     if(slashIdx>=0){const uStar=u.slice(0,slashIdx)+u.slice(slashIdx).replace(/[*\u00b7]/g,'/');if(uStar in tbl) return true;}
   }catch(e){}
+  // V1.3.75: compositional fallback — any product/quotient of known atoms
+  if(_parseUnitToSI(unitStr)) return true;
   return false;
 }
 const _BARE_UNIT_TOKENS = new Set([
@@ -5642,6 +5879,19 @@ function _bracketConvert(val, unitStr) {
       if (uStar !== u && uStar in tbl) return val * tbl[uStar];
     }
   } catch(e) {}
+  // V1.3.75: general compositional fallback — any product/quotient of known
+  // atoms converts via (SI factor) ÷ (display-basis factor for its dimension).
+  // Closes every "recognised but unconvertible" gap (psi, m2, kJ/kmol, W/K,
+  // rad, %, BTU/h, m³/s, Pa·s, kg/kmol, 1/K, …) without table maintenance.
+  // Pure-temperature brackets never reach here — offsets are handled above.
+  const _pp = _parseUnitToSI(unitStr);
+  if (_pp) {
+    const _basis = _dimDisplayBasisSI(_pp.dim);
+    if (isFinite(_basis) && _basis > 0) {
+      const _out = val * _pp.si / _basis;
+      if (isFinite(_out)) return _out;
+    }
+  }
   return null; // unknown unit — leave value unchanged
 }
 
@@ -6193,33 +6443,37 @@ N_N2     = 3.76 * a
 
 N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)`},
   {text:`// Adiabatic Flame Temp — CH4 + variable theoretical air
-// CH4 + a(O2 + 3.76 N2) → products (complete combustion, no dissociation)
-// Rich (50–100%):  (a-1) CO2 + (2-a) CO + 2 H2O + 3.76a N2
-// Lean (>100%):    CO2 + 2 H2O + (a-2) O2 + 3.76a N2
-// min/max select the regime; carbon stays conserved across pct_air=100
+// CH4 + a(O2 + 3.76 N2) → products (no dissociation), a = 2·(pct_air/100)
+// Rich 50–75%   (1 ≤ a < 1.5): CO + (2a-1) H2O + (3-2a) H2 + 3.76a N2
+// Rich 75–100%  (1.5 ≤ a ≤ 2): (2a-3) CO2 + (4-2a) CO + 2 H2O + 3.76a N2
+// Lean >100%    (a > 2):       CO2 + 2 H2O + (a-2) O2 + 3.76a N2
+// min/max clamps select the regime; C, H and O all conserved in every regime
 T_react  = 298.15 [K]
-pct_air  = 180           // % theoretical air (>=50)
+pct_air  = [50:5:200]    // % theoretical air sweep: rich → lean
 
 lambda   = pct_air / 100
 a        = 2 * lambda     // actual O2 supplied per kmol CH4
 
-N_CO2    = min(1, a - 1)
-N_CO     = max(0, 2 - a)
-N_H2O    = 2
+N_CO2    = max(0, min(1, 2*a - 3))
+N_CO     = max(0, min(1, 4 - 2*a))
+N_H2     = max(0, 3 - 2*a)
+N_H2O    = min(2, 2*a - 1)
 N_O2     = max(0, a - 2)
 N_N2     = 3.76 * a
 
-N_CO2*h_CO2(T_prod) + N_CO*h_CO(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react) + a*h_O2(T_react) + N_N2*h_N2(T_react)`},
+N_CO2*h_CO2(T_prod) + N_CO*h_CO(T_prod) + N_H2*h_H2(T_prod) + N_H2O*h_H2O(T_prod) + N_O2*h_O2(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react) + a*h_O2(T_react) + N_N2*h_N2(T_react)`},
   {text:`// Adiabatic Flame Temp — Liquid octane + 100% theoretical air
 // C8H18(l) + 12.5(O2 + 3.76 N2) → 8 CO2 + 9 H2O + 47 N2
-// hf_C8H18l is a built-in dimensional constant (kJ/kmol at 298.15 K)
+// hf_C8H18l is a built-in dimensional constant (kJ/kmol, fuel at 298.15 K)
+// Air terms vanish at T_react = 298.15 K but allow preheated-air studies
+T_react = 298.15 [K]
 
+N_O2  = 12.5
 N_CO2 = 8
 N_H2O = 9
 N_N2  = 47
 
-// Reactants at 298.15 K: O2, N2 contribute 0 → only fuel hf on RHS
-N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = hf_C8H18l`}
+N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = hf_C8H18l + N_O2*h_O2(T_react) + N_N2*h_N2(T_react)`}
 
 ];
 
@@ -9367,6 +9621,19 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
   // Warn before page refresh/close if editor has content
   // ── Force light theme on canvases for print/PDF ─────────────────────
+  // V1.3.76: chart canvas dimensions, print-aware. While printing
+  // (documentElement.dataset.printMode='1', set in beforeprint) the wraps
+  // are re-laid-out by @media print, but clientWidth/Height still report
+  // the SCREEN layout when beforeprint fires — so measuring is wrong.
+  // Use the known print geometry instead: A4 portrait, 15mm margins
+  // → 180mm ≈ 680 CSS px content width; heights match the @media print
+  // wrap rules (sweep 200, ODE 220, diagram 300). The print CSS
+  // width/height:100% rule absorbs any residual paper-size difference
+  // (Letter etc.) by scaling, never clipping.
+  window._printCanvasDims = function(wrap, fbW, fbH, printH){
+    if(document.documentElement.dataset.printMode==='1') return {W:680, H:printH||fbH};
+    return {W:(wrap&&wrap.clientWidth)||fbW, H:(wrap&&wrap.clientHeight)||fbH};
+  };
   function _redrawAllCanvases(){
     try{ if(typeof refreshODEPlot==='function') refreshODEPlot(); }catch(e){}
     try{ if(typeof window._drawSweepPlot==='function') window._drawSweepPlot(); }catch(e){}
@@ -9380,19 +9647,25 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     }catch(e){}
   }
   const _htmlEl=document.documentElement;
+  // V1.3.76: printMode flag + unconditional redraw. The old handler only
+  // redrew when flipping dark→light, so printing FROM light theme captured
+  // the stale screen-sized canvas (clipped plot in the PDF). Now every print
+  // gets a redraw at print dimensions via _printCanvasDims.
   window.addEventListener('beforeprint',()=>{
+    _htmlEl.dataset.printMode='1';
     if(!_htmlEl.classList.contains('light')){
       _htmlEl.classList.add('light');
       _htmlEl.dataset.printDark='1';
-      _redrawAllCanvases();
     }
+    _redrawAllCanvases();
   });
   window.addEventListener('afterprint',()=>{
+    delete _htmlEl.dataset.printMode;
     if(_htmlEl.dataset.printDark){
       _htmlEl.classList.remove('light');
       delete _htmlEl.dataset.printDark;
-      _redrawAllCanvases();
     }
+    _redrawAllCanvases();
   });
 
   window.addEventListener('beforeunload', e => {
@@ -10490,8 +10763,8 @@ function solveODE(txt, method, nSteps, tol) {
 function drawODEPlot(canvas, ts, ys, stateVars, xVar, yVars, tVar, tUnit, stateVarUnits) {
   tVar = tVar || 't';
   const dpr = window.devicePixelRatio||1;
-  const W = canvas.parentElement.clientWidth||400;
-  const H = canvas.parentElement.clientHeight||240;
+  // V1.3.76: print-aware sizing (matches @media print #ode-canvas-wrap height)
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 400, 240, 220);
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width  = W + 'px';
@@ -11153,8 +11426,8 @@ function extractStatePoints(scope) {
 
 function drawDiagram(canvas, dome, states, type, logP, cycles) {
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement.clientWidth || 600;
-  const H = canvas.parentElement.clientHeight || 300;
+  // V1.3.76: print-aware sizing (matches @media print .diag-canvas-wrap height)
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 600, 300, 300);
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
@@ -14452,7 +14725,8 @@ function _drawSurface3D() {
   const canvas = document.getElementById('sweep-canvas');
   const wrap   = document.getElementById('sweep-canvas-wrap');
   const dpr = window.devicePixelRatio || 1;
-  const W = wrap.clientWidth || 600, H = wrap.clientHeight || 240;
+  // V1.3.76: print-aware sizing (matches @media print sweep wrap height)
+  const {W, H} = window._printCanvasDims(wrap, 600, 240, 200);
   canvas.width = W*dpr; canvas.height = H*dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d');
@@ -14746,7 +15020,8 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     const canvas = document.getElementById('sweep-canvas');
     const wrap = document.getElementById('sweep-canvas-wrap');
     const dpr = window.devicePixelRatio || 1;
-    const W = wrap.clientWidth || 600, H = wrap.clientHeight || 140;
+    // V1.3.76: print-aware sizing (680×200 while printing — matches @media print wrap)
+    const {W, H} = window._printCanvasDims(wrap, 600, 140, 200);
     canvas.width = W*dpr; canvas.height = H*dpr;
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
     const ctx = canvas.getContext('2d');
