@@ -5,8 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
-<title>EquaSolve V1.3.78</title>
+<meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
+<title>EquaSolve V1.3.82</title>
+<script>
+// V1.3.82 boot watchdog (separate <head> script — survives a parse error in
+// the main <body> script block, which would otherwise fail silently on iOS).
+(function(){
+  window.__eqsErrors=[];
+  window.addEventListener('error',function(e){
+    window.__eqsErrors.push((e.message||'err')+' @'+(e.lineno||'?')+':'+(e.colno||'?'));
+    try{ if(window.__eqsShowErr) window.__eqsShowErr((e.message||'err')+' @'+(e.lineno||'?')+':'+(e.colno||'?')); }catch(_){}
+  });
+  // If the main script never sets __eqsBooted, surface that after load.
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      if(!window.__eqsBooted){
+        var m='App did not finish initializing.';
+        if(window.__eqsErrors.length) m+=' First error: '+window.__eqsErrors[0];
+        else m+=' (no JS error captured — likely a parse error in an older browser, or a blocked resource.)';
+        try{
+          var d=document.createElement('div');
+          d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a1010;color:#fff;font:12px/1.5 -apple-system,monospace;padding:12px;white-space:pre-wrap;-webkit-user-select:text;user-select:text';
+          d.textContent='EquaSolve: '+m;
+          d.addEventListener('click',function(){d.style.display='none';});
+          (document.body||document.documentElement).appendChild(d);
+        }catch(_){}
+      }
+    },1500);
+  });
+})();
+</script>
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -16,6 +44,15 @@
 .theme-btn{background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--dim);cursor:pointer;font-size:15px;padding:4px 9px;line-height:1;transition:all .2s;flex-shrink:0;}
 .theme-btn:hover{color:var(--hi);border-color:var(--accent)}
 html,body{height:100%;font-family:'DM Mono','Fira Code','Courier New',monospace;background:var(--bg);color:var(--text);font-size:13px;font-weight:400;}
+/* V1.3.79: iOS tap reliability. WKWebView/Safari need an explicit
+   touch-action and a non-suppressed tap highlight on custom <button>
+   elements, and label-less buttons must register taps on their own box
+   (not bubble through a transformed ancestor). These rules make every
+   control directly tappable on iPhone. */
+button,.ex-btn,.s-ode-btn,.tab,.sheet-tab,.io-btn,.new-btn,.theme-btn,#sidebar-toggle{
+  touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0);
+  -webkit-user-select:none;user-select:none;cursor:pointer;
+}
 .light body,.light html,.light{font-weight:500;}
 .light textarea.eq-ta,.light .eq-highlight{font-weight:500;}
 .light .tab,.light .syn-lbl,.light .s-lbl,.light .var-unit,.light .tf-fn,.light .unit-label{font-weight:600;}
@@ -644,7 +681,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.78</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.82</div>
       </div>
     </div>
 
@@ -724,7 +761,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.78</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.82</span></div>
       
     </div>
   </div>
@@ -896,7 +933,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.78</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.82</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -2020,7 +2057,67 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
 
 <div class="ac-dropdown" id="ac-dropdown"></div>
 <script>
+// ═══════════════════════════════════════════════════════════════════
+//  V1.3.82 — ON-DEVICE ERROR REPORTER (must be the very first thing)
+//  A single-file tool gives no console access on a phone. If ANY script
+//  error occurs (parse-time errors in THIS block are caught by the
+//  separate bootstrap script in <head>; runtime errors are caught here),
+//  show it on-screen so it can be read and reported instead of failing
+//  silently with "nothing is clickable".
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  function show(msg){
+    try{
+      var d=document.getElementById('__eqs_err__');
+      if(!d){
+        d=document.createElement('div'); d.id='__eqs_err__';
+        d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;'+
+          'background:#7a1010;color:#fff;font:12px/1.5 -apple-system,monospace;'+
+          'padding:10px 12px;max-height:42vh;overflow:auto;white-space:pre-wrap;'+
+          '-webkit-user-select:text;user-select:text;box-shadow:0 -2px 12px rgba(0,0,0,.5)';
+        (document.body||document.documentElement).appendChild(d);
+        var h=document.createElement('div');
+        h.style.cssText='font-weight:700;margin-bottom:6px';
+        h.textContent='EquaSolve hit a script error (tap to dismiss):';
+        d.appendChild(h);
+        d.addEventListener('click',function(){d.style.display='none';});
+      }
+      var p=document.createElement('div'); p.textContent=msg; d.appendChild(p);
+    }catch(e){}
+  }
+  window.addEventListener('error',function(e){
+    show((e.message||'error')+'  @'+(e.filename||'')+':'+(e.lineno||'?')+':'+(e.colno||'?'));
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    show('Promise: '+((e.reason&&(e.reason.message||e.reason))||'rejection'));
+  });
+  window.__eqsShowErr=show;
+})();
+
 const M = Math;
+
+// ═══════════════════════════════════════════════════════════════════
+//  V1.3.79 — iOS WebView hardening
+//  iOS Safari in Private Browsing / locked-down WKWebView throws a
+//  SecurityError or QuotaExceededError merely on touching window
+//  .localStorage. An UNGUARDED access there used to throw inside the
+//  theme IIFE, killing the theme button; and any throw inside the big
+//  init IIFE silently aborted EVERY listener registered after it
+//  (examples, tabs, sidebar, toolbar) — the exact "nothing is
+//  clickable on iPhone" report. We replace localStorage with a safe
+//  in-memory-fallback shim so no storage access can ever throw.
+// ═══════════════════════════════════════════════════════════════════
+const _safeLS = (() => {
+  const mem = {};
+  let real = null;
+  try { real = window.localStorage; const k='__eqs_t__'; real.setItem(k,'1'); real.removeItem(k); }
+  catch(e){ real = null; }
+  return {
+    getItem(k){ try { return real ? real.getItem(k) : (k in mem ? mem[k] : null); } catch(e){ return (k in mem)?mem[k]:null; } },
+    setItem(k,v){ try { if(real) real.setItem(k,v); else mem[k]=String(v); } catch(e){ mem[k]=String(v); } },
+    removeItem(k){ try { if(real) real.removeItem(k); else delete mem[k]; } catch(e){ delete mem[k]; } },
+  };
+})();
 
 // ═══════════════════════════════════════════════════════════════════
 //  GENERIC INVERSION UTILITIES
@@ -4521,7 +4618,7 @@ function buildRHSMap(txt){
     const idx = clean.indexOf('=');
     if (idx < 0) return;
     const lhs = clean.slice(0, idx).trim();
-    const rhs = clean.slice(idx + 1).trim().replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '');
+    const rhs = clean.slice(idx + 1).trim().replace(/([\w)])\s*\[[^\]:]*\]\s*$/, '$1');
     if (/^[a-zA-Z_]\w*$/.test(lhs)) {
       // Keep first assignment for dim propagation (e.g. m4=m1 before m4=m2+m3)
       // but also store ALL as array under _all key for multi-equation variables
@@ -4538,8 +4635,6 @@ function buildRHSMap(txt){
       const termPat = /([+-]?)\s*([a-zA-Z_]\w*)\s*(?=[+\-)]|$)/g;
       // Find all ±bare-identifier terms in lhs side
       const lhsTerms = [];
-      const lhsRe = /(?:^|(?<=[+\-\(\s]))([+-]?)\s*([a-zA-Z_]\w*)(?=\s*[+\-=\)]|\s*$)/g;
-      let m2;
       const lhsCheck = lhs;
       // Simple regex: find tokens that are sign + identifier with no surrounding ops
       const simpleTermRe = /^([+-]?\s*[a-zA-Z_]\w*)$/;
@@ -4955,7 +5050,7 @@ function _inferMissingVarDims(equationLines) {
   for (let pass = 0; pass < 8; pass++) {
     let added = 0;
     for (const rawLine of equationLines) {
-      const clean = rawLine.replace(/\/\/.*$/, '').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '').trim();
+      const clean = rawLine.replace(/\/\/.*$/, '').replace(/([\w)])\s*\[[^\]:]*\]\s*$/, '$1').trim();
       const idx = clean.indexOf('=');
       if (idx < 0) continue;
       const lhsStr = clean.slice(0, idx).trim();
@@ -6166,7 +6261,7 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     userFunDefs = _prep.userFunDefs;
   } else {
     raw = preprocessBrackets(raw); // convert [unit] brackets to display-unit values
-    const allLines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+    const allLines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
     if(!allLines.length)throw new Error('No equations found.');
 
     // ── User-defined functions: detect  name(a, b, …) = expr  ──────────
@@ -7593,7 +7688,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         }
         // Scan ORIGINAL text (pre-preprocessBrackets) so bracket tags aren't already stripped
         _origTxt.split('\n').forEach(line => {
-          const withoutComment = line.replace(/(?<=[^\[])(\/\/.*)$/, '').trim();
+          const withoutComment = line.replace(/([^\[])(\/\/.*)$/, '$1').trim();
           const eqIdx = withoutComment.indexOf('=');
           if (eqIdx < 0) return;
           const lhs = withoutComment.slice(0, eqIdx).trim();
@@ -8278,6 +8373,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     document.querySelectorAll('.s-ode-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
     document.querySelectorAll('.ex-btn').forEach(b=>b.classList.remove('active'));
   }
+  // V1.3.79: expose to window so the resilient top-level tap layer can drive
+  // example loading even if a later statement in this IIFE were to throw.
+  window._loadAlgEx = loadAlgEx;
+  window._loadOdeEx = loadOdeEx;
 
   // ── New file button with custom confirm popover ──────────────────────
   // Create popover on body so overflow:hidden on toolbar can't clip it
@@ -8982,7 +9081,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   // ── Build structured print report ─────────────────────────────────────────
   function _prettyEq(line) {
     // Strip trailing [unit] tags
-    let s = line.replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '').trimEnd();
+    let s = line.replace(/([\w)])\s*\[[^\]:]*\]\s*$/, '$1').trimEnd();
     // Greek letters
     const greek = {alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',zeta:'ζ',
       eta:'η',theta:'θ',lambda:'λ',mu:'μ',nu:'ν',xi:'ξ',pi:'π',rho:'ρ',
@@ -9036,7 +9135,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       const eqIdx = noComment.indexOf('=');
       if (eqIdx < 0) { equationLines.push({type:'comment', text: line.trim()}); return; }
       const lhs = noComment.slice(0, eqIdx).trim();
-      const rhs = noComment.slice(eqIdx+1).trim().replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '');
+      const rhs = noComment.slice(eqIdx+1).trim().replace(/([\w)])\s*\[[^\]:]*\]\s*$/, '$1');
       const isSimpleNumber = /^-?[\d.eE+\-]+\s*([a-zA-Z_°][\w°\/·^*²³]*)?$/.test(rhs);
       if (/^[a-zA-Z_]\w*$/.test(lhs) && isSimpleNumber) {
         // Extract numeric value and unit string from RHS
@@ -9377,6 +9476,9 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   });
 
   // Example buttons (delegated on aside)
+  // V1.3.80: mark primary example/ODE delegation as bound so the resilient
+  // tap layer defers (avoids a second loadAlgEx that double-pushed history).
+  window.__exBound = true;
   document.querySelector('aside').addEventListener('click', e=>{
     const btn=e.target.closest('.ex-btn');
     if(btn){
@@ -9399,6 +9501,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   });
 
   // Tab bar
+  // V1.3.80: mark primary tab handler bound so the fallback defers.
+  window.__tabBound = true;
   document.querySelector('.tab-bar').addEventListener('click', e=>{
     const btn=e.target.closest('.tab');
     if(!btn||!btn.dataset.tab)return;
@@ -9598,6 +9702,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
   // Mobile sidebar toggle
   // Sidebar toggle
+  // V1.3.80: flag that the primary handler is bound, so the resilient tap
+  // layer treats the sidebar as already-owned and does NOT also toggle it
+  // (a second toggle on the same tap cancelled the first → panel never opened).
+  window.__sidebarBound = true;
   document.getElementById('sidebar-toggle').addEventListener('click',()=>{
     const aside = document.querySelector('aside');
     const isMobile = window.innerWidth <= 900;
@@ -11230,13 +11338,14 @@ function initPlotColorSwatches() {
     btn.title = light ? 'Switch to dark mode' : 'Switch to light mode';
   };
   // Restore saved preference, fall back to system preference
-  const saved = localStorage.getItem('eqs-theme');
+  const saved = _safeLS.getItem('eqs-theme');
   const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   apply(saved ? saved === 'light' : prefersLight);
+  window.__themeBound = true;
   btn.addEventListener('click', () => {
     const isLight = root.classList.contains('light');
     apply(!isLight);
-    localStorage.setItem('eqs-theme', !isLight ? 'light' : 'dark');
+    _safeLS.setItem('eqs-theme', !isLight ? 'light' : 'dark');
     if (window._getOdeResult?.()) refreshODEPlot();
     refreshDiagram();
     window._drawSweepPlot?.();
@@ -12669,7 +12778,7 @@ function runMultiFluidOptimizer(txt, rawLines, direction, objExpr, fluidChoices,
 
 // Synchronous core optimizer — same logic as runOptimizer but returns result object
 function _runOptimizerSync(txt, direction) {
-  const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+  const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
   // Parse objective
   let objExpr = null;
@@ -12839,7 +12948,7 @@ function runOptimizer(txt) {
 
   setTimeout(() => {
     try {
-      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse minimize/maximize line ─────────────────────────
       let direction = 1; // 1=minimize, -1=maximize
@@ -13160,7 +13269,7 @@ function _extractBracketUnits(rawTxt) {
   rawTxt.split('\n').forEach(line => {
     // Strip comment but keep the line with [unit] that may appear before the comment
     // e.g.  rho = 983.2  [kg/m3]  // comment
-    const withoutComment = line.replace(/(?<=[^\[])(\/\/.*)$/, '').trim(); // strip // only outside brackets
+    const withoutComment = line.replace(/([^\[])(\/\/.*)$/, '$1').trim(); // strip // only outside brackets
     const clean = withoutComment;
     // Regular: var = expr [unit]  (may have trailing comment stripped)
     const m1 = clean.match(/^([a-zA-Z_]\w*)\s*=\s*[\s\S]+?\s*\[([^\]:]+)\]\s*$/);
@@ -13190,7 +13299,7 @@ function runUncertainty(txt) {
   setTimeout(() => {
     try {
       const _bracketUnits = _extractBracketUnits(txt); // extract [unit] tags BEFORE stripping
-      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse unc lines ────────────────────────────────────────
       // unc T_in = 550 ± 2   OR   unc T_in = 550 +/- 2
@@ -13365,7 +13474,7 @@ function runRegression(txt) {
   setTimeout(() => {
     try {
       const rawLines = txt.split('\n')
-        .map(l => l.replace(/\/\/.*$/, '').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/, '').trim())
+        .map(l => l.replace(/\/\/.*$/, '').replace(/([\w)])\s*\[[^\]:]*\]\s*$/, '$1').trim())
         .filter(l => l);
 
       // ── 1. Parse arrays (inline tuples or bracket lists) ──────────────────
@@ -14081,7 +14190,7 @@ function runSensitivity(txt) {
   setTimeout(() => {
     try {
       const _bracketUnits = _extractBracketUnits(txt); // extract [unit] tags BEFORE stripping
-      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse sens parameters ─────────────────────────────────
       // sens T_cond = 40  →  {name:'T_cond', value:40}
@@ -14230,7 +14339,7 @@ function runParetoSweep(txt) {
 
   setTimeout(() => {
     try {
-      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/(?<=[\w)])\s*\[[^\]:]*\]\s*$/,'').trim()).filter(l=>l);
+      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse objective ────────────────────────────────────────
       let direction = 1, objExpr = null;
@@ -15111,6 +15220,122 @@ function _renderSweepTable({sweep, results, outputVars, cols, fmtSweep}) {
     results.map(r=>`<tr><td class="sweep-key">${fmtSweep(r.sv)}</td>${outputVars.map(v=>`<td>${r.error?'—':fmtSweep(r.scope[v])}</td>`).join('')}</tr>`).join('') +
     `</tbody></table>`;
 }
+// ═══════════════════════════════════════════════════════════════════
+//  V1.3.79 — RESILIENT TAP LAYER (iOS safety net)
+//  A single delegated listener on document, installed in its OWN guarded
+//  block so it is independent of the large init IIFE above. If anything
+//  in that IIFE throws before its own listeners attach (the failure mode
+//  behind "nothing clickable on iPhone"), THIS layer still drives the
+//  core controls: examples, ODE examples, tab switching, sidebar toggle,
+//  and theme. When the primary handlers are alive they do the work and
+//  this layer no-ops on the same tap (guards check current state), so
+//  there is no double-handling in the normal case.
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  try{
+    if(window.__eqsTapLayer) return; window.__eqsTapLayer = true;
+
+    function switchTabSafe(name){
+      try{
+        document.querySelectorAll('.tab-content').forEach(el=>{el.classList.remove('active');el.style.display='none';el.style.visibility='hidden';el.scrollTop=0;});
+        document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+        const activeTab=document.getElementById('tab-'+name);
+        if(activeTab){
+          activeTab.classList.add('active');
+          activeTab.style.display=(window.innerWidth>=900 && name==='equations')?'flex':'block';
+          activeTab.style.visibility='visible'; activeTab.style.opacity='1'; activeTab.style.position='';
+        }
+        const tb=document.querySelector('.tab[data-tab="'+name+'"]'); if(tb) tb.classList.add('active');
+        const ov=document.getElementById('about-overlay'); const as=document.querySelector('aside');
+        if(name==='about'){ if(ov)ov.style.display='block'; if(as)as.style.visibility='hidden'; }
+        else { if(ov)ov.style.display='none'; if(as)as.style.visibility=''; try{window.scrollTo(0,0);}catch(e){} }
+      }catch(e){}
+    }
+
+    // V1.3.80: self-sufficient example loader for the fallback path. EX and
+    // ODE_EX are top-level consts (outside the init IIFE), so this works even
+    // if the IIFE threw before exposing window._loadAlgEx. Writes the editor
+    // directly and fires 'input' so the highlight/validation refresh.
+    function loadExampleSafe(kind, idx){
+      try{
+        if(typeof window._loadAlgEx==='function' && kind==='alg'){ window._loadAlgEx(idx); return; }
+        if(typeof window._loadOdeEx==='function' && kind==='ode'){ window._loadOdeEx(idx); return; }
+        const lib = kind==='ode' ? (typeof ODE_EX!=='undefined'?ODE_EX:null) : (typeof EX!=='undefined'?EX:null);
+        if(!lib || !lib[idx]) return;
+        const ta = document.getElementById('eq-input');
+        if(ta){ ta.value = lib[idx].text; try{ ta.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+      }catch(e){}
+    }
+
+    document.addEventListener('click', function(e){
+      try{
+        const t = e.target;
+
+        // Example buttons — only when primary delegation failed to bind
+        const exBtn = t.closest && t.closest('.ex-btn');
+        if(exBtn && exBtn.dataset.ex!=null){
+          if(window.__exBound) return;            // primary owns it
+          switchTabSafe('equations');
+          loadExampleSafe('alg', parseInt(exBtn.dataset.ex));
+          const as=document.querySelector('aside'); if(as) as.classList.remove('open');
+          return;
+        }
+        // ODE example buttons — same gate
+        const odeBtn = t.closest && t.closest('.s-ode-btn');
+        if(odeBtn && odeBtn.dataset.odeEx!=null){
+          if(window.__exBound) return;
+          switchTabSafe('equations');
+          loadExampleSafe('ode', parseInt(odeBtn.dataset.odeEx));
+          const as=document.querySelector('aside'); if(as) as.classList.remove('open');
+          return;
+        }
+        // Tab bar — only when primary tab handler failed to bind
+        const tabBtn = t.closest && t.closest('.tab');
+        if(tabBtn && tabBtn.dataset.tab){
+          if(window.__tabBound) return;
+          switchTabSafe(tabBtn.dataset.tab);
+          return;
+        }
+        // Sidebar toggle — only when primary failed to bind. Toggling here
+        // when the primary is alive would double-toggle and the panel would
+        // appear stuck shut (this was the V1.3.79 example-panel regression).
+        const st = t.closest && t.closest('#sidebar-toggle');
+        if(st){
+          if(window.__sidebarBound) return;       // primary owns it
+          const as=document.querySelector('aside');
+          if(as){
+            if(window.innerWidth<=900){ as.classList.toggle('open'); }
+            else { as.classList.toggle('collapsed'); st.textContent=as.classList.contains('collapsed')?'\u203a':'\u2630'; }
+          }
+          return;
+        }
+        // Theme toggle — only when primary failed to bind
+        const th = t.closest && t.closest('#theme-toggle');
+        if(th){
+          if(window.__themeBound) return;
+          const root=document.documentElement;
+          const isLight=root.classList.contains('light');
+          root.classList.toggle('light', !isLight);
+          th.textContent=!isLight?'\ud83c\udf19':'\u2600\ufe0f';
+          _safeLS.setItem('eqs-theme', !isLight?'light':'dark');
+          return;
+        }
+        // Close mobile sidebar when tapping outside it. This is purely additive
+        // (idempotent remove) so it runs regardless of the primary's state.
+        if(window.innerWidth<=900){
+          const as=document.querySelector('aside');
+          if(as && as.classList.contains('open') && !(as.contains(t)) && t.id!=='sidebar-toggle' && !(t.closest&&t.closest('#sidebar-toggle'))){
+            as.classList.remove('open');
+          }
+        }
+      }catch(err){ /* never let the safety net throw */ }
+    }, false);
+  }catch(e){}
+})();
+
+// V1.3.82: mark successful end-of-script so the head watchdog knows the main
+// block parsed and ran to completion (no silent failure).
+window.__eqsBooted = true;
 </script>
 </body>
 </html>
