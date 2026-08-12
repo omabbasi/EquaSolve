@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.83</title>
+<title>EquaSolve V1.3.84</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -138,18 +138,18 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
   /* ── Result cards: 2-col ── */
   .var-grid{grid-template-columns:1fr 1fr !important;}
   /* ── Plots ── */
-  #ode-canvas-wrap{aspect-ratio:16/7 !important;height:auto !important;}
-  .sweep-canvas-wrap{aspect-ratio:16/6 !important;min-height:120px;}
+  #ode-canvas-wrap{aspect-ratio:16/10 !important;height:auto !important;}
+  .sweep-canvas-wrap{aspect-ratio:16/10 !important;min-height:200px;}
   /* ── Force equations tab to use block layout on mobile, not desktop grid ── */
   #tab-equations{display:none !important;}
   #tab-equations.active{display:block !important;}
 }
 /* Desktop ≥900px */
 @media(min-width:900px){
-  /* Canvas sizes */
-  #ode-canvas-wrap{aspect-ratio:unset !important; height:240px !important; min-height:unset !important;}
-  .sweep-canvas-wrap{aspect-ratio:unset !important; height:220px !important; min-height:unset !important;}
-  .diag-canvas-wrap{height:280px;}
+  /* Canvas sizes — V1.3.84: the pinned pixel heights that used to live here
+     (ode 240 / sweep 220 / diagram 280) made aspect-ratio a no-op, so the
+     panes flattened as the window widened (5.9:1 for a diagram at 1920px).
+     Geometry is now governed by aspect-ratio + max-width in the base rules. */
 
   /* Tab-contents: hidden when inactive, flex column when active */
   .tab-content{display:none;flex:1;min-height:0;overflow-y:auto;}
@@ -385,7 +385,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   .ode-result-zone:not(.visible){display:none!important;}
   .ode-zone-header{padding:6px 12px!important;background:#f0f0f0!important;
     font-size:10px!important;color:#444!important;border-bottom:1px solid #ddd!important;}
-  #ode-canvas-wrap{height:220px!important;aspect-ratio:unset!important;}
+  #ode-canvas-wrap{height:425px!important;max-width:none!important;aspect-ratio:unset!important;}
   .ode-table-wrap{display:block!important;}
   .ode-table-wrap.hidden{display:block!important;}
   .ode-table-wrap table{width:100%;border-collapse:collapse;font-size:10px;}
@@ -408,7 +408,9 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   .sweep-zone:not(.visible){display:none!important;}
   .sweep-header{padding:6px 12px!important;background:#f0f0f0!important;
     font-size:10px!important;color:#444!important;border-bottom:1px solid #ddd!important;}
-  .sweep-canvas-wrap{height:200px!important;aspect-ratio:unset!important;}
+  .sweep-canvas-wrap{height:425px!important;max-width:none!important;aspect-ratio:unset!important;}
+  /* 3-D surface is square on screen; it must not inherit the 1-D sweep height */
+  .sweep-canvas-wrap.surface-mode{height:620px!important;max-width:none!important;}
   .sweep-table-wrap{display:block!important;}
   .sweep-table-wrap.hidden{display:block!important;}
   .sweep-table{width:100%;border-collapse:collapse;font-size:10px;}
@@ -419,7 +421,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   #tab-diagram{display:none!important;}
   #tab-diagram.diag-has-data{display:block!important;overflow:visible!important;padding:0!important;margin-top:16px;
     border-top:2px solid #bbb;padding-top:12px!important;}
-  .diag-canvas-wrap{height:300px!important;}
+  .diag-canvas-wrap{height:450px!important;max-width:none!important;}
   .diag-legend{font-size:10px!important;color:#333!important;padding:6px 10px!important;}
   .diag-legend-item{color:#111!important;}
   canvas{max-width:100%!important;display:block;}
@@ -631,7 +633,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .diag-fluid-sel{background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--hi);font-family:inherit;font-size:11px;padding:4px 8px;outline:none;max-width:160px;}
 .diag-check{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);cursor:pointer;user-select:none;}
 .diag-check input{accent-color:var(--accent);width:13px;height:13px;}
-.diag-canvas-wrap{width:100%;aspect-ratio:16/7;min-height:220px;position:relative;flex-shrink:0;}
+.diag-canvas-wrap{width:100%;max-width:780px;margin-left:auto;margin-right:auto;aspect-ratio:3/2;min-height:260px;position:relative;flex-shrink:0;}
 .diag-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .diag-legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--border);min-height:28px;flex-shrink:0;}
 .diag-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;}
@@ -641,12 +643,13 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .sweep-zone{display:none;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-top:6px;}
 .sweep-zone.visible{display:flex;}
 /* 2D surface plot canvas — taller than 1D sweep */
-.surface-canvas-wrap{width:100%;aspect-ratio:1/1;min-height:540px;position:relative;flex-shrink:0;}
+.surface-canvas-wrap{width:100%;max-width:560px;margin-left:auto;margin-right:auto;aspect-ratio:1/1;min-height:360px;position:relative;flex-shrink:0;}
 .surface-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .sweep-header{padding:8px 14px;font-size:11px;font-weight:600;color:var(--hi);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;}
 .sweep-header span{font-size:10px;color:var(--mute);font-weight:400;}
-.sweep-canvas-wrap{width:100%;aspect-ratio:16/7;min-height:160px;position:relative;flex-shrink:0;}
-.sweep-canvas-wrap.surface-mode{aspect-ratio:1/1 !important;min-height:520px !important;}
+.sweep-canvas-wrap{width:100%;max-width:720px;margin-left:auto;margin-right:auto;aspect-ratio:16/10;min-height:240px;position:relative;flex-shrink:0;}
+.sweep-canvas-wrap.surface-mode{max-width:560px !important;aspect-ratio:1/1 !important;min-height:360px !important;}
+#ode-canvas-wrap{width:100%;max-width:720px;margin-left:auto;margin-right:auto;aspect-ratio:16/10;min-height:240px;position:relative;flex-shrink:0;}
 .sweep-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .sweep-y-sel{background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--hi);font-family:inherit;font-size:11px;padding:3px 7px;outline:none;}
 .sweep-table-wrap{overflow-x:auto;flex-shrink:0;}
@@ -682,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.83</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.84</div>
       </div>
     </div>
 
@@ -762,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.83</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.84</span></div>
       
     </div>
   </div>
@@ -934,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.83</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.84</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1011,7 +1014,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         <button class="ode-table-toggle" id="ode-table-toggle" title="Show / hide solution table">⊞ Table</button>
       </div>
       <div id="ode-param-cards" style="display:none;flex-wrap:wrap;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);"></div>
-      <div style="width:100%;aspect-ratio:16/9;min-height:180px;flex-shrink:0;position:relative;" id="ode-canvas-wrap">
+      <div id="ode-canvas-wrap">
         <canvas id="ode-canvas" style="width:100%;height:100%;display:block;"></canvas>
       </div>
       <div class="ode-table-wrap hidden" id="ode-table-wrap">
@@ -10895,7 +10898,7 @@ function drawODEPlot(canvas, ts, ys, stateVars, xVar, yVars, tVar, tUnit, stateV
   tVar = tVar || 't';
   const dpr = window.devicePixelRatio||1;
   // V1.3.76: print-aware sizing (matches @media print #ode-canvas-wrap height)
-  const {W, H} = window._printCanvasDims(canvas.parentElement, 400, 240, 220);
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 400, 250, 425);
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width  = W + 'px';
@@ -11559,7 +11562,7 @@ function extractStatePoints(scope) {
 function drawDiagram(canvas, dome, states, type, logP, cycles) {
   const dpr = window.devicePixelRatio || 1;
   // V1.3.76: print-aware sizing (matches @media print .diag-canvas-wrap height)
-  const {W, H} = window._printCanvasDims(canvas.parentElement, 600, 300, 300);
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 600, 400, 450);
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
@@ -14858,7 +14861,7 @@ function _drawSurface3D() {
   const wrap   = document.getElementById('sweep-canvas-wrap');
   const dpr = window.devicePixelRatio || 1;
   // V1.3.76: print-aware sizing (matches @media print sweep wrap height)
-  const {W, H} = window._printCanvasDims(wrap, 600, 240, 200);
+  const {W, H} = window._printCanvasDims(wrap, 560, 560, 620);
   canvas.width = W*dpr; canvas.height = H*dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d');
@@ -15153,7 +15156,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     const wrap = document.getElementById('sweep-canvas-wrap');
     const dpr = window.devicePixelRatio || 1;
     // V1.3.76: print-aware sizing (680×200 while printing — matches @media print wrap)
-    const {W, H} = window._printCanvasDims(wrap, 600, 140, 200);
+    const {W, H} = window._printCanvasDims(wrap, 600, 375, 425);
     canvas.width = W*dpr; canvas.height = H*dpr;
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
     const ctx = canvas.getContext('2d');
