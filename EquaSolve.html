@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.86</title>
+<title>EquaSolve V1.3.87</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.86</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.87</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.86</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.87</span></div>
       
     </div>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.86</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.87</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -3419,6 +3419,10 @@ const FUNS_base={
   w_psy:(Tdb,RH,P=101.325)=>{const Tk=toK(Tdb);const Psat_=fromMPa(IF97.Psat(Tk));const Pv=RH*Psat_;return 0.62198*Pv/(P-Pv);},
   // h_psy(Tdb, w) → enthalpy kJ/kg dry air
   h_psy:(Tdb,w)=>{const T=UNITS.temp==='°C'?Tdb:(UNITS.temp==='K'?Tdb-273.15:(UNITS.temp==='°F'?(Tdb-32)*5/9:Tdb*5/9-273.15));return 1.006*T+w*(2501+1.86*T);},
+  // Tdb_psy(h, w) → dry-bulb temperature from enthalpy and humidity ratio
+  // Exact inverse of h_psy: h = 1.006·T + w·(2501 + 1.86·T), T in °C
+  //   ⇒ T = (h − 2501·w) / (1.006 + 1.86·w)
+  Tdb_psy:(h,w)=>{const T_C=(h-2501*w)/(1.006+1.86*w);return fromK(T_C+273.15);},
   // RH_psy(Tdb, w, [P]) → relative humidity 0-1
   RH_psy:(Tdb,w,P=101.325)=>{const Tk=toK(Tdb);const Psat_=fromMPa(IF97.Psat(Tk));const Pv=w*P/(0.62198+w);return Pv/Psat_;},
   // Twb_psy(Tdb, w, [P]) → wet-bulb temperature (display units)
@@ -6479,7 +6483,7 @@ const EX=[
   {text:'// Live sliders — ODE spring-damper\n// m, c, k are free parameters → Press Solve\n// Explore underdamped / critically damped / overdamped\nx\'\'= -(c/m)*x\' - (k/m)*x\nx(0) = 1\nx\'(0) = 0\nt = [0, 20]'},
   // ── Psychrometric chart examples ──
   {text:'// Psychrometric: Cooling Coil process\n// Go to Diagram tab → ☁ Psychro after solving\n// State 1: inlet (warm humid air)\nT1 = 30\nRH1 = 0.65\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\nv1 = v_psy(T1, w1)\n// State 2: coil exit (cooled & dehumidified)\nT2 = 12\nRH2 = 0.95\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Energy & moisture removed per kg dry air\nQ_coil  = h1 - h2\ndw      = w1 - w2'},
-  {text:'// Psychrometric: Adiabatic Mixing of two airstreams\n// Go to Diagram tab → ☁ Psychro after solving\n// Stream 1: outdoor air\nT1 = 35\nRH1 = 0.50\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\n// Stream 2: return air\nT2 = 24\nRH2 = 0.55\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Mass flow ratio: 30% outdoor, 70% return\nm_ratio = 0.3\n// Mixed state (State 3)\nw3 = m_ratio*w1 + (1-m_ratio)*w2\nh3 = m_ratio*h1 + (1-m_ratio)*h2\nT3 = Twb_psy(T2, w3) + 0\nRH3 = RH_psy(T3, w3)'},
+  {text:'// Psychrometric: Adiabatic Mixing of two airstreams\n// Go to Diagram tab → ☁ Psychro after solving\n// Stream 1: outdoor air\nT1 = 35\nRH1 = 0.50\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\n// Stream 2: return air\nT2 = 24\nRH2 = 0.55\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Mass flow ratio: 30% outdoor, 70% return\nm_ratio = 0.3\n// Mixed state (State 3)\n// Mass and energy balances give w3 and h3 directly\nw3 = m_ratio*w1 + (1-m_ratio)*w2\nh3 = m_ratio*h1 + (1-m_ratio)*h2\n// Dry-bulb of the mixed state follows from (h3, w3)\nT3 = Tdb_psy(h3, w3)\nRH3 = RH_psy(T3, w3)\n// State 3 lies on the straight line joining states 1 and 2\nTwb3 = Twb_psy(T3, w3)'},
   // ── Moody diagram examples ──
   {text:'// Moody: single pipe — friction factor & head loss\n// Go to Diagram tab → ⊕ Moody after solving\n// Pipe: D=0.05 m, pipe_L=100 m, ε=0.046 mm (commercial steel)\nD = 0.05\npipe_L = 100\nepsilon = 0.000046\nnu = 1e-6\nV = 2.5\n// Reynolds number and relative roughness\nRe1 = Re_pipe(V, D, nu)\neD1 = epsilon / D\n// Friction factor (Colebrook-White)\nf1 = f_moody(Re1, eD1)\n// Head loss and pressure drop (water ρ=1000 kg/m³)\nh_loss = hf_darcy(f1, pipe_L, D, V)\ndP = dP_darcy(f1, pipe_L, D, V, 1000)'},
   {text:'// Moody: two pipes in series — compare operating points\n// Go to Diagram tab → ⊕ Moody after solving\n// Pipe 1: smooth small pipe\nD1 = 0.025\nL1 = 50\nV1 = 3.0\nnu = 1e-6\nRe1 = Re_pipe(V1, D1, nu)\neD1 = 0\nf1 = f_moody(Re1, eD1)\nhl1 = hf_darcy(f1, L1, D1, V1)\n// Pipe 2: rough large pipe\nD2 = 0.10\nL2 = 200\nV2 = 1.0\nRe2 = Re_pipe(V2, D2, nu)\neD2 = 0.001\nf2 = f_moody(Re2, eD2)\nhl2 = hf_darcy(f2, L2, D2, V2)\n// Total head loss\nhl_total = hl1 + hl2'},
@@ -7312,6 +7316,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     // Psychrometrics
     w_psy:['temperature','relative humidity'],
     h_psy:['temperature','humidity ratio'],
+    Tdb_psy:['enthalpy','humidity ratio'],
     v_psy:['temperature','humidity ratio'],
     RH_psy:['temperature','humidity ratio'],
     Twb_psy:['temperature','humidity ratio'],
@@ -8567,6 +8572,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     const psychro = [
       {n:'h_psy',a:'(T,w)'}, {n:'w_psy',a:'(T,RH)'}, {n:'RH_psy',a:'(T,w)'},
       {n:'v_psy',a:'(T,w)'}, {n:'Tdp_psy',a:'(T,w)'}, {n:'Twb_psy',a:'(T,w)'},
+      {n:'Tdb_psy',a:'(h,w)'}, {n:'w_sat',a:'(T)'},
     ];
     psychro.forEach(f => items.push({name:f.n, args:f.a, cat:'Psychro', insert:f.n+f.a, cursorBack:f.a.split(',').length===1?1:f.a.length-1}));
 
