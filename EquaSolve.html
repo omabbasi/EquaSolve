@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.84</title>
+<title>EquaSolve V1.3.85</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.84</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.85</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.84</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.85</span></div>
       
     </div>
   </div>
@@ -843,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="s-sec">
     <div class="s-lbl">Parametric Sweep — Examples</div>
     <button class="ex-btn" data-ex="11">Sweep: VCC COP vs T_cond</button>
-    <button class="ex-btn" data-ex="12">Sweep: Rankine η vs P_high</button>
+    <button class="ex-btn" data-ex="12">Sweep: Rankine η_th &amp; η_ex vs P_high</button>
     <button class="ex-btn" data-ex="37">2D Map: VCC COP</button>
     <button class="ex-btn" data-ex="38">2D Map: Rankine η</button>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.84</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.85</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6471,7 +6471,7 @@ const EX=[
   {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T3 + v3*(P_high - P_low) / 4.18\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
   // ── Parametric sweep examples ──
   {text:'// VCC COP vs condensing temperature\n// Syntax: var = [start : step : end]\nT_cond = [30:5:60]\nT_evap = -10 [degC]\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P2, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// Rankine efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nP_high = [3000:1000:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
+  {text:'// Rankine: 1st- and 2nd-law efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nT0 = 25 [degC]              // dead state for exergy\nP0 = 101.325 [kPa]\nP_high = [3000:500:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// Turbine inlet\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\n// Turbine exit \u2014 isentropic\nh2 = h_Ps(P_low, s1)\n// Condenser exit (sat. liquid) and pump\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\n// First law\nw_net  = (h1 - h2) - (h4 - h3)\nq_in   = h1 - h4\neta_th = w_net / q_in\n// Second law \u2014 exergy of the boiler heat supplied at T_high\nex_q_in = exheat(q_in, T_high)\neta_ex  = w_net / ex_q_in'},
   // ── Live parameter slider examples ──
   {text:'// Live parameter sliders — linear system\n// Press Solve → select a and b as parameters\n// then drag the sliders to explore solutions\na*x + b*y = 12\nx - y = 1'},
   {text:'// Live sliders — heat exchanger\n// U = overall heat transfer coeff [kW/m²·K]\n// A = area [m²], LMTD_val = log-mean temp diff [K]\n// Press Solve → select U and A as parameters\n// Note: dT1 ≠ dT2 required (equal terminals → LMTD = 0/0)\nQ = U * A * LMTD_val\nLMTD_val = (dT1 - dT2) / log(dT1 / dT2)\ndT1 = T_hot_in - T_cold_out\ndT2 = T_hot_out - T_cold_in\nT_hot_in = 120\nT_hot_out = 80\nT_cold_in = 20\nT_cold_out = 50'},
