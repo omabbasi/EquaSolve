@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.85</title>
+<title>EquaSolve V1.3.86</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.85</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.86</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.85</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.86</span></div>
       
     </div>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.85</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.86</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6497,7 +6497,7 @@ const EX=[
   {text:'// Opt: Find best refrigerant for VCC — maximize COP\n// Optimizer finds best temperatures for each fluid automatically\nmaximize COP\nfluid = choice(R134a, R32, R1234yf, R290, R717)\nT_cond = free(40, 30, 55) [degC]\nT_evap = free(-10, -20, 5) [degC]\nh1 = hg_f(T_evap)\ns1 = sg_f(T_evap)\nP_high = Psat_f(T_cond)\nh2 = h_Ps_f(P_high, s1)\nh3 = hf_f(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nCOP >= 2.5'},
   // ── Exergy examples ──
   {text:'// Exergy: Rankine cycle — flow exergy and destruction\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 10 [kPa]\n// State properties\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nT2 = T_Ps(P_low, s1)\nh3 = hf(T2)\ns3 = sf(T2)\nv3 = vf(T2)\nh4 = h3 + v3*(P_high - P_low)\ns4 = s3\n// Performance\nw_turbine = h1 - h2\nw_pump    = h4 - h3\nw_net     = w_turbine - w_pump\nq_boiler  = h1 - h4\neta_th    = w_net / q_boiler\n// Flow exergy using exf(h,s) — detects h,s pair from variable names\n// Dead state h0,s0 computed internally from T0,P0\nex1 = exf(h1, s1)\nex2 = exf(h2, s2)\nex3 = exf(h3, s3)\nex4 = exf(h4, s4)\n// Heat exergy supplied in boiler\nex_Q_boiler = exheat(q_boiler, T_high)\n// Exergy destruction per component\nex_dest_boiler    = ex_Q_boiler - (ex1 - ex4)\nex_dest_turbine   = ex1 - ex2 - w_turbine\nex_dest_condenser = ex2 - ex3\nex_dest_pump      = w_pump - (ex4 - ex3)\n// Exergetic efficiency\neta_ex = w_net / ex_Q_boiler'},
-  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10 [degC]\nT_cond = 40 [degC]\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at dead state boundary temperature\nex_Q_cond = exheat(Q_cond, T0)\nex_Q_evap = exheat(Q_evap, T0)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = (-ex_Q_evap) - m_dot*(ex1 - ex4)\n// Exergetic COP\nCOP_ex = (-ex_Q_evap) / W_comp'},
+  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10 [degC]\nT_cond = 40 [degC]\n// Reservoirs: the cold space sits BELOW ambient, above T_evap\n// Required ordering:  T_evap < T_L < T0 < T_cond\nT_L    = 4 [degC]           // refrigerated space (heat source)\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at the reservoir boundaries\n// Condenser rejects to ambient at T0, so its heat carries zero exergy\nex_Q_cond = exheat(Q_cond, T0)\n// Evaporator draws heat from the cold space at T_L < T0, so the heat\n// exergy is negative; the product of the cycle is (-ex_Q_evap) > 0\nex_Q_evap = exheat(Q_evap, T_L)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = m_dot*(ex4 - ex1) + ex_Q_evap\n// Exergetic COP = COP / COP_reversible, where COP_rev = T_L/(T0-T_L)\nCOP_ex = (-ex_Q_evap) / W_comp'},
   // ── Pareto front examples ──
   {text:'// Pareto: R-134a VCC — HX size vs COP\n// Higher COP needs closer approach temps → larger HX (higher UA)\n// This reveals the true capital cost vs efficiency trade-off\nminimize UA_total\nCOP >= [2.0 : 0.25 : 4.5]   // Pareto: enforce increasing COP\nT_cond = free(42, 32, 58)   // condensing temp [C]\nT_evap = free(-8, -20, 2)   // evaporating temp [C]\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\nh2 = h_Ps_R134a(P_high, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\n// HX sizing from approach temperature\nT_wi = 25 [degC]\ndT_cd = T_cond - T_wi\nUA_cd = Q_cond / dT_cd\nT_ci = 12 [degC]\ndT_ev = T_ci - T_evap\nUA_ev = Q_evap / dT_ev\nUA_total = UA_cd + UA_ev'},
   {text:'// Pareto: Counterflow HX — effectiveness vs UA cost\n// Sweep effectiveness from 0.5 to 0.95, minimize UA (cost)\nminimize UA\neff >= [0.50 : 0.05 : 0.95]   // Pareto sweep on effectiveness\nUA = free(2.0, 0.1, 50)\nm_h = 2.0\nm_c = 1.5\ncp_h = 2.1\ncp_c = 4.186\nC_h = m_h * cp_h\nC_c = m_c * cp_c\nC_min = min(C_h, C_c)\nC_max = max(C_h, C_c)\nCr = C_min / C_max\nNTU_val = NTU(UA, C_min)\neff = eff_NTU_cf(NTU_val, Cr)'},
