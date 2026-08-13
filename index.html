@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.82</title>
+<title>EquaSolve V1.3.87</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -138,18 +138,18 @@ aside.collapsed{width:0 !important;min-width:0 !important;overflow:hidden;border
   /* ── Result cards: 2-col ── */
   .var-grid{grid-template-columns:1fr 1fr !important;}
   /* ── Plots ── */
-  #ode-canvas-wrap{aspect-ratio:16/7 !important;height:auto !important;}
-  .sweep-canvas-wrap{aspect-ratio:16/6 !important;min-height:120px;}
+  #ode-canvas-wrap{aspect-ratio:16/10 !important;height:auto !important;}
+  .sweep-canvas-wrap{aspect-ratio:16/10 !important;min-height:200px;}
   /* ── Force equations tab to use block layout on mobile, not desktop grid ── */
   #tab-equations{display:none !important;}
   #tab-equations.active{display:block !important;}
 }
 /* Desktop ≥900px */
 @media(min-width:900px){
-  /* Canvas sizes */
-  #ode-canvas-wrap{aspect-ratio:unset !important; height:240px !important; min-height:unset !important;}
-  .sweep-canvas-wrap{aspect-ratio:unset !important; height:220px !important; min-height:unset !important;}
-  .diag-canvas-wrap{height:280px;}
+  /* Canvas sizes — V1.3.84: the pinned pixel heights that used to live here
+     (ode 240 / sweep 220 / diagram 280) made aspect-ratio a no-op, so the
+     panes flattened as the window widened (5.9:1 for a diagram at 1920px).
+     Geometry is now governed by aspect-ratio + max-width in the base rules. */
 
   /* Tab-contents: hidden when inactive, flex column when active */
   .tab-content{display:none;flex:1;min-height:0;overflow-y:auto;}
@@ -385,7 +385,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   .ode-result-zone:not(.visible){display:none!important;}
   .ode-zone-header{padding:6px 12px!important;background:#f0f0f0!important;
     font-size:10px!important;color:#444!important;border-bottom:1px solid #ddd!important;}
-  #ode-canvas-wrap{height:220px!important;aspect-ratio:unset!important;}
+  #ode-canvas-wrap{height:425px!important;max-width:none!important;aspect-ratio:unset!important;}
   .ode-table-wrap{display:block!important;}
   .ode-table-wrap.hidden{display:block!important;}
   .ode-table-wrap table{width:100%;border-collapse:collapse;font-size:10px;}
@@ -408,7 +408,9 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   .sweep-zone:not(.visible){display:none!important;}
   .sweep-header{padding:6px 12px!important;background:#f0f0f0!important;
     font-size:10px!important;color:#444!important;border-bottom:1px solid #ddd!important;}
-  .sweep-canvas-wrap{height:200px!important;aspect-ratio:unset!important;}
+  .sweep-canvas-wrap{height:425px!important;max-width:none!important;aspect-ratio:unset!important;}
+  /* 3-D surface is square on screen; it must not inherit the 1-D sweep height */
+  .sweep-canvas-wrap.surface-mode{height:620px!important;max-width:none!important;}
   .sweep-table-wrap{display:block!important;}
   .sweep-table-wrap.hidden{display:block!important;}
   .sweep-table{width:100%;border-collapse:collapse;font-size:10px;}
@@ -419,7 +421,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   #tab-diagram{display:none!important;}
   #tab-diagram.diag-has-data{display:block!important;overflow:visible!important;padding:0!important;margin-top:16px;
     border-top:2px solid #bbb;padding-top:12px!important;}
-  .diag-canvas-wrap{height:300px!important;}
+  .diag-canvas-wrap{height:450px!important;max-width:none!important;}
   .diag-legend{font-size:10px!important;color:#333!important;padding:6px 10px!important;}
   .diag-legend-item{color:#111!important;}
   canvas{max-width:100%!important;display:block;}
@@ -547,6 +549,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .afb-fns{font-size:10px;color:var(--mute);flex:1;line-height:1.7}.afb-fns span{color:var(--purple)}
 .afb-clear{background:transparent;border:1px solid var(--border2);border-radius:5px;padding:4px 10px;color:var(--mute);font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}.afb-clear:hover{border-color:var(--red);color:var(--red)}
 .fluid-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px}
+.gwp-basis-note{font-size:10px;line-height:1.6;color:var(--mute);border-left:2px solid var(--border2);padding:6px 0 6px 10px;margin-top:10px}.gwp-basis-note strong{color:var(--dim)}
 .fluid-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}.fluid-card:hover{border-color:var(--border2);background:var(--border)}.fluid-card.selected{border-color:var(--green);background:rgba(63,185,80,.05)}
 .fluid-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:transparent;transition:background .2s}.fluid-card.selected::before{background:var(--green)}
 .fc-name{font-size:13px;font-weight:700;color:var(--hi);margin-bottom:2px}.fc-formula{font-size:10px;color:var(--purple);margin-bottom:6px}
@@ -630,7 +633,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .diag-fluid-sel{background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--hi);font-family:inherit;font-size:11px;padding:4px 8px;outline:none;max-width:160px;}
 .diag-check{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);cursor:pointer;user-select:none;}
 .diag-check input{accent-color:var(--accent);width:13px;height:13px;}
-.diag-canvas-wrap{width:100%;aspect-ratio:16/7;min-height:220px;position:relative;flex-shrink:0;}
+.diag-canvas-wrap{width:100%;max-width:780px;margin-left:auto;margin-right:auto;aspect-ratio:3/2;min-height:260px;position:relative;flex-shrink:0;}
 .diag-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .diag-legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--border);min-height:28px;flex-shrink:0;}
 .diag-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--dim);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;}
@@ -640,12 +643,13 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .sweep-zone{display:none;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;margin-top:6px;}
 .sweep-zone.visible{display:flex;}
 /* 2D surface plot canvas — taller than 1D sweep */
-.surface-canvas-wrap{width:100%;aspect-ratio:1/1;min-height:540px;position:relative;flex-shrink:0;}
+.surface-canvas-wrap{width:100%;max-width:560px;margin-left:auto;margin-right:auto;aspect-ratio:1/1;min-height:360px;position:relative;flex-shrink:0;}
 .surface-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .sweep-header{padding:8px 14px;font-size:11px;font-weight:600;color:var(--hi);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;}
 .sweep-header span{font-size:10px;color:var(--mute);font-weight:400;}
-.sweep-canvas-wrap{width:100%;aspect-ratio:16/7;min-height:160px;position:relative;flex-shrink:0;}
-.sweep-canvas-wrap.surface-mode{aspect-ratio:1/1 !important;min-height:520px !important;}
+.sweep-canvas-wrap{width:100%;max-width:720px;margin-left:auto;margin-right:auto;aspect-ratio:16/10;min-height:240px;position:relative;flex-shrink:0;}
+.sweep-canvas-wrap.surface-mode{max-width:560px !important;aspect-ratio:1/1 !important;min-height:360px !important;}
+#ode-canvas-wrap{width:100%;max-width:720px;margin-left:auto;margin-right:auto;aspect-ratio:16/10;min-height:240px;position:relative;flex-shrink:0;}
 .sweep-canvas-wrap canvas{width:100%;height:100%;display:block;}
 .sweep-y-sel{background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--hi);font-family:inherit;font-size:11px;padding:3px 7px;outline:none;}
 .sweep-table-wrap{overflow-x:auto;flex-shrink:0;}
@@ -681,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.82</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.87</div>
       </div>
     </div>
 
@@ -761,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.82</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.87</span></div>
       
     </div>
   </div>
@@ -839,7 +843,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="s-sec">
     <div class="s-lbl">Parametric Sweep — Examples</div>
     <button class="ex-btn" data-ex="11">Sweep: VCC COP vs T_cond</button>
-    <button class="ex-btn" data-ex="12">Sweep: Rankine η vs P_high</button>
+    <button class="ex-btn" data-ex="12">Sweep: Rankine η_th &amp; η_ex vs P_high</button>
     <button class="ex-btn" data-ex="37">2D Map: VCC COP</button>
     <button class="ex-btn" data-ex="38">2D Map: Rankine η</button>
   </div>
@@ -933,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.82</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.87</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1010,7 +1014,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         <button class="ode-table-toggle" id="ode-table-toggle" title="Show / hide solution table">⊞ Table</button>
       </div>
       <div id="ode-param-cards" style="display:none;flex-wrap:wrap;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);"></div>
-      <div style="width:100%;aspect-ratio:16/9;min-height:180px;flex-shrink:0;position:relative;" id="ode-canvas-wrap">
+      <div id="ode-canvas-wrap">
         <canvas id="ode-canvas" style="width:100%;height:100%;display:block;"></canvas>
       </div>
       <div class="ode-table-wrap hidden" id="ode-table-wrap">
@@ -1261,6 +1265,10 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <button class="filter-pill" data-cat="natural">Natural</button>
     </div>
     <div class="fluid-grid" id="fluid-grid"></div>
+    <div class="gwp-basis-note">GWP₁₀₀ = 100-year global warming potential, <strong>IPCC AR6</strong> basis
+      (WGI Ch.&nbsp;7 Supplementary Material, Table 7.SM.7; without climate&ndash;carbon-cycle feedbacks).
+      Blend values are mass-weighted averages of the AR6 component values at nominal ASHRAE&nbsp;34 composition.
+      <strong>&dagger;</strong> = species not assessed in AR6 (see source comments).</div>
     <div class="prop-ref" id="prop-ref" style="display:none">
       <div class="prop-ref-header">Property Functions — <strong id="prop-ref-fluid-name" style="color:var(--blue)"></strong></div>
       <div class="prop-ref-tabs" id="pr-tabs"></div>
@@ -2948,6 +2956,16 @@ function createFluid(data){
 // ═══════════════════════════════════════════════════════════════════
 //  FLUID DATABASE
 // ═══════════════════════════════════════════════════════════════════
+//  GWP BASIS (updated V1.3.83):
+//  All `gwp` entries are 100-year Global Warming Potentials (GWP₁₀₀) on the
+//  IPCC Sixth Assessment Report basis — AR6 WGI, Chapter 7 Supplementary
+//  Material, Table 7.SM.7 (Forster et al., 2021), values WITHOUT climate–
+//  carbon-cycle feedbacks. Previous releases used AR4 (2007) values.
+//  Blends: IPCC assigns GWPs to pure halocarbons only, so blend values here
+//  are mass-weighted averages of the AR6 component values at the ASHRAE-34
+//  nominal composition (calculation shown in each blend's comment).
+//  `gwpNote`: species NOT assessed in AR6 — flagged with † in the UI.
+// ═══════════════════════════════════════════════════════════════════
 const FLUID_DB_RAW={
   // ── Refrigerants ── (IIR reference: hf=200 kJ/kg, sf=1.0 kJ/kg·K at 0°C = Cengel/Boles convention)
   R134a:{name:'R-134a',formula:'CH₂FCF₃',category:'hfc',catLabel:'HFC',
@@ -2996,42 +3014,44 @@ const FLUID_DB_RAW={
       1.40:{TK:[325.56,327.15,331.15,335.15,339.15,343.15,347.15,351.15,355.15,359.15,363.15,367.15,371.15,375.15,379.15,383.15,387.15,391.15],h:[276.146,278.147,283.071,287.848,292.517,297.106,301.634,306.114,310.559,314.975,319.371,323.751,328.121,332.483,336.84,341.197,345.554,349.914],s:[0.91061,0.9167,0.93167,0.94601,0.95986,0.97331,0.98642,0.99926,1.01184,1.02421,1.03638,1.04838,1.06021,1.0719,1.08346,1.09489,1.1062,1.1174]},
       1.60:{TK:[331.02,335.15,339.15,343.15,347.15,351.15,355.15,359.15,363.15,367.15,371.15,375.15,379.15,383.15,387.15,391.15],h:[277.873,283.295,288.35,293.252,298.041,302.745,307.383,311.971,316.518,321.035,325.527,330.001,334.462,338.913,343.358,347.799],s:[0.90795,0.92415,0.93914,0.95351,0.96739,0.98086,0.994,1.00684,1.01943,1.0318,1.04397,1.05596,1.06779,1.07947,1.09101,1.10242]}
     },
-    gwp:1430,description:'Automotive A/C & commercial refrigeration'},
+    gwp:1530,description:'Automotive A/C & commercial refrigeration'},
   R22:{name:'R-22',formula:'CHClF₂',category:'hcfc',catLabel:'HCFC',
     MW:86.468,Tc:369.30,Pc:4.9000,omega:0.22082,Tmin:115.73,
     cp0:[17.62,162.0,-68.0,5.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR (Cengel Table A-14)
-    gwp:1810,description:'Legacy refrigerant, global phase-out'},
+    gwp:1960,description:'Legacy refrigerant, global phase-out'},
 
   R32:{name:'R-32',formula:'CH₂F₂',category:'hfc',catLabel:'HFC',
     MW:52.024,Tc:351.26,Pc:5.7820,omega:0.27690,Tmin:136.34,
     cp0:[11.40,175.5,-86.0,10.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:675,description:'Main component of R-410A'},
+    gwp:771,description:'Main component of R-410A'},
 
   R410A:{name:'R-410A',formula:'R-32/R-125',category:'blend',catLabel:'Blend',
     MW:72.585,Tc:344.51,Pc:4.9014,omega:0.29600,Tmin:200.0,
     cp0:[15.5,220.0,-110.0,15.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:2088,description:'Dominant residential A/C blend'},
+    gwp:2256,   // AR6 mass-weighted: 0.50(771)+0.50(3740)=2255.5
+    description:'Dominant residential A/C blend'},
 
   R404A:{name:'R-404A',formula:'R-125/143a/134a',category:'blend',catLabel:'Blend',
     MW:97.604,Tc:345.27,Pc:3.7287,omega:0.29300,Tmin:200.0,
     cp0:[22.0,260.0,-130.0,18.0],
     refT:233.15,refH:0,refS:0,                               // ASHRAE: hf=0, sf=0 at -40°C
-    gwp:3922,description:'Low-temp refrigeration blend'},
+    gwp:4728,   // AR6 mass-weighted: 0.44(3740)+0.52(5810)+0.04(1530)=4728.0
+    description:'Low-temp refrigeration blend'},
 
   R1234yf:{name:'R-1234yf',formula:'CH₂=CFCF₃',category:'hfo',catLabel:'HFO',
     MW:114.04,Tc:367.85,Pc:3.3822,omega:0.27600,Tmin:220.0,
     cp0:[19.0,260.0,-130.0,20.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:4,description:'Ultra-low GWP automotive refrigerant'},
+    gwp:0.501,description:'Ultra-low GWP automotive refrigerant'},
 
   R1234ze:{name:'R-1234ze(E)',formula:'CHF=CHCF₃',category:'hfo',catLabel:'HFO',
     MW:114.04,Tc:382.51,Pc:3.6350,omega:0.31300,Tmin:168.62,
     cp0:[20.0,255.0,-125.0,19.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:7,description:'Low GWP stationary chillers'},
+    gwp:1.37,description:'Low GWP stationary chillers'},
 
   // Ammonia — IIR reference (hf=200, sf=1.0 at 0°C) — Cengel Table A-15/A-16
   // cp0 optimised for refrigeration range 200–450 K (NIST-derived fit)
@@ -3052,19 +3072,20 @@ const FLUID_DB_RAW={
     MW:44.096,Tc:369.89,Pc:4.2477,omega:0.15270,Tmin:85.53,
     cp0:[9.01,211.2,-94.5,12.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:3,description:'Highly efficient hydrocarbon (A3)'},
+    gwp:0.02,description:'Highly efficient hydrocarbon (A3)'},
 
   R600a:{name:'R-600a (i-C₄H₁₀)',formula:'i-C₄H₁₀',category:'natural',catLabel:'Natural',
     MW:58.123,Tc:407.81,Pc:3.6290,omega:0.18400,Tmin:113.73,
     cp0:[5.0,280.0,-125.0,16.0],
     refT:273.15,refH:200,refS:1.0,                           // IIR
-    gwp:3,description:'Domestic refrigerators & heat pumps'},
+    gwp:0.006,gwpNote:'isobutane not assessed in AR6 — AR6 n-butane value used as isomer proxy',
+    description:'Domestic refrigerators & heat pumps'},
 
   // ── Hydrocarbons & Gases ── (conventional reference: h=0, s=0 at 25°C/298.15 K)
   methane:{name:'Methane',formula:'CH₄',category:'hc',catLabel:'HC',
     MW:16.043,Tc:190.56,Pc:4.5992,omega:0.01142,Tmin:90.69,
     cp0:[19.89,5.024,13.20,-3.5],refT:298.15,refH:0,refS:0,
-    gwp:86,description:'Natural gas main component'},
+    gwp:29.8,description:'Natural gas main component'},
 
   ethane:{name:'Ethane',formula:'C₂H₆',category:'hc',catLabel:'HC',
     MW:30.069,Tc:305.33,Pc:4.8718,omega:0.09949,Tmin:90.37,
@@ -3119,65 +3140,70 @@ const FLUID_DB_RAW={
     MW:66.051,Tc:386.41,Pc:4.5168,omega:0.27521,Tmin:154.56,
     cp0:[20.0,160.0,-65.0,9.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:124,description:'Low-GWP HFC, potential R-134a replacement'},
+    gwp:164,description:'Low-GWP HFC, potential R-134a replacement'},
 
   R125:{name:'R-125',formula:'C₂HF₅',category:'hfc',catLabel:'HFC',
     MW:120.021,Tc:339.17,Pc:3.6177,omega:0.30520,Tmin:172.52,
     cp0:[22.0,175.0,-75.0,10.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:3500,description:'Component of R-410A and R-404A'},
+    gwp:3740,description:'Component of R-410A and R-404A'},
 
   R143a:{name:'R-143a',formula:'CH₃CF₃',category:'hfc',catLabel:'HFC',
     MW:84.041,Tc:345.86,Pc:3.7610,omega:0.26160,Tmin:161.34,
     cp0:[18.0,155.0,-60.0,8.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:4470,description:'Component of R-507A and R-404A'},
+    gwp:5810,description:'Component of R-507A and R-404A'},
 
   // ── Additional HFO / Low-GWP ─────────────────────────────────────
   R245fa:{name:'R-245fa',formula:'CF₃CH₂CHF₂',category:'hfo',catLabel:'HFO',
     MW:134.048,Tc:427.16,Pc:3.6510,omega:0.37760,Tmin:171.05,
     cp0:[50.0,200.0,-85.0,13.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:858,description:'ORC working fluid, centrifugal chillers'},
+    gwp:962,description:'ORC working fluid, centrifugal chillers'},
 
   R454B:{name:'R-454B',formula:'R-32/R-1234yf',category:'hfo',catLabel:'HFO',
     MW:56.84,Tc:353.88,Pc:4.6490,omega:0.30600,Tmin:200.0,
     cp0:[16.0,180.0,-78.0,10.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:467,description:'Low-GWP replacement for R-410A'},
+    gwp:531,    // AR6 mass-weighted: 0.689(771)+0.311(0.501)=531.4
+    description:'Low-GWP replacement for R-410A'},
 
   // ── Additional HCFC ───────────────────────────────────────────────
   R123:{name:'R-123',formula:'CF₃CHCl₂',category:'hcfc',catLabel:'HCFC',
     MW:152.931,Tc:456.83,Pc:3.6618,omega:0.28190,Tmin:166.0,
     cp0:[28.0,200.0,-88.0,12.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:77,description:'Low-pressure centrifugal chillers (HCFC phase-out)'},
+    gwp:90.4,description:'Low-pressure centrifugal chillers (HCFC phase-out)'},
 
   // ── Additional Blends ─────────────────────────────────────────────
   R507A:{name:'R-507A',formula:'R-125/143a (50/50)',category:'blend',catLabel:'Blend',
     MW:98.859,Tc:343.76,Pc:3.7048,omega:0.29200,Tmin:200.0,
     cp0:[20.0,165.0,-68.0,9.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:3985,description:'Drop-in for R-502, low-temperature refrigeration'},
+    gwp:4775,   // AR6 mass-weighted: 0.50(3740)+0.50(5810)=4775.0
+    description:'Drop-in for R-502, low-temperature refrigeration'},
 
   R407C:{name:'R-407C',formula:'R-32/125/134a',category:'blend',catLabel:'Blend',
     MW:86.204,Tc:359.18,Pc:4.6320,omega:0.33200,Tmin:200.0,
     cp0:[18.0,205.0,-92.0,12.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:1774,description:'R-22 replacement in centrifugal chillers'},
+    gwp:1908,   // AR6 mass-weighted: 0.23(771)+0.25(3740)+0.52(1530)=1907.9
+    description:'R-22 replacement in centrifugal chillers'},
 
   R448A:{name:'R-448A',formula:'R-32/125/1234ze/134a/1234yf',category:'blend',catLabel:'Blend',
     MW:86.29,Tc:354.31,Pc:4.6020,omega:0.35500,Tmin:200.0,
     cp0:[18.0,200.0,-89.0,12.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:1387,description:'Low-GWP replacement for R-404A and R-507A'},
+    gwp:1494,   // AR6 mass-weighted: 0.26(771)+0.26(3740)+0.20(0.501)+0.21(1530)+0.07(1.37)=1494.4
+    description:'Low-GWP replacement for R-404A and R-507A'},
 
   // ── Hydrocarbons (extended) ───────────────────────────────────────
   R1270:{name:'R-1270 (Propylene)',formula:'C₃H₆',category:'natural',catLabel:'Natural',
     MW:42.081,Tc:364.21,Pc:4.5550,omega:0.14700,Tmin:87.95,
     cp0:[5.0,155.0,-68.0,11.0],
     refT:273.15,refH:200,refS:1.0,
-    gwp:2,description:'Ultra-low GWP industrial refrigerant'},
+    gwp:null,gwpNote:'propene not assessed in AR6; atmospheric lifetime of hours implies GWP100 below that of propane (0.02)',
+    description:'Ultra-low GWP industrial refrigerant'},
 
   pentane:{name:'Pentane',formula:'n-C₅H₁₂',category:'hc',catLabel:'HC',
     MW:72.149,Tc:469.65,Pc:3.3700,omega:0.25100,Tmin:143.47,
@@ -3393,6 +3419,10 @@ const FUNS_base={
   w_psy:(Tdb,RH,P=101.325)=>{const Tk=toK(Tdb);const Psat_=fromMPa(IF97.Psat(Tk));const Pv=RH*Psat_;return 0.62198*Pv/(P-Pv);},
   // h_psy(Tdb, w) → enthalpy kJ/kg dry air
   h_psy:(Tdb,w)=>{const T=UNITS.temp==='°C'?Tdb:(UNITS.temp==='K'?Tdb-273.15:(UNITS.temp==='°F'?(Tdb-32)*5/9:Tdb*5/9-273.15));return 1.006*T+w*(2501+1.86*T);},
+  // Tdb_psy(h, w) → dry-bulb temperature from enthalpy and humidity ratio
+  // Exact inverse of h_psy: h = 1.006·T + w·(2501 + 1.86·T), T in °C
+  //   ⇒ T = (h − 2501·w) / (1.006 + 1.86·w)
+  Tdb_psy:(h,w)=>{const T_C=(h-2501*w)/(1.006+1.86*w);return fromK(T_C+273.15);},
   // RH_psy(Tdb, w, [P]) → relative humidity 0-1
   RH_psy:(Tdb,w,P=101.325)=>{const Tk=toK(Tdb);const Psat_=fromMPa(IF97.Psat(Tk));const Pv=w*P/(0.62198+w);return Pv/Psat_;},
   // Twb_psy(Tdb, w, [P]) → wet-bulb temperature (display units)
@@ -6445,7 +6475,7 @@ const EX=[
   {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T3 + v3*(P_high - P_low) / 4.18\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
   // ── Parametric sweep examples ──
   {text:'// VCC COP vs condensing temperature\n// Syntax: var = [start : step : end]\nT_cond = [30:5:60]\nT_evap = -10 [degC]\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P2, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// Rankine efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nP_high = [3000:1000:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\neta = (h1-h2-(h4-h3)) / (h1-h4)'},
+  {text:'// Rankine: 1st- and 2nd-law efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nT0 = 25 [degC]              // dead state for exergy\nP0 = 101.325 [kPa]\nP_high = [3000:500:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// Turbine inlet\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\n// Turbine exit \u2014 isentropic\nh2 = h_Ps(P_low, s1)\n// Condenser exit (sat. liquid) and pump\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\n// First law\nw_net  = (h1 - h2) - (h4 - h3)\nq_in   = h1 - h4\neta_th = w_net / q_in\n// Second law \u2014 exergy of the boiler heat supplied at T_high\nex_q_in = exheat(q_in, T_high)\neta_ex  = w_net / ex_q_in'},
   // ── Live parameter slider examples ──
   {text:'// Live parameter sliders — linear system\n// Press Solve → select a and b as parameters\n// then drag the sliders to explore solutions\na*x + b*y = 12\nx - y = 1'},
   {text:'// Live sliders — heat exchanger\n// U = overall heat transfer coeff [kW/m²·K]\n// A = area [m²], LMTD_val = log-mean temp diff [K]\n// Press Solve → select U and A as parameters\n// Note: dT1 ≠ dT2 required (equal terminals → LMTD = 0/0)\nQ = U * A * LMTD_val\nLMTD_val = (dT1 - dT2) / log(dT1 / dT2)\ndT1 = T_hot_in - T_cold_out\ndT2 = T_hot_out - T_cold_in\nT_hot_in = 120\nT_hot_out = 80\nT_cold_in = 20\nT_cold_out = 50'},
@@ -6453,7 +6483,7 @@ const EX=[
   {text:'// Live sliders — ODE spring-damper\n// m, c, k are free parameters → Press Solve\n// Explore underdamped / critically damped / overdamped\nx\'\'= -(c/m)*x\' - (k/m)*x\nx(0) = 1\nx\'(0) = 0\nt = [0, 20]'},
   // ── Psychrometric chart examples ──
   {text:'// Psychrometric: Cooling Coil process\n// Go to Diagram tab → ☁ Psychro after solving\n// State 1: inlet (warm humid air)\nT1 = 30\nRH1 = 0.65\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\nv1 = v_psy(T1, w1)\n// State 2: coil exit (cooled & dehumidified)\nT2 = 12\nRH2 = 0.95\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Energy & moisture removed per kg dry air\nQ_coil  = h1 - h2\ndw      = w1 - w2'},
-  {text:'// Psychrometric: Adiabatic Mixing of two airstreams\n// Go to Diagram tab → ☁ Psychro after solving\n// Stream 1: outdoor air\nT1 = 35\nRH1 = 0.50\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\n// Stream 2: return air\nT2 = 24\nRH2 = 0.55\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Mass flow ratio: 30% outdoor, 70% return\nm_ratio = 0.3\n// Mixed state (State 3)\nw3 = m_ratio*w1 + (1-m_ratio)*w2\nh3 = m_ratio*h1 + (1-m_ratio)*h2\nT3 = Twb_psy(T2, w3) + 0\nRH3 = RH_psy(T3, w3)'},
+  {text:'// Psychrometric: Adiabatic Mixing of two airstreams\n// Go to Diagram tab → ☁ Psychro after solving\n// Stream 1: outdoor air\nT1 = 35\nRH1 = 0.50\nw1 = w_psy(T1, RH1)\nh1 = h_psy(T1, w1)\n// Stream 2: return air\nT2 = 24\nRH2 = 0.55\nw2 = w_psy(T2, RH2)\nh2 = h_psy(T2, w2)\n// Mass flow ratio: 30% outdoor, 70% return\nm_ratio = 0.3\n// Mixed state (State 3)\n// Mass and energy balances give w3 and h3 directly\nw3 = m_ratio*w1 + (1-m_ratio)*w2\nh3 = m_ratio*h1 + (1-m_ratio)*h2\n// Dry-bulb of the mixed state follows from (h3, w3)\nT3 = Tdb_psy(h3, w3)\nRH3 = RH_psy(T3, w3)\n// State 3 lies on the straight line joining states 1 and 2\nTwb3 = Twb_psy(T3, w3)'},
   // ── Moody diagram examples ──
   {text:'// Moody: single pipe — friction factor & head loss\n// Go to Diagram tab → ⊕ Moody after solving\n// Pipe: D=0.05 m, pipe_L=100 m, ε=0.046 mm (commercial steel)\nD = 0.05\npipe_L = 100\nepsilon = 0.000046\nnu = 1e-6\nV = 2.5\n// Reynolds number and relative roughness\nRe1 = Re_pipe(V, D, nu)\neD1 = epsilon / D\n// Friction factor (Colebrook-White)\nf1 = f_moody(Re1, eD1)\n// Head loss and pressure drop (water ρ=1000 kg/m³)\nh_loss = hf_darcy(f1, pipe_L, D, V)\ndP = dP_darcy(f1, pipe_L, D, V, 1000)'},
   {text:'// Moody: two pipes in series — compare operating points\n// Go to Diagram tab → ⊕ Moody after solving\n// Pipe 1: smooth small pipe\nD1 = 0.025\nL1 = 50\nV1 = 3.0\nnu = 1e-6\nRe1 = Re_pipe(V1, D1, nu)\neD1 = 0\nf1 = f_moody(Re1, eD1)\nhl1 = hf_darcy(f1, L1, D1, V1)\n// Pipe 2: rough large pipe\nD2 = 0.10\nL2 = 200\nV2 = 1.0\nRe2 = Re_pipe(V2, D2, nu)\neD2 = 0.001\nf2 = f_moody(Re2, eD2)\nhl2 = hf_darcy(f2, L2, D2, V2)\n// Total head loss\nhl_total = hl1 + hl2'},
@@ -6471,7 +6501,7 @@ const EX=[
   {text:'// Opt: Find best refrigerant for VCC — maximize COP\n// Optimizer finds best temperatures for each fluid automatically\nmaximize COP\nfluid = choice(R134a, R32, R1234yf, R290, R717)\nT_cond = free(40, 30, 55) [degC]\nT_evap = free(-10, -20, 5) [degC]\nh1 = hg_f(T_evap)\ns1 = sg_f(T_evap)\nP_high = Psat_f(T_cond)\nh2 = h_Ps_f(P_high, s1)\nh3 = hf_f(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nCOP >= 2.5'},
   // ── Exergy examples ──
   {text:'// Exergy: Rankine cycle — flow exergy and destruction\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 10 [kPa]\n// State properties\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nT2 = T_Ps(P_low, s1)\nh3 = hf(T2)\ns3 = sf(T2)\nv3 = vf(T2)\nh4 = h3 + v3*(P_high - P_low)\ns4 = s3\n// Performance\nw_turbine = h1 - h2\nw_pump    = h4 - h3\nw_net     = w_turbine - w_pump\nq_boiler  = h1 - h4\neta_th    = w_net / q_boiler\n// Flow exergy using exf(h,s) — detects h,s pair from variable names\n// Dead state h0,s0 computed internally from T0,P0\nex1 = exf(h1, s1)\nex2 = exf(h2, s2)\nex3 = exf(h3, s3)\nex4 = exf(h4, s4)\n// Heat exergy supplied in boiler\nex_Q_boiler = exheat(q_boiler, T_high)\n// Exergy destruction per component\nex_dest_boiler    = ex_Q_boiler - (ex1 - ex4)\nex_dest_turbine   = ex1 - ex2 - w_turbine\nex_dest_condenser = ex2 - ex3\nex_dest_pump      = w_pump - (ex4 - ex3)\n// Exergetic efficiency\neta_ex = w_net / ex_Q_boiler'},
-  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10 [degC]\nT_cond = 40 [degC]\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at dead state boundary temperature\nex_Q_cond = exheat(Q_cond, T0)\nex_Q_evap = exheat(Q_evap, T0)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = (-ex_Q_evap) - m_dot*(ex1 - ex4)\n// Exergetic COP\nCOP_ex = (-ex_Q_evap) / W_comp'},
+  {text:'// Exergy: R-134a VCC — exergy destruction per component\nT0 = 25 [degC]\nP0 = 101.325 [kPa]\neta_c = 0.85       // isentropic efficiency of compressor\nT_evap = -10 [degC]\nT_cond = 40 [degC]\n// Reservoirs: the cold space sits BELOW ambient, above T_evap\n// Required ordering:  T_evap < T_L < T0 < T_cond\nT_L    = 4 [degC]           // refrigerated space (heat source)\nP_low  = Psat_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\n// State 1: sat. vapour\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after real compression (eta_c < 1)\nh2s = h_Ps_R134a(P_high, s1)   // isentropic enthalpy\nh2  = h1 + (h2s - h1) / eta_c  // real enthalpy\ns2  = s_Ph_R134a(P_high, h2)    // real entropy after compression\n// State 3: sat. liquid\nh3 = hf_R134a(T_cond)\ns3 = sf_R134a(T_cond)\n// State 4: after throttle — isenthalpic, entropy increases\nh4 = h3\nx4 = x_Ph_R134a(P_low, h4)      // quality after throttle\ns4 = sf_R134a(T_evap) + x4 * (sg_R134a(T_evap) - sf_R134a(T_evap))\n// Performance\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\nm_dot = Q_evap / (h1 - h4)\n// Flow exergies — exf detects (h,s) from variable names\nex1 = exf_R134a(h1, s1)\nex2 = exf_R134a(h2, s2)\nex3 = exf_R134a(h3, s3)\nex4 = exf_R134a(h4, s4)\n// Heat exergies at the reservoir boundaries\n// Condenser rejects to ambient at T0, so its heat carries zero exergy\nex_Q_cond = exheat(Q_cond, T0)\n// Evaporator draws heat from the cold space at T_L < T0, so the heat\n// exergy is negative; the product of the cycle is (-ex_Q_evap) > 0\nex_Q_evap = exheat(Q_evap, T_L)\n// Exergy destruction per component (all positive)\nex_dest_comp  = W_comp - m_dot*(ex2 - ex1)   // irreversibility in compressor\nex_dest_cond  = m_dot*(ex2 - ex3) - ex_Q_cond\nex_dest_valve = m_dot*(ex3 - ex4)             // throttle irreversibility\nex_dest_evap  = m_dot*(ex4 - ex1) + ex_Q_evap\n// Exergetic COP = COP / COP_reversible, where COP_rev = T_L/(T0-T_L)\nCOP_ex = (-ex_Q_evap) / W_comp'},
   // ── Pareto front examples ──
   {text:'// Pareto: R-134a VCC — HX size vs COP\n// Higher COP needs closer approach temps → larger HX (higher UA)\n// This reveals the true capital cost vs efficiency trade-off\nminimize UA_total\nCOP >= [2.0 : 0.25 : 4.5]   // Pareto: enforce increasing COP\nT_cond = free(42, 32, 58)   // condensing temp [C]\nT_evap = free(-8, -20, 2)   // evaporating temp [C]\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nP_high = Psat_R134a(T_cond)\nh2 = h_Ps_R134a(P_high, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)\nQ_evap = 10\nW_comp = Q_evap / COP\nQ_cond = Q_evap + W_comp\n// HX sizing from approach temperature\nT_wi = 25 [degC]\ndT_cd = T_cond - T_wi\nUA_cd = Q_cond / dT_cd\nT_ci = 12 [degC]\ndT_ev = T_ci - T_evap\nUA_ev = Q_evap / dT_ev\nUA_total = UA_cd + UA_ev'},
   {text:'// Pareto: Counterflow HX — effectiveness vs UA cost\n// Sweep effectiveness from 0.5 to 0.95, minimize UA (cost)\nminimize UA\neff >= [0.50 : 0.05 : 0.95]   // Pareto sweep on effectiveness\nUA = free(2.0, 0.1, 50)\nm_h = 2.0\nm_c = 1.5\ncp_h = 2.1\ncp_c = 4.186\nC_h = m_h * cp_h\nC_c = m_c * cp_c\nC_min = min(C_h, C_c)\nC_max = max(C_h, C_c)\nCr = C_min / C_max\nNTU_val = NTU(UA, C_min)\neff = eff_NTU_cf(NTU_val, Cr)'},
@@ -6646,7 +6676,7 @@ function renderFluidGrid(){
     if(allowed&&!allowed.includes(d.category))return'';
     if(q&&!d.name.toLowerCase().includes(q)&&!d.formula.toLowerCase().includes(q)&&!key.toLowerCase().includes(q))return'';
     const isSel=ACTIVE_FLUID_KEY===key||(key==='water'&&ACTIVE_FLUID_KEY===null);
-    return`<div class="fluid-card${isSel?' selected':''}" data-fluid-key="${key}"><div class="fc-sel-icon">✓</div><div class="fc-name">${d.name}</div><div class="fc-formula">${d.formula}</div><span class="fc-badge badge-${d.category==='iapws'?'iapws':d.category}">${d.catLabel}</span><div class="fc-props">Tc:<span>${d.Tc.toFixed(1)} K</span><br>Pc:<span>${d.Pc.toFixed(3)} MPa</span><br>MW:<span>${d.MW.toFixed(2)} g/mol</span>${d.gwp!==undefined?`<br>GWP:<span>${d.gwp}</span>`:''}</div><div class="fc-desc">${d.description||''}</div></div>`;
+    return`<div class="fluid-card${isSel?' selected':''}" data-fluid-key="${key}"><div class="fc-sel-icon">✓</div><div class="fc-name">${d.name}</div><div class="fc-formula">${d.formula}</div><span class="fc-badge badge-${d.category==='iapws'?'iapws':d.category}">${d.catLabel}</span><div class="fc-props">Tc:<span>${d.Tc.toFixed(1)} K</span><br>Pc:<span>${d.Pc.toFixed(3)} MPa</span><br>MW:<span>${d.MW.toFixed(2)} g/mol</span>${d.gwp!==undefined?`<br>GWP₁₀₀:<span>${d.gwp===null?'n/a':d.gwp}${d.gwpNote?'†':''}</span>`:''}</div><div class="fc-desc">${d.description||''}</div></div>`;
   }).join('')||'<div style="color:var(--mute);padding:20px;grid-column:1/-1;font-style:italic">No fluids match.</div>';
 }
 function selectFluid(key){ACTIVE_FLUID_KEY=key==='water'?null:key;setActiveFunctions();renderFluidGrid();updateFluidBanner();updateSidebar();renderPropRef(key);}
@@ -7286,6 +7316,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     // Psychrometrics
     w_psy:['temperature','relative humidity'],
     h_psy:['temperature','humidity ratio'],
+    Tdb_psy:['enthalpy','humidity ratio'],
     v_psy:['temperature','humidity ratio'],
     RH_psy:['temperature','humidity ratio'],
     Twb_psy:['temperature','humidity ratio'],
@@ -8541,6 +8572,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     const psychro = [
       {n:'h_psy',a:'(T,w)'}, {n:'w_psy',a:'(T,RH)'}, {n:'RH_psy',a:'(T,w)'},
       {n:'v_psy',a:'(T,w)'}, {n:'Tdp_psy',a:'(T,w)'}, {n:'Twb_psy',a:'(T,w)'},
+      {n:'Tdb_psy',a:'(h,w)'}, {n:'w_sat',a:'(T)'},
     ];
     psychro.forEach(f => items.push({name:f.n, args:f.a, cat:'Psychro', insert:f.n+f.a, cursorBack:f.a.split(',').length===1?1:f.a.length-1}));
 
@@ -10872,7 +10904,7 @@ function drawODEPlot(canvas, ts, ys, stateVars, xVar, yVars, tVar, tUnit, stateV
   tVar = tVar || 't';
   const dpr = window.devicePixelRatio||1;
   // V1.3.76: print-aware sizing (matches @media print #ode-canvas-wrap height)
-  const {W, H} = window._printCanvasDims(canvas.parentElement, 400, 240, 220);
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 400, 250, 425);
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width  = W + 'px';
@@ -11536,7 +11568,7 @@ function extractStatePoints(scope) {
 function drawDiagram(canvas, dome, states, type, logP, cycles) {
   const dpr = window.devicePixelRatio || 1;
   // V1.3.76: print-aware sizing (matches @media print .diag-canvas-wrap height)
-  const {W, H} = window._printCanvasDims(canvas.parentElement, 600, 300, 300);
+  const {W, H} = window._printCanvasDims(canvas.parentElement, 600, 400, 450);
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
@@ -14835,7 +14867,7 @@ function _drawSurface3D() {
   const wrap   = document.getElementById('sweep-canvas-wrap');
   const dpr = window.devicePixelRatio || 1;
   // V1.3.76: print-aware sizing (matches @media print sweep wrap height)
-  const {W, H} = window._printCanvasDims(wrap, 600, 240, 200);
+  const {W, H} = window._printCanvasDims(wrap, 560, 560, 620);
   canvas.width = W*dpr; canvas.height = H*dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d');
@@ -15130,7 +15162,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     const wrap = document.getElementById('sweep-canvas-wrap');
     const dpr = window.devicePixelRatio || 1;
     // V1.3.76: print-aware sizing (680×200 while printing — matches @media print wrap)
-    const {W, H} = window._printCanvasDims(wrap, 600, 140, 200);
+    const {W, H} = window._printCanvasDims(wrap, 600, 375, 425);
     canvas.width = W*dpr; canvas.height = H*dpr;
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
     const ctx = canvas.getContext('2d');
@@ -15339,3 +15371,4 @@ window.__eqsBooted = true;
 </script>
 </body>
 </html>
+
