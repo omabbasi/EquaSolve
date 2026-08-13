@@ -1,0 +1,50 @@
+name: Deploy latest EquaSolve
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "EquaSolve_V*.html"
+      - ".github/workflows/deploy-latest.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Select latest EquaSolve version
+        shell: bash
+        run: |
+          mkdir _site
+          latest="$(printf '%s\n' EquaSolve_V*.html | sort -V | tail -n 1)"
+          test -f "$latest"
+          cp "$latest" _site/index.html
+          echo "Publishing $latest"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
