@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.90</title>
+<title>EquaSolve V1.3.91</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.90</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.91</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.90</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.91</span></div>
       
     </div>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.90</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.91</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -9607,7 +9607,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     _updateUndoRedoBtns();
     updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
     autoResizeTA();
-    // V1.3.90: the editor is a transparent textarea over the #eq-highlight
+    // V1.3.91: the editor is a transparent textarea over the #eq-highlight
     // overlay, and renderHighlight() is bound to the 'input' event only.
     // Assigning $in.value programmatically does not fire 'input', so switching
     // sheets left the overlay painting the previous sheet's text. Every other
@@ -9649,7 +9649,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     _updateUndoRedoBtns();
     updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
     autoResizeTA();
-    // V1.3.90: the editor is a transparent textarea over the #eq-highlight
+    // V1.3.91: the editor is a transparent textarea over the #eq-highlight
     // overlay, and renderHighlight() is bound to the 'input' event only.
     // Assigning $in.value programmatically does not fire 'input', so switching
     // sheets left the overlay painting the previous sheet's text. Every other
@@ -10303,7 +10303,7 @@ function preprocessHigherOrder(lines) {
 // Also: implicit ODEs — any equation containing y' anywhere, e.g. x + y' = f(t)
 // Algebraic: lhs = rhs  (any equation without a prime, not a known param)
 // ICs: y(0) = val   Span: t = [0,10]   Params: k = 0.5
-// V1.3.90: identifier scan that ignores numeric literals.
+// V1.3.91: identifier scan that ignores numeric literals.
 // The bare regex /[a-zA-Z_]\w*/g matches the exponent suffix of scientific
 // notation, so `k2 = 3e7` produced a phantom identifier `e7`. That phantom was
 // then absorbed into algVarSet as an algebraic unknown, appeared as a junk
@@ -10399,16 +10399,31 @@ function parseODESystem(txt) {
     }
   }
 
+  // V1.3.91: promotion to an algebraic (state-dependent) variable is now
+  // TRANSITIVE. Previously a definition was promoted only if its RHS *directly*
+  // named a differential state, so `rA = -k*(CA - CB*CC/Kc)` — whose RHS names
+  // only other algebraic quantities — was filed as a constant parameter.
+  // evalParams could not resolve it (CA is not in the parameter scope), the
+  // exception was swallowed, and the integrator then failed with
+  // "Undefined variable: rA". Chains like `rB = -rA` cascaded the same way.
+  // Iterate to a fixed point so state dependence propagates through any chain
+  // of definitions, in any declaration order.
+  const algNames = new Set();
+  for (let _changed = true; _changed; ) {
+    _changed = false;
+    for (const [k, expr] of Object.entries(params)) {
+      if (algNames.has(k)) continue;
+      const ids = exprIds(expr).filter(id => !KNOWN.has(id));
+      const stateDependent = ids.some(id =>
+        diffVars.has(id) || algNames.has(id) || (!(id in params) && id !== tVar));
+      if (stateDependent) { algNames.add(k); _changed = true; }
+    }
+  }
   const pureParams = {};
   const promotedAlg = [];
   for (const [k, expr] of Object.entries(params)) {
-    const ids = exprIds(expr).filter(id => !KNOWN.has(id));
-    const refsDiffVar = ids.some(id => diffVars.has(id));
-    if (refsDiffVar || ids.some(id => !pureParams[id] && !KNOWN.has(id) && !(id in params) && id !== tVar)) {
-      promotedAlg.push({ lhs: k, rhs: expr });
-    } else {
-      pureParams[k] = expr;
-    }
+    if (algNames.has(k)) promotedAlg.push({ lhs: k, rhs: expr });
+    else pureParams[k] = expr;
   }
 
   const allParams = { ...pureParams };
@@ -10431,7 +10446,7 @@ function parseODESystem(txt) {
   }
   const algVars = [...algVarSet];
 
-  // V1.3.90: free-parameter detection for identifiers that appear inside an
+  // V1.3.91: free-parameter detection for identifiers that appear inside an
   // ALGEBRAIC equation. Such an identifier was previously absorbed into
   // algVarSet as an algebraic unknown, then handed a fabricated `v = 0`
   // equation in buildODEEval — Newton solved it to zero and the run completed
@@ -10650,6 +10665,7 @@ function buildODEEval(parsed) {
 
   // Detect which algebraic equations are explicit (algVar = expr alone)
   const algExplicit = {};  // algVar → pre-compiled RHS AST (if explicit)
+  const algExplicitOrder = [];  // V1.3.91: dependency-sorted eval order
   const algImplicit = { vars: [], eqs: [] };  // remaining equations for Newton
   if (isDAE) {
     // Build map from algVar name → its equation (matched by LHS, not by index)
@@ -10670,6 +10686,28 @@ function buildODEEval(parsed) {
         algImplicit.eqs.push(eq);
       }
     }
+
+    // V1.3.91: evaluate explicit algebraic variables in DEPENDENCY order.
+    // rhs() makes a single pass with no iteration to convergence, so a variable
+    // evaluated before something it depends on silently used the previous
+    // step's value. Sorting topologically means declaration order in the sheet
+    // no longer matters, matching Polymath's behaviour. Cycles are left in
+    // declaration order — those are genuinely implicit and fall back to the
+    // warm-start value, exactly as before.
+    const algDeps = {};
+    for (const v of Object.keys(algExplicit)) {
+      const idx = algEqByVar[v];
+      algDeps[v] = exprIds(algEqs[idx].rhs).filter(id => id !== v && (id in algExplicit));
+    }
+    const _tsMark = {};  // 1 = visiting (cycle guard), 2 = emitted
+    const _tsVisit = v => {
+      if (_tsMark[v]) return;
+      _tsMark[v] = 1;
+      for (const dep of algDeps[v]) if (_tsMark[dep] !== 1) _tsVisit(dep);
+      _tsMark[v] = 2;
+      algExplicitOrder.push(v);
+    };
+    for (const v of Object.keys(algExplicit)) _tsVisit(v);
   }
 
   function rhs(t, Y) {
@@ -10679,7 +10717,8 @@ function buildODEEval(parsed) {
     // Solve algebraic system for alg vars (DAE inner Newton loop)
     if (isDAE) {
       // First: evaluate explicit alg vars directly (no Newton needed)
-      for (const [v, ast] of Object.entries(algExplicit)) {
+      for (const v of algExplicitOrder) {
+        const ast = algExplicit[v];
         try { scope[v] = evalNode(ast, scope); } catch(e) { scope[v] = algState[v] ?? 1; }
         algState[v] = scope[v];
       }
