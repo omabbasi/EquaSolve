@@ -14,7 +14,7 @@ Built-in libraries provide thermophysical properties for 38 working fluids (wate
 Open **https://omabbasi.github.io/EquaSolve/** in your browser.
 
 **Option 2 — Download and run locally:**
-1. Download `EquaSolve_V1_3_87.html` from this repository.
+1. Download `EquaSolve_V1_3_89.html` from this repository.
 2. Double-click the file. It will open in your default browser.
 3. That's it. No setup required.
 
