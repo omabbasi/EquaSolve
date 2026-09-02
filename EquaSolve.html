@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.87</title>
+<title>EquaSolve V1.3.88</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.87</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.88</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.87</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.88</span></div>
       
     </div>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.87</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.88</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -10283,6 +10283,18 @@ function preprocessHigherOrder(lines) {
 // Also: implicit ODEs — any equation containing y' anywhere, e.g. x + y' = f(t)
 // Algebraic: lhs = rhs  (any equation without a prime, not a known param)
 // ICs: y(0) = val   Span: t = [0,10]   Params: k = 0.5
+// V1.3.88: identifier scan that ignores numeric literals.
+// The bare regex /[a-zA-Z_]\w*/g matches the exponent suffix of scientific
+// notation, so `k2 = 3e7` produced a phantom identifier `e7`. That phantom was
+// then absorbed into algVarSet as an algebraic unknown, appeared as a junk
+// column in the ODE table and plot legend, and broke any attempt to compare
+// the number of algebraic unknowns against the number of algebraic equations.
+function exprIds(str) {
+  return (String(str)
+    .replace(/\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\.\d+(?:[eE][+-]?\d+)?/g, ' ')
+    .match(/[a-zA-Z_]\w*/g)) || [];
+}
+
 function parseODESystem(txt) {
   let lines = txt.split('\n').map(l => l.replace(/\/\/.*$/,'').trim()).filter(Boolean);
 
@@ -10370,7 +10382,7 @@ function parseODESystem(txt) {
   const pureParams = {};
   const promotedAlg = [];
   for (const [k, expr] of Object.entries(params)) {
-    const ids = (expr.match(/[a-zA-Z_]\w*/g) || []).filter(id => !KNOWN.has(id));
+    const ids = exprIds(expr).filter(id => !KNOWN.has(id));
     const refsDiffVar = ids.some(id => diffVars.has(id));
     if (refsDiffVar || ids.some(id => !pureParams[id] && !KNOWN.has(id) && !(id in params) && id !== tVar)) {
       promotedAlg.push({ lhs: k, rhs: expr });
@@ -10389,7 +10401,7 @@ function parseODESystem(txt) {
 
   const algVarSet = new Set();
   for (const { lhs, rhs } of allAlgEqs) {
-    const ids = [...(lhs.match(/[a-zA-Z_]\w*/g)||[]), ...(rhs.match(/[a-zA-Z_]\w*/g)||[])];
+    const ids = [...exprIds(lhs), ...exprIds(rhs)];
     for (const id of ids) {
       if (!diffVars.has(id) && !KNOWN.has(id) && id !== tVar && !allParams[id]) {
         algVarSet.add(id);
@@ -10398,6 +10410,24 @@ function parseODESystem(txt) {
     if (/^\w+$/.test(lhs.trim()) && !diffVars.has(lhs.trim())) algVarSet.add(lhs.trim());
   }
   const algVars = [...algVarSet];
+
+  // V1.3.88: square-system check for the algebraic (DAE) block.
+  // An identifier that appears in an algebraic equation but is never defined
+  // (e.g. a commented-out parameter) was previously absorbed into algVarSet and
+  // then handed a fabricated `v = 0` equation in buildODEEval. Newton solved it
+  // to zero and the run completed with no warning, producing a plausible-looking
+  // but silently wrong solution. Compare counts rather than scanning for orphans
+  // alone, so that genuinely implicit equations such as `z^2 = abs(x) + 0.1`
+  // (where z has no bare-LHS definition) keep working.
+  if (algVars.length !== allAlgEqs.length) {
+    const defined = new Set(allAlgEqs.map(e => e.lhs.trim()).filter(t => /^\w+$/.test(t)));
+    const orphans = algVars.filter(v => !defined.has(v));
+    let msg = `Algebraic system is not square: ${algVars.length} unknown(s) but ${allAlgEqs.length} equation(s).`;
+    if (orphans.length) {
+      msg += `\nUndefined: ${orphans.join(', ')} \u2014 add a definition, or check for a commented-out parameter.`;
+    }
+    return { error: msg };
+  }
 
   const missing = stateVars.filter(v => ics[v] === undefined);
   if (missing.length) return { error: `Missing initial condition for: ${missing.map(v => `${v}(0) = ?`).join(', ')}` };
@@ -10412,10 +10442,7 @@ function parseODESystem(txt) {
   const undeclared = new Set();
   for (const [v, { lhs, rhs, dToken }] of Object.entries(implicitDerivs || {})) {
     // Reconstruct original expression, strip the dToken placeholder since it's internal
-    const allIds = [
-      ...(lhs.match(/[a-zA-Z_]\w*/g) || []),
-      ...(rhs.match(/[a-zA-Z_]\w*/g) || [])
-    ];
+    const allIds = [...exprIds(lhs), ...exprIds(rhs)];
     for (const id of allIds) {
       if (id === dToken) continue;                   // internal placeholder
       if (id.startsWith('__d_')) continue;           // internal prefix
