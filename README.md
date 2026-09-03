@@ -119,17 +119,20 @@ will be extended with the journal reference once the accompanying paper is publi
 
 ## Version archive
 
-Every build is preserved. `Archive/` holds all 62 versions from V1.234 (April 2026)
-through V1.3.97 under their original filenames, and each is a tagged commit dated from
-its original release, so a specific version can be retrieved directly:
+The repository root carries only the current release. Every earlier build is preserved in
+`Archive/` — all 62 versions from V1.234 (April 2026) through V1.3.97, under their
+original filenames. Each is also a git tag dated from its original release.
 
 ```bash
-git checkout v1.3.35 -- EquaSolve.html      # the build cited by earlier submissions
-git diff v1.3.89 v1.3.97 -- EquaSolve.html  # what changed between releases
+ls Archive/                       # every build ever released
+git tag                           # v1.234 ... v1.3.97, in release order
+
+# what changed between two releases
+git diff --no-index Archive/EquaSolve_V1_3_89.html Archive/EquaSolve_V1_3_97.html
 ```
 
-`EquaSolve.html` at the repository root is the canonical file that carries this history;
-the numbered `EquaSolve_V1_3_*.html` files at the root are the published releases.
+Reproducing a result from an earlier paper means taking that version straight from
+`Archive/` — for example `Archive/EquaSolve_V1_3_35.html`.
 
 ---
 

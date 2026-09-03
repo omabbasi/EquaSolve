@@ -15,15 +15,27 @@ Builds are produced whole, not patched incrementally, and are versioned by filen
 is why sixty-odd versions accumulated there. **That is no longer the source of truth —
 this repo is.**
 
+**The repository root holds exactly one build: the current release.** Every earlier
+version lives in `Archive/` and nowhere else. Do not leave old releases at the root.
+
 When a new build is produced:
 
-1. Save it over `EquaSolve.html`.
-2. Commit with the version as the subject line (e.g. `v1.3.98`).
-3. Tag it: `git tag v1.3.98`.
-4. Drop the originally-named copy into `Archive/`.
+1. `git rm` the previous release from the root.
+2. Add the new build to the root as `EquaSolve_V1_3_NN.html`.
+3. Copy the same file into `Archive/` under that name.
+4. Commit with the version as the subject line (e.g. `v1.3.98`), then `git tag v1.3.98`.
+5. Bump the version strings in `README.md` and `version:` in `CITATION.cff`.
 
-Keeping the canonical filename stable is what makes `git diff v1.3.95 v1.3.97` work.
-Do not rename `EquaSolve.html` to a versioned name — that breaks every diff.
+To compare two builds, diff the archived copies directly — this needs no shared filename
+and always works:
+
+```bash
+git diff --no-index Archive/EquaSolve_V1_3_89.html Archive/EquaSolve_V1_3_97.html
+```
+
+Builds up to v1.3.97 also share a canonical path (`EquaSolve.html`) inside their own
+commits, so `git diff v1.3.89 v1.3.97 -- EquaSolve.html` still works for that range. That
+file was removed from the root on 3 Sep 2026; releases after v1.3.97 will not have it.
 
 ## Conventions that matter
 
@@ -58,9 +70,14 @@ Two traps in that mechanism:
 - **Only root-level files are globbed.** Publishing a release means copying it to the root
   as `EquaSolve_V1_3_NN.html`, not just committing it to `Archive/`.
 
-Release checklist: update `EquaSolve.html`, copy it to root as `EquaSolve_V1_3_NN.html`,
-refresh `index.html` to match, bump the two version strings in `README.md` and `version:`
-in `CITATION.cff`, add the build to `Archive/`, commit, tag.
+Because the root holds only one release, `sort -V` now has a single candidate — but keep
+the rule anyway: exactly one `EquaSolve_V*.html` at the root, everything else in
+`Archive/`. See the release steps under "How development actually happens".
+
+There is no committed `index.html`. The workflow generates its own at deploy time
+(`cp "$latest" _site/index.html`), so the root does not need one. This holds only while
+Pages is served from GitHub Actions; if it is ever switched to "deploy from branch", a
+root `index.html` becomes load-bearing again.
 
 ## Resolved
 
