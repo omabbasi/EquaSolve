@@ -2,7 +2,8 @@
 
 **A single-file, browser-based engineering equation solver.**
 
-[![DOI](https://img.shields.io/badge/DOI-10.5541%2Fijot.1978096-blue)](https://doi.org/10.5541/ijot.1978096)
+[![Paper DOI](https://img.shields.io/badge/paper-10.5541%2Fijot.1978096-blue)](https://doi.org/10.5541/ijot.1978096)
+[![Software DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22278667.svg)](https://doi.org/10.5281/zenodo.22278667)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-omabbasi.github.io%2FEquaSolve-orange)](https://omabbasi.github.io/EquaSolve/)
 
@@ -142,6 +143,19 @@ BibTeX:
 
 A machine-readable [`CITATION.cff`](CITATION.cff) is also provided, so GitHub's
 "Cite this repository" button returns this reference.
+
+### Citing the software itself
+
+The reference above cites the *paper*. To cite the *code* — which is what you need when a
+result depends on the exact build you ran — use the Zenodo archive:
+
+| | DOI |
+|---|---|
+| **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
+| **v1.3.100** specifically | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
+
+Cite the paper for the method, the version DOI for reproducibility. Every release is
+archived on Zenodo with the complete `Archive/` history attached.
 
 ---
 

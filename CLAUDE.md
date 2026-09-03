@@ -113,3 +113,13 @@ How the integration works, and its one trap:
 The paper's DOI (`10.5541/ijot.1978096`) identifies the article. A Zenodo DOI identifies
 the code, and is what lets someone cite the exact build behind a result — which is the
 point of keeping `Archive/`.
+
+Live values, first archived 3 Sep 2026 from release `v1.3.100`:
+
+- **Concept DOI `10.5281/zenodo.22278667`** — stable, always resolves to the newest
+  release. This is the one to put in README badges, `CITATION.cff`, and the app.
+- **Version DOI `10.5281/zenodo.22278668`** — release `v1.3.100` only.
+
+Every future GitHub Release mints a **new version DOI**; the concept DOI never changes.
+So after each release, add the new version DOI to `identifiers` in `CITATION.cff` and to
+the README table, and leave the concept DOI alone.
