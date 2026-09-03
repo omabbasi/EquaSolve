@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.91</title>
+<title>EquaSolve V1.3.95</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.91</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.95</div>
       </div>
     </div>
 
@@ -765,7 +765,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.91</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.95</span></div>
       
     </div>
   </div>
@@ -937,7 +937,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.91</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.95</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1014,6 +1014,12 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         <button class="ode-table-toggle" id="ode-table-toggle" title="Show / hide solution table">⊞ Table</button>
       </div>
       <div id="ode-param-cards" style="display:none;flex-wrap:wrap;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);"></div>
+      <!-- V1.3.95: ODE-side unit advisory. The panel in #alg-result-zone is scoped
+           to the algebraic renderer, so the ODE zone needs its own strip. -->
+      <div class="unit-advisory" id="ode-unit-advisory" style="margin:10px 12px;">
+        <div class="unit-advisory-title">&#9888; Unit Advisory</div>
+        <div id="ode-unit-advisory-body"></div>
+      </div>
       <div id="ode-canvas-wrap">
         <canvas id="ode-canvas" style="width:100%;height:100%;display:block;"></canvas>
       </div>
@@ -4463,6 +4469,18 @@ function evalDimNode(nd) {
     const _specVo = [-1,3,0,0,0,0,0];  // m³/kg (specific volume: v_PT)
     const _molE   = [1,2,-2,0,0,-1,0]; // J/mol (molar energy: combustion h_X(T))
     const _molS   = [1,2,-2,0,-1,-1,0];// J/(mol·K) (molar entropy: combustion s_X(T))
+    // V1.3.95: transcendental functions are dimensionless, and must be resolved
+    // BEFORE the thermo-name patterns below. The specific-energy alternation
+    // contains a bare `ex` (exergy) with no terminator, so `exp` matched `^ex`
+    // and every exponential was typed as kJ/kg. On an Arrhenius sheet that
+    // propagated into every rate constant and raised a false
+    // "incompatible dimensions" error on the rate equation.
+    // Only the genuinely dimensionless functions are listed — sqrt/abs/min/max
+    // keep their existing behaviour rather than being silently redefined here.
+    if (/^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc)$/.test(fn)) {
+      return {val: 1, dim: _D.none.slice()};
+    }
+
     // V1.3.51: Combustion ideal-gas h_X(T) / s_X(T) → molar dims (kJ/kmol).
     // Must come BEFORE the generic ^h_ / ^s_ regex below, which would otherwise
     // mis-classify 1-arg combustion calls as mass-specific kJ/kg. 2-arg
@@ -4696,6 +4714,30 @@ let _varDimCache = {};
 // ORIGINAL value and unit string so result cards show e.g. "300 K" not "26.85 K"
 let _bracketDisplayMap = {};
 
+// V1.3.95: single implementation of "how should a bracketed value be shown".
+// Temperature is an interval scale, so a bracketed absolute temperature is
+// converted through K into the ACTIVE OUTPUT unit and labelled with that unit.
+// Every other bracket unit is a ratio scale with no output-unit setting, so the
+// value the user typed is echoed back with the unit they typed.
+// Previously this lived only in the algebraic card renderer; the ODE param cards
+// transcribed the raw source tag next to a scope value that had already been
+// converted to the INPUT basis, producing false cards such as "T0 56.85 K".
+function _bracketCardDisplay(v) {
+  const bde = _bracketDisplayMap[v];
+  if (!bde) return null;
+  const ou = bde.unit;
+  const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
+  if (_tempSet[ou]) {
+    let T_K;
+    if      (ou==='K')               T_K = bde.val;
+    else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
+    else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
+    else                             T_K = bde.val * 5/9; // °R
+    return { dispVal: fromK(T_K), unitLabel: UNITS.temp };
+  }
+  return { dispVal: bde.val, unitLabel: bde.unit };
+}
+
 // Best unit label: prefers name-based guess for power/work variables when
 // dim inference gives only specific energy (kJ/kg) — happens when mass flow rate
 // propagation is incomplete (e.g. m3 variable dim not resolved)
@@ -4718,23 +4760,77 @@ function _rhs_has_dim_conflict(rhsMapEntry) {
   if (!rhsMapEntry) return false;
   try { return _hasDimConflictInSum(parse(rhsMapEntry)); } catch(e) { return false; }
 }
+// V1.3.95: prefer a bracket label carried by the RHS over the SI-base spelling.
+// _varDimCache holds a 7-element dimension vector with no scale factor, so
+// dimToLabel can only emit the SI-base name. `CA0 = 9.3 [kmol/m^3]` displayed
+// correctly from _bracketDisplayMap, but `CA = CA0*(1-X)` inherited the dimension
+// alone and was labelled mol/m³ over a value still on the kmol basis — wrong by a
+// factor of 1000. When the RHS references a bracketed variable whose dimension
+// matches this one exactly, that variable's own bracket unit is the honest label,
+// because the value was computed on its basis. Resolved labels are recorded so a
+// chain (CA0 → CA → …) keeps propagating.
+let _derivedUnitLabel = {};
+function _inheritedBracketUnit(v, rhsMapEntry) {
+  if (!rhsMapEntry || !_varDimCache) return '';
+  // Derive this variable's dim from its RHS rather than trusting _varDimCache.
+  // The cache can hold a stale zero-dim entry: buildVarDimCache locks in
+  // "confirmed dimensionless" results, and a variable propagated before its
+  // dependencies were resolved (rA ahead of CA in source order) keeps that
+  // wrong value. inferUnitFromRHS already recomputes live, so match it here.
+  let myDim = null;
+  try { const _d = evalDimNode(parse(rhsMapEntry)); if (_d && _d.dim) myDim = _d.dim; } catch (e) {}
+  if (!myDim && (v in _varDimCache)) myDim = _varDimCache[v];
+  if (!myDim || !myDim.some(x => x !== 0)) return '';   // dimensionless: nothing to inherit
+  let ids;
+  try { ids = exprIds(rhsMapEntry); } catch (e) { return ''; }
+  for (const id of ids) {
+    if (id === v) continue;
+    const srcUnit = (_bracketDisplayMap[id] && _bracketDisplayMap[id].unit) || _derivedUnitLabel[id];
+    if (!srcUnit) continue;
+    const srcDim = _varDimCache[id];
+    if (!srcDim || !srcDim.every((x, i) => x === myDim[i])) continue;
+    return srcUnit;
+  }
+  return '';
+}
+// V1.3.95: resolve derived labels to a fixed point before any card renders.
+// _bestUnitLabel alone would only inherit from a source already resolved, so a
+// chain such as CA0 → CA → rA depended on the order cards happen to be drawn in.
+function _resolveDerivedUnitLabels(rhsMap) {
+  _derivedUnitLabel = {};
+  for (let pass = 0, changed = true; changed && pass < 8; pass++) {
+    changed = false;
+    for (const [v, rhs] of Object.entries(rhsMap || {})) {
+      if (typeof rhs !== 'string') continue;
+      if (_derivedUnitLabel[v]) continue;
+      if (_bracketDisplayMap[v] && _bracketDisplayMap[v].unit) continue;
+      if (_dimConflictVars.has(v) || _rhs_has_dim_conflict(rhs)) continue;
+      const u = _inheritedBracketUnit(v, rhs);
+      if (u) { _derivedUnitLabel[v] = u; changed = true; }
+    }
+  }
+}
 function _bestUnitLabel(v, rhsMapEntry) {
   // Rule: if the RHS expression contains a sum of incompatible dimensions, show no unit.
   if (_dimConflictVars.has(v) || _rhs_has_dim_conflict(rhsMapEntry)) return '';
-  // 1. RHS dimensional inference
+  // 1. A bracket unit inherited from the RHS beats the SI-base spelling (V1.3.95)
+  const inherited = _inheritedBracketUnit(v, rhsMapEntry);
+  if (inherited) { _derivedUnitLabel[v] = inherited; return inherited; }
+  // 2. RHS dimensional inference
   const dimUnit = rhsMapEntry ? inferUnitFromRHS(rhsMapEntry)?.unit : null;
   if (dimUnit) return dimUnit;
-  // 2. Direct _varDimCache lookup
+  // 3. Direct _varDimCache lookup
   if (_varDimCache && v in _varDimCache) {
     const label = dimToLabel(_varDimCache[v]);
     if (label) return label;
   }
-  // 3. No label
+  // 4. No label
   return '';
 }
 function buildVarDimCache(rhsMap, fullTxt, reset=true) {
   if (reset) {
     _varDimCache = {};
+    _derivedUnitLabel = {};   // V1.3.95
     _dimConflictVars.clear();
     // Collect ALL variable names from both LHS and RHS — prevents user vars like
     // m3, m2, s1, s2 etc. from being mistaken for UNIT_DIM entries (m3=m³, s=seconds)
@@ -4895,6 +4991,56 @@ function _seedBracketDimsFromText(rawTxt) {
     const _pd = _parseUnitToSI(bm[1].trim());
     if (_pd && _pd.dim.some(x => x !== 0)) _varDimCache[lhs] = _pd.dim.slice();
   });
+
+  // V1.3.95: seed dimensions from INLINE unit brackets, e.g.
+  //   k = 31.1[1/h]*exp(7906*(T-360)/360/T)
+  // The pass above only matches a bracket at the END of the RHS. An inline tag
+  // was converted numerically by preprocessBrackets and then discarded, so the
+  // variable stayed dimension-blind: `k` read as dimensionless, and
+  // `T = T0 + 43.4[K]*X` became a K + dimensionless sum, i.e. a dimensional
+  // conflict, which suppresses the unit label entirely.
+  //
+  // parse() cannot represent a bracket (it only ever sees post-preprocess text),
+  // so substitute each `number[unit]` with a placeholder variable, register the
+  // placeholder's dim, and let the existing dim evaluator walk the expression.
+  // Iterate so that chains (a tagged literal feeding a variable that feeds
+  // another) resolve regardless of declaration order.
+  const _INLINE_NUM_UNIT = /(\d[\d.]*(?:[eE][+-]?\d+)?)\s*\[([^\]]+)\]/g;
+  for (let _iter = 0, _progress = true; _iter < 5 && _progress; _iter++) {
+    _progress = false;
+    rawTxt.split('\n').forEach(line => {
+      const clean = line.replace(/\/\/.*$/, '').trim();
+      const eqIdx = clean.indexOf('=');
+      if (eqIdx < 0) return;
+      const lhs = clean.slice(0, eqIdx).trim();
+      if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
+      if (_varDimCache[lhs]) return;                  // already ground truth
+      const rhsRaw = clean.slice(eqIdx + 1);
+      if (/\[[^\]]+\]\s*$/.test(rhsRaw)) return;      // trailing bracket: handled above
+      if (!/\[[^\]]+\]/.test(rhsRaw)) return;         // nothing inline to seed from
+      const holders = [];
+      let ok = true;
+      const rhs = rhsRaw.replace(_INLINE_NUM_UNIT, (m, num, unit) => {
+        const pd = _parseUnitToSI(unit.trim());
+        if (!pd) { ok = false; return m; }
+        const nm = '__bu' + holders.length;
+        holders.push(nm);
+        _varDimCache[nm] = pd.dim.slice();
+        _userVarNames.add(nm);
+        return nm;
+      });
+      if (ok) {
+        try {
+          const d = evalDimNode(parse(rhs));
+          if (d && d.dim && d.dim.some(x => x !== 0)) {
+            _varDimCache[lhs] = d.dim.slice();
+            _progress = true;
+          }
+        } catch (e) {}
+      }
+      holders.forEach(nm => { delete _varDimCache[nm]; _userVarNames.delete(nm); });
+    });
+  }
 }
 
 // V1.3.42: dim signature of property-function arguments, derived from the suffix.
@@ -6117,7 +6263,12 @@ function detectODEFreeParams(txt, existingSliderNames) {
   const undeclared = new Set();
   const scan = expr => {
     if (!expr) return;
-    (expr.match(/[a-zA-Z_]\w*/g) || []).forEach(id => {
+    // V1.3.95: use exprIds, not a raw scan. V1.3.88 stopped absorbing the phantom
+    // `e7` from `k2 = 3e7` into algVars — correct — but this scan still found it in
+    // the text, and with algVars no longer covering it, it was offered as a free
+    // parameter. The Robertson example asked to "Select 2 parameters" instead of
+    // solving. Strip numeric literals here for the same reason parseODESystem does.
+    exprIds(expr).forEach(id => {
       if (!id.startsWith('__d_') && !knownVars.has(id)) undeclared.add(id);
     });
   };
@@ -7745,28 +7896,15 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           varUnitOverrides: varUnitOverrides,
           txt: txt
         };
+        try { _resolveDerivedUnitLabels(rhsMap); } catch(e) {}   // V1.3.95
         const cards=displayVars.map((v,i)=>{
           const raw=r.scope[v];
           let dispVal, unitLabel;
 
           if (_bracketDisplayMap[v]) {
-            const bde = _bracketDisplayMap[v];
-            const ou = bde.unit;
-            // Temperature brackets: always show in the active display temperature unit
-            const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
-            if (_tempSet[ou]) {
-              let T_K;
-              if      (ou==='K')             T_K = bde.val;
-              else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
-              else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
-              else                             T_K = bde.val * 5/9; // °R
-              dispVal   = fromK(T_K);   // K → active display unit
-              unitLabel = UNITS.temp;
-            } else {
-              // Non-temperature: show original value and bracket unit label
-              dispVal   = bde.val;
-              unitLabel = bde.unit;
-            }
+            const _bcd = _bracketCardDisplay(v);   // V1.3.95: shared with the ODE cards
+            dispVal   = _bcd.dispVal;
+            unitLabel = _bcd.unitLabel;
           } else {
             // Computed or un-bracketed variable: use dim inference only
             unitLabel = _bestUnitLabel(v, rhsMap[v]);
@@ -9607,7 +9745,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     _updateUndoRedoBtns();
     updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
     autoResizeTA();
-    // V1.3.91: the editor is a transparent textarea over the #eq-highlight
+    // V1.3.95: the editor is a transparent textarea over the #eq-highlight
     // overlay, and renderHighlight() is bound to the 'input' event only.
     // Assigning $in.value programmatically does not fire 'input', so switching
     // sheets left the overlay painting the previous sheet's text. Every other
@@ -9649,7 +9787,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     _updateUndoRedoBtns();
     updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
     autoResizeTA();
-    // V1.3.91: the editor is a transparent textarea over the #eq-highlight
+    // V1.3.95: the editor is a transparent textarea over the #eq-highlight
     // overlay, and renderHighlight() is bound to the 'input' event only.
     // Assigning $in.value programmatically does not fire 'input', so switching
     // sheets left the overlay painting the previous sheet's text. Every other
@@ -10303,7 +10441,7 @@ function preprocessHigherOrder(lines) {
 // Also: implicit ODEs — any equation containing y' anywhere, e.g. x + y' = f(t)
 // Algebraic: lhs = rhs  (any equation without a prime, not a known param)
 // ICs: y(0) = val   Span: t = [0,10]   Params: k = 0.5
-// V1.3.91: identifier scan that ignores numeric literals.
+// V1.3.95: identifier scan that ignores numeric literals.
 // The bare regex /[a-zA-Z_]\w*/g matches the exponent suffix of scientific
 // notation, so `k2 = 3e7` produced a phantom identifier `e7`. That phantom was
 // then absorbed into algVarSet as an algebraic unknown, appeared as a junk
@@ -10399,7 +10537,7 @@ function parseODESystem(txt) {
     }
   }
 
-  // V1.3.91: promotion to an algebraic (state-dependent) variable is now
+  // V1.3.95: promotion to an algebraic (state-dependent) variable is now
   // TRANSITIVE. Previously a definition was promoted only if its RHS *directly*
   // named a differential state, so `rA = -k*(CA - CB*CC/Kc)` — whose RHS names
   // only other algebraic quantities — was filed as a constant parameter.
@@ -10446,7 +10584,7 @@ function parseODESystem(txt) {
   }
   const algVars = [...algVarSet];
 
-  // V1.3.91: free-parameter detection for identifiers that appear inside an
+  // V1.3.95: free-parameter detection for identifiers that appear inside an
   // ALGEBRAIC equation. Such an identifier was previously absorbed into
   // algVarSet as an algebraic unknown, then handed a fabricated `v = 0`
   // equation in buildODEEval — Newton solved it to zero and the run completed
@@ -10665,7 +10803,7 @@ function buildODEEval(parsed) {
 
   // Detect which algebraic equations are explicit (algVar = expr alone)
   const algExplicit = {};  // algVar → pre-compiled RHS AST (if explicit)
-  const algExplicitOrder = [];  // V1.3.91: dependency-sorted eval order
+  const algExplicitOrder = [];  // V1.3.95: dependency-sorted eval order
   const algImplicit = { vars: [], eqs: [] };  // remaining equations for Newton
   if (isDAE) {
     // Build map from algVar name → its equation (matched by LHS, not by index)
@@ -10687,7 +10825,7 @@ function buildODEEval(parsed) {
       }
     }
 
-    // V1.3.91: evaluate explicit algebraic variables in DEPENDENCY order.
+    // V1.3.95: evaluate explicit algebraic variables in DEPENDENCY order.
     // rhs() makes a single pass with no iteration to convergence, so a variable
     // evaluated before something it depends on silently used the previous
     // step's value. Sorting topologically means declaration order in the sheet
@@ -11202,7 +11340,10 @@ function refreshODEPlot() {
 function renderODETable(ts, ys, stateVars, tVar, tUnit, stateVarUnits) {
   const wrap = document.getElementById('ode-table-wrap');
   // Store data for deferred render when user toggles table on
-  wrap._tableData = { ts, ys, stateVars, tVar };
+  // V1.3.95: keep the unit maps too — the deferred render below re-called this
+  // with four arguments, so toggling the table on after a solve dropped every
+  // column unit.
+  wrap._tableData = { ts, ys, stateVars, tVar, tUnit, stateVarUnits };
   if (wrap.classList.contains('hidden')) return; // skip render — table is hidden
 
   const _svu2 = stateVarUnits || {};
@@ -11301,6 +11442,31 @@ function runODESolver(txt) {
       odeResult = solveODE(augText, meth, nStep, tol);
       // Apply span unit extracted from raw text (preprocessBrackets strips it before parseODESystem sees it)
       if (_spanUnit && !odeResult.tUnit) odeResult.tUnit = _spanUnit;
+      // V1.3.95: infer units for ODE variables that carry no literal [unit] tag.
+      // The ODE path previously only transcribed end-of-line tags, so computed
+      // quantities (CA, CB, rA, …) had blank table headers even when their
+      // dimension was fully determined by a tagged constant. Run the same
+      // seeding sequence the algebraic renderer uses, then fill in the gaps —
+      // an explicit tag always wins over an inferred label.
+      try {
+        const _rhsODE = buildRHSMap(text);
+        buildVarDimCache(_rhsODE, text);
+        _varDimCache = {};
+        _seedBracketDimsFromText(_rawOdeTxt || '');
+        buildVarDimCache(_rhsODE, null, false);
+        _resolveDerivedUnitLabels(_rhsODE);
+        // Only accept a label inherited from a bracketed variable, not the
+        // SI-base spelling dimToLabel would produce. _varDimCache carries a
+        // dimension with no scale, so an SI-base label sits over a value that is
+        // still on the user's basis: rA would read [mol/m³·s] above a value in
+        // kmol/(m³·s) — wrong by a thousand, which is the bug this release
+        // fixes elsewhere. A blank header is honest; a scaled-wrong one is not.
+        for (const _v of (odeResult.stateVars || [])) {
+          if (_stateVarUnits[_v]) continue;
+          const _lbl = _derivedUnitLabel[_v] || _inheritedBracketUnit(_v, _rhsODE[_v]);
+          if (_lbl) _stateVarUnits[_v] = _lbl;
+        }
+      } catch (e) {}
       if (Object.keys(_stateVarUnits).length) odeResult.stateVarUnits = _stateVarUnits;
       window._setOdeResult(odeResult);
       updateODEPlotSelects(odeResult.stateVars, odeResult.tVar, odeResult.tUnit, odeResult.stateVarUnits);
@@ -11314,8 +11480,13 @@ function runODESolver(txt) {
         const fmt = n => { const dp=UNITS.sigfigs??3; return !isFinite(n)?String(n):(Math.abs(n)>=1e9||(Math.abs(n)<1e-4&&n!==0))?n.toExponential(dp):parseFloat(n.toFixed(dp)).toString(); };
         const _odeVarUnits = odeResult.stateVarUnits || {};
         paramCards.innerHTML = pEntries.map(([k,v]) => {
-          const val = typeof v === 'number' ? fmt(v) : '?';
-          const unit = _odeVarUnits[k] || '';
+          // V1.3.95: prefer the shared bracket display rule. The scope value is on
+          // the INPUT basis, so pairing it with the raw source tag was false
+          // ("T0 56.85 K", "FA0 0.041 kmol/h"). Fall back to the old behaviour only
+          // for params with no bracket entry.
+          const _bcd = _bracketCardDisplay(k);
+          const val  = _bcd ? fmt(_bcd.dispVal) : (typeof v === 'number' ? fmt(v) : '?');
+          const unit = _bcd ? _bcd.unitLabel : (_odeVarUnits[k] || '');
           return `<div class="var-card"><div><span class="var-name">${k}</span>${unit?`<div class="var-unit">${unit}</div>`:''}</div><span class="var-val">${val}</span></div>`;
         }).join('');
         paramCards.style.display = 'flex';
@@ -11323,6 +11494,38 @@ function runODESolver(txt) {
         paramCards.style.display = 'none';
         paramCards.innerHTML = '';
       }
+
+      // V1.3.95: warn when a bracketed ABSOLUTE temperature is present but the
+      // input basis is not Kelvin. preprocessBrackets substitutes the value on the
+      // input basis, so `T0 = 330 [K]` becomes 56.85 on a °C input and every
+      // Arrhenius / gas-law term in the sheet is silently evaluated on a
+      // non-absolute scale. The card cannot convey this on its own: with Output
+      // set to K it correctly reads "330 K" while the solve used 56.85.
+      try {
+        const _adv = document.getElementById('ode-unit-advisory');
+        const _advBody = document.getElementById('ode-unit-advisory-body');
+        const _tIn = UNITS.tempIn || UNITS.temp;
+        // Fire only on the destructive combination: the user asked for an ABSOLUTE
+        // scale but the input basis is a RELATIVE one, so the value was shifted off
+        // absolute zero. A [°C] tag on a °C input is unchanged and needs no warning.
+        const _ABS = {'K':1,'°R':1,'degR':1};
+        const _REL = {'°C':1,'degC':1,'°F':1,'degF':1};
+        const _tempTagged = Object.keys(_bracketDisplayMap || {})
+          .filter(k => _ABS[(_bracketDisplayMap[k] || {}).unit]);
+        if (_REL[_tIn] && _tempTagged.length) {
+          _advBody.innerHTML =
+            `<div class="unit-advisory-item dim-error">Temperature input unit is ` +
+            `<code>${_tIn}</code>, so <code>${_tempTagged.join('</code>, <code>')}</code> ` +
+            `${_tempTagged.length > 1 ? 'are' : 'is'} substituted into the equations on the ` +
+            `${_tIn} scale, not in Kelvin. Terms such as <code>exp(E/(R*T))</code> or ` +
+            `<code>P*V = n*R*T</code> require absolute temperature. Set Units → Temperature ` +
+            `Input to <code>K</code>, or drop the bracket so the number is used as written.</div>`;
+          _adv.classList.add('visible','has-dim-errors');
+        } else {
+          _adv.classList.remove('visible','has-dim-errors');
+          _advBody.innerHTML = '';
+        }
+      } catch(e) {}
 
       stat.style.color='var(--green)';
       stat.textContent=`✓ ${odeResult.nPoints} pts · ${odeResult.typeLabel || `${odeResult.stateVars.length} vars`} · ${(()=>{const _ms=performance.now()-_t0;return _ms<1?'<1 ms':_ms<1000?_ms.toFixed(1)+' ms':(_ms/1000).toFixed(2)+' s';})()}`;
@@ -11438,8 +11641,8 @@ function initPlotColorSwatches() {
       btn.textContent = hidden ? '⊞ Table' : '⊟ Table';
       // Render table now if being shown for first time / after a solve
       if (!hidden && wrap._tableData) {
-        const {ts, ys, stateVars, tVar} = wrap._tableData;
-        renderODETable(ts, ys, stateVars, tVar);
+        const {ts, ys, stateVars, tVar, tUnit, stateVarUnits} = wrap._tableData;
+        renderODETable(ts, ys, stateVars, tVar, tUnit, stateVarUnits);
       }
     });
 
