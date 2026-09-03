@@ -93,3 +93,23 @@ root `index.html` becomes load-bearing again.
 repository and verified byte-identical (SHA-256) to the copy attached to the EquaSolve
 project on claude.ai. It is the version cited by the CAE journal submission and by
 `../Figure_1_EquaSolve_V1_3_35.py`.
+
+## Software archiving (Zenodo)
+
+`.zenodo.json` at the repo root supplies the metadata for the Zenodo record — title,
+author, Apache-2.0 licence, keywords, and a `related_identifiers` entry pointing at the
+paper's DOI. Without it Zenodo guesses from the GitHub repo and gets the author name and
+licence wrong, so keep it in step with `CITATION.cff`.
+
+How the integration works, and its one trap:
+
+- Zenodo archives a repository **only on a GitHub Release**, and **only for releases
+  published after** the repo's switch is enabled at zenodo.org/account/settings/github.
+  Enabling it later does not backfill; earlier releases are never archived.
+- Pushing a tag is not a release. A GitHub Release must be created from the tag.
+- Each release mints a new *version DOI*; a single *concept DOI* always resolves to the
+  newest. Cite the concept DOI for "the software", the version DOI for "the build I ran".
+
+The paper's DOI (`10.5541/ijot.1978096`) identifies the article. A Zenodo DOI identifies
+the code, and is what lets someone cite the exact build behind a result — which is the
+point of keeping `Archive/`.

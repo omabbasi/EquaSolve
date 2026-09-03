@@ -1,0 +1,30 @@
+{
+  "upload_type": "software",
+  "title": "EquaSolve: A Zero-Installation Browser-Based Engineering Equation Solver with Embedded Thermophysical Properties, Optimization, and Interactive Visualization",
+  "description": "<p>EquaSolve is a self-contained HTML/JavaScript application that solves systems of nonlinear algebraic equations, ordinary differential equations (ODEs), parametric sweeps, optimization problems, regression fits, and sensitivity and uncertainty analyses &mdash; all from a single HTML file that runs in any modern web browser. No installation, no compilation, and no internet connection at runtime.</p><p>Built-in libraries provide thermophysical properties for 38 working fluids (water/steam, air, common gases, hydrocarbons, alcohols, and HFC/HFO/natural refrigerants), heat-transfer and pipe-flow correlations, psychrometric routines, exergy and second-law analysis, and interactive P&ndash;h, T&ndash;s, P&ndash;v, psychrometric, and Moody charts.</p><p>This archive includes the complete version history: every build from V1.234 (April 2026) onward is preserved under <code>Archive/</code>, so a result produced with any earlier version can be reproduced exactly.</p>",
+  "creators": [
+    {
+      "name": "Al-Abbasi, Omar",
+      "affiliation": "University of Bahrain"
+    }
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "keywords": [
+    "equation solver",
+    "thermodynamics",
+    "thermophysical properties",
+    "engineering education",
+    "heat transfer",
+    "psychrometrics",
+    "exergy analysis",
+    "computational thermo-fluids"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5541/ijot.1978096",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ authors:
   - family-names: Al-Abbasi
     given-names: Omar
     affiliation: "University of Bahrain"
-version: 1.3.99
+version: 1.3.100
 date-released: 2026-09-03
 license: Apache-2.0
 url: "https://omabbasi.github.io/EquaSolve/"
@@ -37,4 +37,4 @@ preferred-citation:
   month: 12
   doi: "10.5541/ijot.1978096"
   url: "https://doi.org/10.5541/ijot.1978096"
-  notes: "In press; issue scheduled for December 2026. Volume, issue and page numbers pending."
+  notes: "Accepted for publication; issue scheduled for December 2026. Volume, issue and page numbers pending."
