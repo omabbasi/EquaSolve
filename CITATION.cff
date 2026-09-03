@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use EquaSolve in academic work, please cite it as below."
+message: "If you use EquaSolve in academic work, please cite the published paper below."
 title: "EquaSolve: A Zero-Installation Browser-Based Engineering Equation Solver with Embedded Thermophysical Properties, Optimization, and Interactive Visualization"
 abstract: >-
   A self-contained HTML/JavaScript application that solves systems of nonlinear
@@ -12,7 +12,7 @@ authors:
   - family-names: Al-Abbasi
     given-names: Omar
     affiliation: "University of Bahrain"
-version: 1.3.97
+version: 1.3.98
 date-released: 2026-09-03
 license: Apache-2.0
 url: "https://omabbasi.github.io/EquaSolve/"
@@ -25,3 +25,14 @@ keywords:
   - heat transfer
   - psychrometrics
   - exergy analysis
+preferred-citation:
+  type: article
+  title: "EquaSolve: A Zero-Installation Browser-Based Engineering Equation Solver with Embedded Thermophysical Properties, Optimization, and Interactive Visualization"
+  authors:
+    - family-names: Al-Abbasi
+      given-names: Omar
+      affiliation: "University of Bahrain"
+  journal: "International Journal of Thermodynamics"
+  year: 2026
+  doi: "10.5541/ijot.1978096"
+  url: "https://doi.org/10.5541/ijot.1978096"
