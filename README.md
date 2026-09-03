@@ -6,8 +6,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-omabbasi.github.io%2FEquaSolve-orange)](https://omabbasi.github.io/EquaSolve/)
 
-Published in the *International Journal of Thermodynamics* —
-[doi:10.5541/ijot.1978096](https://doi.org/10.5541/ijot.1978096).
+Accepted in the *International Journal of Thermodynamics* — [doi:10.5541/ijot.1978096](https://doi.org/10.5541/ijot.1978096).
+The issue appears in **December 2026**; the DOI begins resolving once it is published.
 
 EquaSolve is a self-contained HTML/JavaScript application that solves systems of nonlinear algebraic equations, ordinary differential equations (ODEs), parametric sweeps, optimization problems, regression fits, and sensitivity / uncertainty analyses — all from a single HTML file that runs in any modern web browser. No installation, no compilation, no internet connection at runtime.
 
@@ -117,7 +117,12 @@ If you use EquaSolve in academic work, please cite:
 
 > Al-Abbasi, O. (2026). EquaSolve: A Zero-Installation Browser-Based Engineering Equation Solver
 > with Embedded Thermophysical Properties, Optimization, and Interactive Visualization.
-> *International Journal of Thermodynamics*. https://doi.org/10.5541/ijot.1978096
+> *International Journal of Thermodynamics* (in press; issue scheduled for December 2026).
+> https://doi.org/10.5541/ijot.1978096
+
+Volume, issue, and page numbers are assigned when the issue is published in December 2026
+and will be added here then. Until then the DOI is the stable identifier — note that it
+does not resolve until the publisher registers it.
 
 BibTeX:
 
@@ -129,6 +134,7 @@ BibTeX:
              and Interactive Visualization},
   journal = {International Journal of Thermodynamics},
   year    = {2026},
+  note    = {In press; issue scheduled for December 2026},
   doi     = {10.5541/ijot.1978096},
   url     = {https://doi.org/10.5541/ijot.1978096}
 }

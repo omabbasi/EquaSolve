@@ -5,8 +5,16 @@
 EquaSolve is a general engineering equation solver distributed as **one self-contained
 HTML file** — no build step, no dependencies, no server. Open `EquaSolve.html` in a
 browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
-Bahrain. It is the subject of an academic paper; the most recent submission package targets the
-*International Journal of Thermodynamics*.
+Bahrain. The accompanying paper was **accepted** in the *International Journal of
+Thermodynamics*, `doi:10.5541/ijot.1978096`. It is **in press** — the issue appears in
+**December 2026**.
+
+**Pending, December 2026:** volume, issue and page numbers do not exist yet. When the
+issue is published, add them in three places — the citation block in `README.md`
+(prose + BibTeX), `preferred-citation` in `CITATION.cff` (and drop its `notes` field),
+and the Citation card on the About page of the current build (an app change, so it ships
+as a version bump). The DOI does not resolve until the publisher registers it; check
+`https://doi.org/10.5541/ijot.1978096` before assuming metadata is available.
 
 ## How development actually happens
 
