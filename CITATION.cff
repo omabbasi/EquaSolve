@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use EquaSolve in academic work, please cite it as below."
+title: "EquaSolve: A Zero-Installation Browser-Based Engineering Equation Solver with Embedded Thermophysical Properties, Optimization, and Interactive Visualization"
+abstract: >-
+  A self-contained HTML/JavaScript application that solves systems of nonlinear
+  algebraic equations, ordinary differential equations, parametric sweeps,
+  optimization problems, regression fits, and sensitivity and uncertainty
+  analyses, with built-in thermophysical property libraries for 38 working
+  fluids. Runs offline in any modern browser with no installation.
+type: software
+authors:
+  - family-names: Al-Abbasi
+    given-names: Omar
+    affiliation: "University of Bahrain"
+version: 1.3.97
+date-released: 2026-09-03
+license: Apache-2.0
+url: "https://omabbasi.github.io/EquaSolve/"
+repository-code: "https://github.com/omabbasi/EquaSolve"
+keywords:
+  - equation solver
+  - thermodynamics
+  - thermophysical properties
+  - engineering education
+  - heat transfer
+  - psychrometrics
+  - exergy analysis

@@ -14,7 +14,7 @@ Built-in libraries provide thermophysical properties for 38 working fluids (wate
 Open **https://omabbasi.github.io/EquaSolve/** in your browser.
 
 **Option 2 — Download and run locally:**
-1. Download `EquaSolve_V1_3_89.html` from this repository.
+1. Download the highest-numbered `EquaSolve_V1_3_*.html` in this repository — currently **`EquaSolve_V1_3_97.html`**. This is the same build the live demo serves.
 2. Double-click the file. It will open in your default browser.
 3. That's it. No setup required.
 
@@ -112,7 +112,24 @@ If you use EquaSolve in academic work, please cite:
 with Embedded Thermophysical Properties, Optimization, and Interactive Visualization.
 > *[Journal name, volume, pages]*. https://github.com/omabbasi/EquaSolve
 
-A `CITATION.cff` file will be added once the accompanying paper is published.
+A machine-readable [`CITATION.cff`](CITATION.cff) is provided for the software itself. It
+will be extended with the journal reference once the accompanying paper is published.
+
+---
+
+## Version archive
+
+Every build is preserved. `Archive/` holds all 62 versions from V1.234 (April 2026)
+through V1.3.97 under their original filenames, and each is a tagged commit dated from
+its original release, so a specific version can be retrieved directly:
+
+```bash
+git checkout v1.3.35 -- EquaSolve.html      # the build cited by earlier submissions
+git diff v1.3.89 v1.3.97 -- EquaSolve.html  # what changed between releases
+```
+
+`EquaSolve.html` at the repository root is the canonical file that carries this history;
+the numbered `EquaSolve_V1_3_*.html` files at the root are the published releases.
 
 ---
 
@@ -141,6 +158,6 @@ EquaSolve was developed as a free, lightweight alternative to commercial equatio
 ## Reporting issues and contributing
 
 Bug reports, feature requests, and pull requests are welcome via the [Issues](https://github.com/omabbasi/EquaSolve/issues) tab. When reporting a numerical issue, please include:
-1. The version number (currently V1.3.87)
+1. The version number (currently V1.3.97)
 2. The browser and operating system used
 3. A minimal example that reproduces the problem
