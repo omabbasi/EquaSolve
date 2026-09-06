@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.102</title>
+<title>EquaSolve V1.3.103</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.102</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.103</div>
       </div>
     </div>
 
@@ -777,7 +777,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.102</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.103</span></div>
       
     </div>
   </div>
@@ -949,7 +949,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.102</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.103</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1063,12 +1063,16 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
           <span style="font-size:10px;color:var(--mute);">Plot:</span>
           <select class="sweep-y-sel" id="sweep-y-sel" multiple style="min-height:26px;max-height:52px;"></select>
+          <label id="sweep-xing-wrap" style="display:none;align-items:center;gap:4px;font-size:10px;color:var(--mute);cursor:pointer;white-space:nowrap;" title="Find where the plotted curves cross">
+            <input type="checkbox" id="sweep-xing-cb" style="cursor:pointer;margin:0;"> ✛ Intersections
+          </label>
           <button class="ode-table-toggle" id="sweep-table-toggle" title="Show / hide results table">⊞ Table</button>
         </div>
       </div>
       <div class="sweep-canvas-wrap" id="sweep-canvas-wrap">
         <canvas id="sweep-canvas"></canvas>
       </div>
+      <div id="sweep-xing-out" style="display:none;padding:6px 12px;font-size:10px;line-height:1.8;color:var(--dim);border-top:1px solid var(--border2);"></div>
       <div class="sweep-table-wrap hidden" id="sweep-table-wrap"><div id="sweep-table-inner"></div></div>
     </div>
 
@@ -8462,6 +8466,13 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   function handleSolve(){
     const txt=$in.value.trim(); if(!txt)return;
     const type = detectType(txt);
+    // V1.3.103: intersections belong to 1D sweeps only. Hide the control and
+    // drop the recompute hook on every solve; renderSweepResults restores them.
+    const _xw = document.getElementById('sweep-xing-wrap');
+    if (_xw) _xw.style.display = 'none';
+    const _xo = document.getElementById('sweep-xing-out');
+    if (_xo) { _xo.style.display = 'none'; _xo.innerHTML = ''; }
+    window._recomputeSweepXings = null;
     // V1.3.97: the two result zones are mutually exclusive — a sheet is either
     // ODE/DAE or one of the algebraic modes. Neither solve path hid the other's
     // zone, so solving an ODE after an algebraic sheet left the previous variable
@@ -11711,6 +11722,11 @@ function initPlotColorSwatches() {
     });
 
     // Sweep table toggle — single listener covering 1D sweep, 2D sweep and Pareto
+    document.getElementById('sweep-xing-cb')?.addEventListener('change', () => {
+      // Recompute against the current sweep, then redraw. Both hooks are set by
+      // renderSweepResults, so a stale panel simply does nothing.
+      try { window._recomputeSweepXings?.(); window._drawSweepPlot?.(); } catch(e) {}
+    });
     document.getElementById('sweep-table-toggle').addEventListener('click', () => {
       const tableWrap = document.getElementById('sweep-table-wrap');
       const btn = document.getElementById('sweep-table-toggle');
@@ -15503,7 +15519,9 @@ function runParametricSweep(txt, _isSliderRerun) {
       const _sweepTimeMs = performance.now()-_t0;
       const _sweepTimeLbl = _sweepTimeMs<1?'<1 ms':_sweepTimeMs<1000?_sweepTimeMs.toFixed(1)+' ms':(_sweepTimeMs/1000).toFixed(2)+' s';
       // Store sweep results for diagram overlay
-      window._lastSweepResults = { sweep, results, sweepName: sweep.name };
+      // V1.3.103: restTxt + fixedScope let the intersection finder re-solve the
+      // system at intermediate x values instead of only interpolating the grid.
+      window._lastSweepResults = { sweep, results, sweepName: sweep.name, restTxt, fixedScope };
       renderSweepResults(sweep, results, outputVars, autoYLines.map(l=>l.split('=')[0].trim()), buildRHSMap(txt), _sweepTimeLbl);
       // Diagnostics panel — use first successful solve's diagnostics
       try {
@@ -15530,6 +15548,199 @@ function runParametricSweep(txt, _isSliderRerun) {
     }
     $bt.disabled=false; $bt.innerHTML='▶ Solve';
   }, 60);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CURVE INTERSECTIONS  (V1.3.103)
+// ═══════════════════════════════════════════════════════════════════
+// Generic by construction: this reads only the sampled values the sweep already
+// produced, never the equations. Polynomials, transcendentals, refrigerant
+// property calls, correlation chains — all the same to it.
+//
+// For each pair of plotted series it scans d = yi - yj for sign changes and
+// refines every bracket. Three guards are what make that trustworthy on
+// arbitrary curves rather than only on well-behaved ones:
+//
+//   * Poles. 1/(x-c) and tan(x) flip sign across an asymptote without the
+//     curves ever being equal, so a sign change alone is NOT evidence of a
+//     crossing. Every candidate must also converge with |d| small relative to
+//     the local curve magnitude; anything else is discarded.
+//   * Gaps. A series that is null/NaN over part of the range must not have a
+//     bracket drawn across the hole, so only adjacent valid samples pair up.
+//   * Coincident series. Two curves equal over a stretch would otherwise report
+//     a crossing at every grid point; such runs collapse into one entry.
+//
+// Tangential contact — touching without crossing — produces no sign change and
+// is invisible to the scan above, so it gets a separate local-minimum pass and
+// is reported as approximate.
+function _sweepRefineCrossing(dAt, a, fa, b, fb, relTol) {
+  // False position with the Illinois correction: keeps the root bracketed like
+  // bisection but converges far faster, which matters because every evaluation
+  // here is a full re-solve of the system.
+  let side = 0, x = a, fx = fa;
+  for (let it = 0; it < 60; it++) {
+    if (fb === fa) break;
+    x = (fb * a - fa * b) / (fb - fa);
+    if (!isFinite(x) || x <= Math.min(a, b) || x >= Math.max(a, b)) x = (a + b) / 2;
+    fx = dAt(x);
+    if (!isFinite(fx)) { x = (a + b) / 2; fx = dAt(x); if (!isFinite(fx)) return null; }
+    if (Math.abs(fx) <= relTol(x) || Math.abs(b - a) <= 1e-12 * Math.max(1, Math.abs(x))) {
+      return { x, f: fx };
+    }
+    if (fx * fb > 0) { b = x; fb = fx; if (side === -1) fa /= 2; side = -1; }
+    else             { a = x; fa = fx; if (side === +1) fb /= 2; side = +1; }
+  }
+  return { x, f: fx };
+}
+
+function _sweepIntersections(results, yVars, evalAt) {
+  const out = [];
+  if (!results || results.length < 2 || !yVars || yVars.length < 2) return out;
+
+  // Typical magnitude of the plotted data, used for relative tolerances so the
+  // same code behaves on values of order 1e-6 and 1e6 alike.
+  const mags = [];
+  for (const v of yVars) for (const r of results) {
+    const y = r.scope ? r.scope[v] : undefined;
+    if (isFinite(y)) mags.push(Math.abs(y));
+  }
+  mags.sort((p2, q) => p2 - q);
+  const scale = mags.length ? Math.max(mags[Math.floor(mags.length / 2)], 1e-12) : 1;
+  const EQ_TOL = 1e-9 * Math.max(scale, 1);
+
+  for (let i = 0; i < yVars.length; i++) {
+    for (let j = i + 1; j < yVars.length; j++) {
+      const vi = yVars[i], vj = yVars[j];
+      const dk = k => {
+        const sc = results[k].scope || {};
+        const A = sc[vi], B = sc[vj];
+        return (isFinite(A) && isFinite(B)) ? A - B : NaN;
+      };
+      const xk = k => results[k].sv;
+      const magk = k => {
+        const sc = results[k].scope || {};
+        return Math.max(Math.abs(sc[vi]) || 0, Math.abs(sc[vj]) || 0, 1);
+      };
+
+      // Coincident stretches first, so they do not also register as crossings.
+      const flat = [];
+      for (let k = 0; k < results.length; k++) {
+        if (!(Math.abs(dk(k)) <= EQ_TOL * magk(k))) continue;
+        const st = k;
+        while (k + 1 < results.length && Math.abs(dk(k + 1)) <= EQ_TOL * magk(k + 1)) k++;
+        if (k - st >= 2) flat.push([st, k]);
+      }
+      const inFlat = k => flat.some(([st, en]) => k >= st && k <= en);
+      for (const [st, en] of flat) {
+        out.push({ a: vi, b: vj, kind: 'coincident',
+                   x: xk(st), x2: xk(en), y: (results[st].scope || {})[vi] });
+      }
+
+      const dAt = evalAt ? (xv => {
+        const sc = evalAt(xv);
+        if (!sc) return NaN;
+        const A = sc[vi], B = sc[vj];
+        return (isFinite(A) && isFinite(B)) ? A - B : NaN;
+      }) : null;
+
+      for (let k = 0; k + 1 < results.length; k++) {
+        const d0 = dk(k), d1 = dk(k + 1);
+        if (!isFinite(d0) || !isFinite(d1)) continue;   // never bracket across a gap
+        if (inFlat(k) || inFlat(k + 1)) continue;
+        // A sample sitting exactly on zero is not automatically a crossing: for
+        // y1 = x^2 against y2 = 0 the difference touches zero and comes straight
+        // back, which is a tangency, not a sign change. Decide from the nearest
+        // non-zero neighbours, and leave the touching case to the tangency pass
+        // below so it is reported once, correctly labelled.
+        if (d0 === 0) {
+          let l = k - 1; while (l >= 0 && dk(l) === 0) l--;
+          let r2 = k + 1; while (r2 < results.length && dk(r2) === 0) r2++;
+          const fl = l >= 0 ? dk(l) : NaN;
+          const fr = r2 < results.length ? dk(r2) : NaN;
+          if (isFinite(fl) && isFinite(fr) && fl * fr < 0) {
+            out.push({ a: vi, b: vj, kind: 'cross', x: xk(k),
+                       y: (results[k].scope || {})[vi], scale });
+          }
+          continue;
+        }
+        if (d0 * d1 >= 0) continue;                     // strict sign change only
+
+        const x0 = xk(k), x1 = xk(k + 1);
+        const localMag = Math.max(magk(k), magk(k + 1));
+        let hit;
+        if (dAt) {
+          hit = _sweepRefineCrossing(dAt, x0, d0, x1, d1, xv => 1e-13 * localMag);
+        } else {
+          const t = d0 / (d0 - d1);
+          hit = { x: x0 + t * (x1 - x0), f: NaN, t };
+        }
+        if (!hit || !isFinite(hit.x)) continue;
+
+        const sc = evalAt ? evalAt(hit.x) : null;
+        const yi = sc ? sc[vi] : undefined, yj = sc ? sc[vj] : undefined;
+        const yA = results[k].scope[vi], yB = results[k + 1].scope[vi];
+        const yVal = isFinite(yi) ? yi
+                   : yA + (isFinite(hit.t) ? hit.t : 0.5) * (yB - yA);
+        // Pole guard: a genuine crossing converges with the two curves actually
+        // equal there. An asymptote flips sign while |d| stays large, so it is
+        // rejected here rather than drawn as a phantom intersection.
+        if (evalAt) {
+          const localY = Math.max(Math.abs(yi) || 0, Math.abs(yj) || 0, 1);
+          if (!isFinite(hit.f) || Math.abs(hit.f) > 1e-5 * localY) continue;
+        }
+        out.push({ a: vi, b: vj, kind: 'cross', x: hit.x, y: yVal, scale, approx: !evalAt });
+      }
+
+      // Tangency: a sharp dip of |d| towards zero with no sign change. Reported
+      // separately and flagged approximate — the grid, not a refinement, sets
+      // its accuracy.
+      for (let k = 1; k + 1 < results.length; k++) {
+        const dm = dk(k - 1), d0 = dk(k), dp = dk(k + 1);
+        if (![dm, d0, dp].every(isFinite)) continue;
+        if (inFlat(k)) continue;
+        const A = Math.abs(d0);
+        if (!(A < Math.abs(dm) && A < Math.abs(dp))) continue;
+        if (A > 1e-4 * magk(k)) continue;
+        if (dm * dp < 0) continue;                       // that is a crossing, not a touch
+        if (!(Math.abs(dm) > 8 * A && Math.abs(dp) > 8 * A)) continue;
+        out.push({ a: vi, b: vj, kind: 'tangent', x: xk(k),
+                   y: (results[k].scope || {})[vi], scale, approx: true });
+      }
+    }
+  }
+  out.sort((p2, q) => p2.x - q.x);
+  return out;
+}
+
+function _renderXingReadout(el, list, yVars, on) {
+  if (!el) return;
+  if (!on) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  const fmt = (n, sc) => {
+    const dp = UNITS.sigfigs ?? 3;
+    if (!isFinite(n)) return '—';
+    if (sc && n !== 0 && Math.abs(n) <= 1e-9 * sc) return '0';
+    if (n !== 0 && Math.abs(n) < 1e-4) return n.toExponential(dp);
+    return parseFloat(n.toFixed(dp)).toString();
+  };
+  if (!yVars || yVars.length < 2) {
+    el.innerHTML = '<span style="color:var(--mute)">Select two or more curves to find intersections.</span>';
+    return;
+  }
+  if (!list || !list.length) {
+    el.innerHTML = '<span style="color:var(--mute)">✛ No intersections found in this range.</span>';
+    return;
+  }
+  el.innerHTML = list.map(p => {
+    const pair = `<span style="color:var(--hi)">${p.a} × ${p.b}</span>`;
+    if (p.kind === 'coincident') {
+      return `<div>✛ ${pair} — identical from x = ${fmt(p.x)} to ${fmt(p.x2)}</div>`;
+    }
+    const tag = p.kind === 'tangent'
+      ? ' <span style="color:var(--accent)">(tangent, approx)</span>'
+      : (p.approx ? ' <span style="color:var(--mute)">(approx)</span>' : '');
+    return `<div>✛ ${pair} &nbsp; x = <span style="color:var(--hi)">${fmt(p.x, p.scale)}</span> &nbsp; y = <span style="color:var(--hi)">${fmt(p.y, p.scale)}</span>${tag}</div>`;
+  }).join('');
 }
 
 function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, timeLbl) {
@@ -15585,13 +15796,45 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     return false;
   };
   const _varying = outputVars.filter(_varies);
-  const _defaults = new Set((_varying.length ? _varying : outputVars).slice(0, 2));
+  // Prefer curves that actually change, but always fill up to two series when
+  // two exist. Selecting only one would otherwise happen whenever the second
+  // curve is a constant — `y1 = x^2` against a threshold `y2 = 5` — which is a
+  // perfectly ordinary thing to plot, and leaves the intersection finder with
+  // no pair to work on.
+  const _pick = _varying.slice(0, 2);
+  for (const v of outputVars) {
+    if (_pick.length >= 2) break;
+    if (!_pick.includes(v)) _pick.push(v);
+  }
+  const _defaults = new Set(_pick);
   ySel.innerHTML = outputVars.map(v => {
     const sel = (_sameSet && _prevSel.size) ? _prevSel.has(v)
               : autoSet.size > 0            ? autoSet.has(v)
               :                               _defaults.has(v);
     return `<option value="${v}" ${sel ? 'selected' : ''}>${v}</option>`;
   }).join('');
+
+  // V1.3.103: intersection state for this render.
+  let _xings = null;
+  const _xingCb  = document.getElementById('sweep-xing-cb');
+  const _xingOut = document.getElementById('sweep-xing-out');
+  const _xingWrap = document.getElementById('sweep-xing-wrap');
+  if (_xingWrap) _xingWrap.style.display = 'inline-flex';
+  const _stash = window._lastSweepResults || {};
+  // Refining by re-solving is what makes a crossing exact rather than a linear
+  // guess between two grid points. Falls back to interpolation if the equations
+  // are unavailable.
+  const _evalAt = (typeof _stash.restTxt === 'string')
+    ? (xv => { try { return solveSystem(`${sweep.name} = ${xv}\n${_stash.restTxt}`, {}, _stash.fixedScope || {}).scope; }
+               catch (e) { return null; } })
+    : null;
+  const recomputeXings = () => {
+    const on = !!(_xingCb && _xingCb.checked);
+    const yv = Array.from(document.getElementById('sweep-y-sel').selectedOptions).map(o => o.value);
+    _xings = on ? _sweepIntersections(results, yv, _evalAt) : null;
+    _renderXingReadout(_xingOut, _xings, yv, on);
+  };
+  window._recomputeSweepXings = recomputeXings;
 
   const drawSweepPlot = window._drawSweepPlot = () => {
     const canvas = document.getElementById('sweep-canvas');
@@ -15663,11 +15906,37 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
         ctx.fillText(labelTxt, PAD.l + pw - ctx.measureText(labelTxt).width - 4, clampedY);
       }
     });
+
+    // V1.3.103: intersection markers, drawn last so they sit above the curves.
+    if (_xings && _xings.length) {
+      _xings.forEach(pt => {
+        if (pt.kind === 'coincident') return;
+        const X = toX(pt.x), Y = toY(pt.y);
+        if (!isFinite(X) || !isFinite(Y)) return;
+        if (X < PAD.l - 2 || X > PAD.l + pw + 2 || Y < PAD.t - 2 || Y > PAD.t + ph + 2) return;
+        ctx.beginPath(); ctx.arc(X, Y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = pt.kind === 'tangent' ? '#f0883e' : '#e5534b';
+        ctx.fill();
+        ctx.strokeStyle = light ? '#ffffff' : '#0d1117';
+        ctx.lineWidth = 1.5; ctx.stroke();
+      });
+    }
   };
 
-  drawSweepPlot();
-  ySel.addEventListener('change', drawSweepPlot);
+  // V1.3.103: these two listeners used to stack. renderSweepResults runs on
+  // every solve, and each call added another handler bound to that call's
+  // `results`, so stale closures kept firing on later sweeps.
+  if (window._sweepPlotHandlers) {
+    ySel.removeEventListener('change', window._sweepPlotHandlers.sel);
+    window.removeEventListener('resize', window._sweepPlotHandlers.res);
+  }
+  const _onSelChange = () => { recomputeXings(); drawSweepPlot(); };
+  window._sweepPlotHandlers = { sel: _onSelChange, res: drawSweepPlot };
+  ySel.addEventListener('change', _onSelChange);
   window.addEventListener('resize', drawSweepPlot);
+
+  recomputeXings();
+  drawSweepPlot();
 
   // Table — hidden by default, render deferred until shown
   const dp = UNITS.sigfigs ?? 3;
