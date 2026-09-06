@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.100</title>
+<title>EquaSolve V1.3.101</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.100</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.101</div>
       </div>
     </div>
 
@@ -777,7 +777,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.100</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.101</span></div>
       
     </div>
   </div>
@@ -949,7 +949,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.100</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.101</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -7084,6 +7084,7 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
   let sliderState = {};
   let sliderDefs  = [];
   let pendingParamSelection = null;
+  let _paramSelListeners = null;
   let sliderRerunTimer = null;
 
   function fmtSliderVal(n){const dp=UNITS.sigfigs??3;if(!isFinite(n))return String(n);if(n!==0&&Math.abs(n)<5e-4)return n.toExponential(dp);if(Math.abs(n)>=1e9)return n.toExponential(dp);return parseFloat(n.toFixed(dp)).toString();}
@@ -7217,8 +7218,18 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
       if(applyBtn)applyBtn.disabled=(count!==needed);
     };
     refresh();
-    body.addEventListener('change',e=>{if(e.target.dataset.paramCheck)refresh();});
-    body.addEventListener('click',e=>{
+    // V1.3.101: this function used to attach a fresh pair of delegated listeners
+    // to #slider-zone-body on every call and never remove the previous ones. Each
+    // closure captured its own `mode`, so prompting for an algebraic system and
+    // then an ODE left two live handlers: clicking Apply fired both, and the stale
+    // one re-solved the ODE text with runAlgSolver, which rejects `t = [0, 10]`
+    // with "Unknown char: [". Keep exactly one pair alive.
+    if(_paramSelListeners){
+      body.removeEventListener('change',_paramSelListeners.change);
+      body.removeEventListener('click',_paramSelListeners.click);
+    }
+    const _onParamChange=e=>{if(e.target.dataset.paramCheck)refresh();};
+    const _onParamClick=e=>{
       if(e.target&&e.target.id==='param-apply-btn'){
         e.preventDefault();
         const checks=[...body.querySelectorAll('[data-param-check]:checked')];
@@ -7236,9 +7247,13 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
         syncSliderState(defs);
         renderSliderZone(defs);
         if(mode==='ode'){ window._odeSliderRerun=true; runODESolver($in.value.trim()); }
+        else if(mode==='sweep') runParametricSweep($in.value.trim(), true);
         else runAlgSolver($in.value.trim(), true);
       }
-    });
+    };
+    _paramSelListeners={change:_onParamChange,click:_onParamClick};
+    body.addEventListener('change',_onParamChange);
+    body.addEventListener('click',_onParamClick);
   }
 
   function updateSliderDisplay(name,val){
@@ -7273,6 +7288,7 @@ const SOLVER_CFG = { nrMaxIter:400, nrTol:1e-10, nrStarts:14 };
       if(txt !== _snapText) return;
       const type=detectType(txt);
       if(type==='ode'){ window._odeSliderRerun=true; runODESolver(txt); }
+      else if(type==='sweep') runParametricSweep(txt, true);
       else runAlgSolver(txt, true);
     },80);
   }
@@ -10150,6 +10166,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     renderZone: (defs) => renderSliderZone(defs),
     renderSelection: (n, c, m) => renderParameterSelection(n, c, m),
     sync: (defs) => syncSliderState(defs),
+    rank: (info) => rankAlgParameterCandidates(info),
   };
 })();
 
@@ -15374,11 +15391,17 @@ function _drawSurface3D() {
   ctx.fillText('drag to rotate · pinch or scroll to zoom', W/2, H-4);
 }
 
-function runParametricSweep(txt) {
+function runParametricSweep(txt, _isSliderRerun) {
   const $bt = document.getElementById('solve-btn');
   const $stat = document.getElementById('solve-status');
   $bt.disabled=true; $bt.innerHTML='<span class="spin">◌</span> Sweeping…';
   $stat.style.color='var(--mute)'; $stat.textContent='';
+  // V1.3.101: a fresh Solve clears any previous slider selection so the user is
+  // re-prompted; a slider-driven re-run must keep it.
+  if (!_isSliderRerun && window._slider) {
+    window._slider.state = {}; window._slider.defs = []; window._slider.pending = null;
+    window._slider.renderZone([]);
+  }
   const _t0 = performance.now();
   // Hide single-solve result cards — sweep shows its own table/plot
   document.getElementById('alg-result-zone')?.classList.remove('visible');
@@ -15425,13 +15448,41 @@ function runParametricSweep(txt) {
         : [...pureRestLines, ...autoYLines];
 
       const restTxt = finalRestLines.join('\n');
+
+      // V1.3.101: free-parameter detection for sweeps.
+      // This loop previously went straight to solveSystem, so an undefined
+      // identifier (`y = a*x + b` with no `a =`) failed every point with
+      // "Under-determined: N vars, M eqs" — a message then discarded in favour of
+      // "All sweep points failed to solve.", which named nothing. The algebraic
+      // path already handles this by offering sliders, and a sweep is just an
+      // algebraic solve repeated over a grid, so it gets the same treatment.
+      // Probing with the sweep variable pinned at its first value makes the
+      // system structurally identical to the one solved at every point.
+      const _sl = window._slider;
+      const info = analyzeAlgSystem(`${sweep.name} = ${sweep.values[0]}\n${restTxt}`);
+      const _defs = (_sl && _sl.defs) || [];
+      const needed = info.diff - _defs.filter(d => info.allVars.includes(d.name)).length;
+      if (needed > 0) {
+        // The sweep variable is driven by the grid, so it can never be a slider.
+        const candidates = _sl.rank(info).filter(c => c.name !== sweep.name);
+        _sl.renderSelection(needed, candidates, 'sweep');
+        $bt.disabled=false; $bt.innerHTML='▶ Solve';
+        $stat.style.color='var(--accent)';
+        $stat.textContent=`Select ${needed} parameter${needed>1?'s':''} →`;
+        return;
+      }
+
+      // Slider values are held constant across the whole sweep.
+      const fixedScope = {};
+      _defs.forEach(d => { if (info.allVars.includes(d.name)) fixedScope[d.name] = _sl.state[d.name]; });
+
       const results = []; // [{sweepVal, scope, allVars}]
       let allVarNames = null;
 
       for (const val of sweep.values) {
         const augTxt = `${sweep.name} = ${val}\n${restTxt}`;
         try {
-          const r = solveSystem(augTxt, {});
+          const r = solveSystem(augTxt, {}, fixedScope);
           if (!allVarNames) allVarNames = r.allVars;
           results.push({sv: val, scope: r.scope, vars: r.allVars});
         } catch(e) {
@@ -15439,7 +15490,14 @@ function runParametricSweep(txt) {
         }
       }
 
-      if (!allVarNames) throw new Error('All sweep points failed to solve.');
+      if (!allVarNames) {
+        // V1.3.101: surface the underlying reason. Each point carries its own
+        // error; reporting the first is far more useful than a generic failure.
+        const _first = results.find(r => r.error);
+        throw new Error(_first
+          ? `All ${results.length} sweep points failed to solve.\n${_first.error}`
+          : 'All sweep points failed to solve.');
+      }
       const outputVars = allVarNames.filter(v => v !== sweep.name);
 
       const _sweepTimeMs = performance.now()-_t0;

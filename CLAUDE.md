@@ -4,7 +4,7 @@
 
 EquaSolve is a general engineering equation solver distributed as **one self-contained
 HTML file** — no build step, no dependencies, no server. Open the release at the repo
-root (currently `EquaSolve_V1_3_100.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
+root (currently `EquaSolve_V1_3_101.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
 Bahrain. The accompanying paper was **accepted** in the *International Journal of
 Thermodynamics*, `doi:10.5541/ijot.1978096`. State it as **accepted** — the issue
 appears in **December 2026**.
@@ -57,7 +57,7 @@ file was removed from the root on 3 Sep 2026; releases after v1.3.97 will not ha
 ## Repo is inside OneDrive
 
 The working tree lives under `D:\OneDrive - University of Bahrain\`. The packed
-repository is small (~1 MB for all 65 builds, thanks to delta compression), so sync
+repository is small (~1 MB for all 66 builds, thanks to delta compression), so sync
 is not a practical problem, but avoid long-running git operations while OneDrive is
 actively syncing.
 
