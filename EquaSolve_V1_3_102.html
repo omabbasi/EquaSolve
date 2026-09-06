@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.101</title>
+<title>EquaSolve V1.3.102</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.101</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.102</div>
       </div>
     </div>
 
@@ -777,7 +777,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.101</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.102</span></div>
       
     </div>
   </div>
@@ -949,7 +949,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.101</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.102</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -15557,8 +15557,39 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
   // Populate Y axis selector
   const ySel = document.getElementById('sweep-y-sel');
   const autoSet = new Set(autoSelectVars || []);
-  ySel.innerHTML = outputVars.map((v, i) => {
-    const sel = autoSet.size > 0 ? autoSet.has(v) : i < 2;
+  // V1.3.102: two fixes to which series start selected.
+  //
+  // 1. The default was positional — the first two of outputVars. That order comes
+  //    from the solve scope, so constants routinely come first: `a = 1, b = 2,
+  //    y1 = x^2+x, y2 = a*x+b` plotted a and b, two flat lines, while the curves
+  //    stayed unselected and the flat lines squashed the y-scale. Prefer variables
+  //    that actually change across the sweep; a constant carries no information on
+  //    a sweep plot. Slider parameters are constant by construction and so are
+  //    excluded by the same test.
+  //
+  // 2. The <select> was rebuilt on every render, discarding the user's choice.
+  //    That was harmless while a sweep only rendered once, but since sliders drive
+  //    sweeps (V1.3.101) every drag silently reset the plot. Keep the previous
+  //    selection whenever the variable set is unchanged.
+  const _prevSel = new Set([...(ySel.selectedOptions || [])].map(o => o.value));
+  const _sameSet = [...(ySel.options || [])].map(o => o.value).join('\u0000')
+                 === outputVars.join('\u0000');
+  const _varies = v => {
+    let first;
+    for (const r of results) {
+      const y = r.scope ? r.scope[v] : undefined;
+      if (!isFinite(y)) continue;
+      if (first === undefined) first = y;
+      else if (Math.abs(y - first) > 1e-12 * Math.max(1, Math.abs(first))) return true;
+    }
+    return false;
+  };
+  const _varying = outputVars.filter(_varies);
+  const _defaults = new Set((_varying.length ? _varying : outputVars).slice(0, 2));
+  ySel.innerHTML = outputVars.map(v => {
+    const sel = (_sameSet && _prevSel.size) ? _prevSel.has(v)
+              : autoSet.size > 0            ? autoSet.has(v)
+              :                               _defaults.has(v);
     return `<option value="${v}" ${sel ? 'selected' : ''}>${v}</option>`;
   }).join('');
 
