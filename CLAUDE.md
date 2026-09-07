@@ -33,6 +33,13 @@ When a new build is produced:
 3. Copy the same file into `Archive/` under that name.
 4. Commit with the version as the subject line (e.g. `v1.3.98`), then `git tag v1.3.98`.
 5. Bump the version strings in `README.md` and `version:` in `CITATION.cff`.
+6. Push `main` **and the tag** (`git push origin main --tags`).
+7. **Create a GitHub Release from the tag** — the tag alone is not a release. Without
+   this the sidebar "Latest" badge stays on the previous version and, more importantly,
+   Zenodo never archives the build (it triggers on releases only, never on tags). This
+   step was silently skipped for v1.3.101, v1.3.102 and v1.3.103.
+8. After the release, add the newly minted **version DOI** to `identifiers` in
+   `CITATION.cff` and to the DOI table in `README.md`. Leave the concept DOI alone.
 
 To compare two builds, diff the archived copies directly — this needs no shared filename
 and always works:
