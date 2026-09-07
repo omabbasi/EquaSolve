@@ -1,0 +1,51 @@
+name: Create release from tag
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to cut a release from (e.g. v1.3.103)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          tag="${{ github.event.inputs.tag }}"
+          [ -n "$tag" ] || tag="${GITHUB_REF_NAME}"
+          git rev-parse -q --verify "refs/tags/$tag" >/dev/null
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create release if it does not exist
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+          # The root holds exactly one build; attach it so the release is self-contained.
+          build="$(git show --name-only --format= "refs/tags/$TAG" -- 'EquaSolve_V*.html' | head -n 1)"
+          [ -n "$build" ] && git show "refs/tags/$TAG:$build" > "$build" || build=""
+          gh release create "$TAG" \
+            --title "EquaSolve $TAG" \
+            --generate-notes \
+            ${build:+"$build"}
