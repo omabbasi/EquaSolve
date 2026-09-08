@@ -154,7 +154,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 |---|---|
 | **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
 | **v1.3.100** — the build behind the paper | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
-| **v1.3.104** specifically | [10.5281/zenodo.22661509](https://doi.org/10.5281/zenodo.22661509) |
+| **v1.3.105** — the current release | [10.5281/zenodo.22661793](https://doi.org/10.5281/zenodo.22661793) |
 
 **If you are unsure which to use, use the first one** — the all-versions (concept) DOI.
 It is the permanent identifier for EquaSolve as a piece of software, it never changes,
