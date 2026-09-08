@@ -31,6 +31,9 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.22662018"
     description: "Version DOI for release v1.3.106"
+  - type: doi
+    value: "10.5281/zenodo.22662218"
+    description: "Version DOI for release v1.3.107"
 license: Apache-2.0
 url: "https://omabbasi.github.io/EquaSolve/"
 repository-code: "https://github.com/omabbasi/EquaSolve"
