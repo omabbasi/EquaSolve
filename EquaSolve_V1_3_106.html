@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.105</title>
+<title>EquaSolve V1.3.106</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -698,7 +698,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.105</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.106</div>
       </div>
     </div>
 
@@ -790,7 +790,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.105</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.106</span></div>
       
     </div>
   </div>
@@ -962,7 +962,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.105</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.106</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -13001,7 +13001,22 @@ function parseSweepLine(line) {
   if (!isFinite(start) || !isFinite(end) || !isFinite(step) || step <= 0) return null;
   const values = [];
   for (let v = start; v <= end + step*1e-9; v += step) values.push(parseFloat(v.toFixed(10)));
-  return {name, values};
+  // V1.3.106: a range may carry its own unit -- "d = [20:1:80] [mm]". The range
+  // brackets and the unit brackets look alike, so the unit is matched separately,
+  // anchored to the end of the line, after the range has been consumed.
+  const um = line.match(/\]\s*\[([^\]:]+)\]\s*$/);
+  const unit = um ? um[1].trim() : null;
+  return {name, values, unit};
+}
+
+// V1.3.106: a swept value re-enters the solver as a generated source line. Emitting
+// it with the unit the user wrote lets the ordinary bracket conversion do the work,
+// so the sweep column stays in the typed unit (20..80 mm) while the equations
+// receive the solver's own basis (0.020..0.080 m). Without this the raw number went
+// straight into the equations -- a shaft swept over "d = [20:1:80] [mm]" was solved
+// as if it were 20 to 80 METRES, which is how a 1 m shaft weighed 44,000 tonnes.
+function _sweepAssign(sw, val){
+  return sw.name + ' = ' + val + (sw && sw.unit ? ' [' + sw.unit + ']' : '');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -15304,7 +15319,7 @@ function run2DSweep(txt) {
       for (let ix = 0; ix < nx; ix++) {
         grid[ix] = [];
         for (let iy = 0; iy < ny; iy++) {
-          const augTxt = `${xSweep.name} = ${xSweep.values[ix]}\n${ySweep.name} = ${ySweep.values[iy]}\n${restTxt}`;
+          const augTxt = `${_sweepAssign(xSweep, xSweep.values[ix])}\n${_sweepAssign(ySweep, ySweep.values[iy])}\n${restTxt}`;
           try {
             const r = solveSystem(augTxt, {});
             if (!allVarNames) allVarNames = r.allVars;
@@ -15360,8 +15375,8 @@ function run2DSweep(txt) {
       }
 
       // Build flat table — all output variables
-      const xUnit = _dimLabelFor(xSweep.name, rhsMap);
-      const yUnit = _dimLabelFor(ySweep.name, rhsMap);
+      const xUnit = xSweep.unit || _dimLabelFor(xSweep.name, rhsMap);
+      const yUnit = ySweep.unit || _dimLabelFor(ySweep.name, rhsMap);
 
       const outHeaders = outputVars.map(v => {
         const u = _dimLabelFor(v, rhsMap);
@@ -15616,8 +15631,8 @@ function _drawSurface3D() {
     ctx.fillText(label, b.sx + (side==='left'?-6:side==='right'?6:0), b.sy + (side==='center'?14:4));
   }
 
-  const xUnit = _dimLabelFor(xSweep.name, rhsMap);
-  const yUnit = _dimLabelFor(ySweep.name, rhsMap);
+  const xUnit = xSweep.unit || _dimLabelFor(xSweep.name, rhsMap);
+  const yUnit = ySweep.unit || _dimLabelFor(ySweep.name, rhsMap);
   const zUnit = _dimLabelFor(selVar, rhsMap);
 
   drawAxis(0,0,0, axLen,0,0, xUnit?`${xSweep.name} [${xUnit}]`:xSweep.name, 'center');
@@ -15727,7 +15742,7 @@ function runParametricSweep(txt, _isSliderRerun) {
       // Probing with the sweep variable pinned at its first value makes the
       // system structurally identical to the one solved at every point.
       const _sl = window._slider;
-      const info = analyzeAlgSystem(`${sweep.name} = ${sweep.values[0]}\n${restTxt}`);
+      const info = analyzeAlgSystem(`${_sweepAssign(sweep, sweep.values[0])}\n${restTxt}`);
       const _defs = (_sl && _sl.defs) || [];
       const needed = info.diff - _defs.filter(d => info.allVars.includes(d.name)).length;
       if (needed > 0) {
@@ -15748,7 +15763,7 @@ function runParametricSweep(txt, _isSliderRerun) {
       let allVarNames = null;
 
       for (const val of sweep.values) {
-        const augTxt = `${sweep.name} = ${val}\n${restTxt}`;
+        const augTxt = `${_sweepAssign(sweep, val)}\n${restTxt}`;
         try {
           const r = solveSystem(augTxt, {}, fixedScope);
           if (!allVarNames) allVarNames = r.allVars;
@@ -16077,7 +16092,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
   // guess between two grid points. Falls back to interpolation if the equations
   // are unavailable.
   const _evalAt = (typeof _stash.restTxt === 'string')
-    ? (xv => { try { return solveSystem(`${sweep.name} = ${xv}\n${_stash.restTxt}`, {}, _stash.fixedScope || {}).scope; }
+    ? (xv => { try { return solveSystem(`${_sweepAssign(sweep, xv)}\n${_stash.restTxt}`, {}, _stash.fixedScope || {}).scope; }
                catch (e) { return null; } })
     : null;
   const recomputeXings = () => {
@@ -16132,7 +16147,7 @@ function renderSweepResults(sweep, results, outputVars, autoSelectVars, rhsMap, 
     for(let i=0;i<=4;i++){const v=yMin+(yMax-yMin)*(1-i/4);ctx.fillText(parseFloat(v.toPrecision(3)),PAD.l-4,PAD.t+i*ph/4+4);}
     ctx.textAlign='center'; ctx.fillStyle=ax; ctx.font='10px sans-serif';
     // X axis label with unit
-    const xUnit = _dimLabelFor(sweep.name, rhsMap);
+    const xUnit = sweep.unit || _dimLabelFor(sweep.name, rhsMap);
     ctx.fillText(xUnit ? `${sweep.name} [${xUnit}]` : sweep.name, PAD.l+pw/2, H-4);
 
     // Lines
