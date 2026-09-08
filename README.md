@@ -156,8 +156,16 @@ result depends on the exact build you ran — use the Zenodo archive:
 | **v1.3.100** specifically | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
 | **v1.3.104** specifically | [10.5281/zenodo.22661509](https://doi.org/10.5281/zenodo.22661509) |
 
-Cite the paper for the method, the version DOI for reproducibility. Every release is
-archived on Zenodo with the complete `Archive/` history attached.
+**If you are unsure which to use, use the first one** — the all-versions (concept) DOI.
+It is the permanent identifier for EquaSolve as a piece of software, it never changes,
+and it always resolves to the newest release. It is what the badge above, the
+`CITATION.cff` file, and GitHub's "Cite this repository" button all return.
+
+Reach for a version DOI only in the narrower case where a published result depends on
+the exact build that produced it — then cite that build's DOI alongside the paper. Cite
+the paper itself for the method. Every release is archived on Zenodo with the complete
+`Archive/` history attached, so a build without its own DOI is still recoverable from
+any archived release.
 
 ---
 
