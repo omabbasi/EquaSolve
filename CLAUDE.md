@@ -12,11 +12,12 @@ appears in **December 2026**.
 **The paper's results were computed with `v1.3.100`** (Zenodo version DOI
 `10.5281/zenodo.22278668`) — confirmed by the author, 8 Sep 2026. That is the build to
 cite for reproducing them, the same way `v1.3.35` is the build behind the CAE
-submission. Note that v1.3.100 predates the unit-mixing fix in v1.3.104: a model that
-combines mechanical units (force, torque, length) with pressure or energy units is off
-by 1000x in that build. Thermodynamic models stay inside one unit family and are
-unaffected, but any mechanical result in the paper is worth re-checking against
-v1.3.104 before the December issue appears.
+submission. v1.3.100 predates the unit-mixing fix in v1.3.104, so in that build a model
+combining mechanical units (force, torque, length) with pressure or energy units is off
+by 1000x, and bracketed units in optimizer-family modes were discarded rather than
+converted. **The author confirmed on 8 Sep 2026 that none of the paper's examples are
+affected** — they stay inside a single unit family. The published results stand; do not
+re-open this.
 
 **Pending, December 2026:** volume, issue and page numbers do not exist yet. When the
 issue is published, add them in three places — the citation block in `README.md`
