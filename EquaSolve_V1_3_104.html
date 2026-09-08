@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline' https://fonts.googleapis.com; font-src * https://fonts.gstatic.com data:;">
-<title>EquaSolve V1.3.103</title>
+<title>EquaSolve V1.3.104</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -685,7 +685,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.103</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.104</div>
       </div>
     </div>
 
@@ -777,7 +777,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.103</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.104</span></div>
       
     </div>
   </div>
@@ -949,7 +949,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.103</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.104</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6060,6 +6060,178 @@ function _dimDisplayBasisSI(dim){
   let f=1;dim.forEach((e,i)=>{if(e)f*=Math.pow(bases[i],e);});
   return f;
 }
+
+// -- V1.3.104: dimensional scale normalization ("unit mixing") ------------
+// The internal frame stores every dimension in its own display unit -- length
+// m, mass kg, force N, but pressure kPa, energy kJ, power kW. Those bases are
+// NOT multiplicatively coherent: N*m produces joules while the energy basis is
+// kJ, and N/m2 produces pascals while the pressure basis is kPa. Since the
+// evaluator does plain arithmetic on plain numbers, a derived quantity lands on
+// whatever scale its inputs implied, which need not be the basis its own
+// dimension is stored in. That is why "W = F*dx" reported 2000 labelled kJ (it
+// was 2000 J), and why a shaft stress built from [N*m] and [mm] could not be
+// compared against a limit given in [MPa].
+//
+// No single fixed frame can fix this: coherence with kg*m/s2 forces force = N,
+// which forces energy = J and pressure = Pa, but thermo needs kJ and kPa. So
+// instead of re-basing, each assignment is normalized: compute the scale the
+// arithmetic actually produced, compare it against the basis for the result's
+// dimension, and fold the ratio into the equation as an explicit factor.
+//
+// Safety: a factor is inserted ONLY when every leaf of the expression has a
+// known dimension. Sheets with no [unit] brackets seed no dimensions, so every
+// basis is 1, no factor is ever emitted, and their behaviour is unchanged.
+let _unitNormNotes = [];
+function _basisOfDim(dim){
+  if(!dim || !dim.some(v => v !== 0)) return 1;
+  try{
+    const b = _dimDisplayBasisSI(dim);
+    return (isFinite(b) && b > 0) ? b : 1;
+  }catch(e){ return 1; }
+}
+// Temperature is an interval scale (offsets, not ratios) -- never rescaled.
+function _isPureTempDim(d){
+  return !!d && d[4] !== 0 && d[0]===0 && d[1]===0 && d[2]===0 && d[3]===0 && d[5]===0 && d[6]===0;
+}
+// SI units per internal unit for a bracket unit, as _bracketConvert stores it.
+function _storedScaleOfBracketUnit(unitStr){
+  try{
+    const p = _parseUnitToSI(unitStr);
+    if(!p || !p.dim.some(v => v !== 0)) return null;
+    if(_isPureTempDim(p.dim)) return null;
+    const c = _bracketConvert(1, unitStr);
+    if(c === null || !isFinite(c) || c === 0) return null;
+    return {dim: p.dim, scale: p.si / c};
+  }catch(e){ return null; }
+}
+// Re-scale a bracket-converted constant onto its dimension's basis. Only units
+// whose table factor disagrees with the dimensional basis move -- in practice
+// the torque family ([N*m] and friends), which the table treats as force x
+// length while the dimension it carries is stored as energy.
+function _normalizeBracketValue(cv, unitStr){
+  if(cv === null || !isFinite(cv)) return cv;
+  const sc = _storedScaleOfBracketUnit(unitStr);
+  if(!sc) return cv;
+  const b = _basisOfDim(sc.dim);
+  const f = sc.scale / b;
+  if(!isFinite(f) || f <= 0 || Math.abs(f - 1) < 1e-12) return cv;
+  return cv * f;
+}
+const _DIMLESS7 = [0,0,0,0,0,0,0];
+// Walk an AST returning {ok, dim, scale} where scale is "SI units per numeric
+// unit" of the value the expression evaluates to. ok:false means "not
+// confident" and suppresses normalization for that line.
+function _dimScaleNode(nd){
+  const NO = {ok:false, dim:_DIMLESS7.slice(), scale:1};
+  if(!nd) return NO;
+  if(nd.t === 'N') return {ok:true, dim:_DIMLESS7.slice(), scale:1};
+  if(nd.t === 'V'){
+    if(typeof _varDimCache !== 'undefined' && _varDimCache && (nd.n in _varDimCache)){
+      const d = _varDimCache[nd.n].slice();
+      return {ok:true, dim:d, scale:_basisOfDim(d)};
+    }
+    if(typeof CONSTS_DIMS !== 'undefined' && (nd.n in CONSTS_DIMS)){
+      const d = CONSTS_DIMS[nd.n].slice();
+      return {ok:true, dim:d, scale:_basisOfDim(d)};
+    }
+    if(typeof CONSTS !== 'undefined' && (nd.n in CONSTS)){
+      return {ok:true, dim:_DIMLESS7.slice(), scale:1};
+    }
+    return NO;                      // unknown dimension -- do not touch this line
+  }
+  if(nd.t === 'U') return _dimScaleNode(nd.R);
+  if(nd.t === 'F'){
+    const fn = String(nd.fn || '').toLowerCase();
+    if(/^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc)$/.test(fn))
+      return {ok:true, dim:_DIMLESS7.slice(), scale:1};
+    if(fn === 'sqrt'){
+      const a = _dimScaleNode(nd.args && nd.args[0]);
+      if(!a.ok) return NO;
+      return {ok:true, dim:a.dim.map(x => x/2), scale:Math.sqrt(a.scale)};
+    }
+    if(fn === 'abs' || fn === 'min' || fn === 'max'){
+      const a = _dimScaleNode(nd.args && nd.args[0]);
+      return a.ok ? a : NO;
+    }
+    // Thermo/property functions return values already on their dimension's
+    // basis (h in kJ/kg, Psat in the pressure basis, ...), so scale == basis.
+    try{
+      const d = evalDimNode(nd).dim;
+      if(d && d.some(v => v !== 0)) return {ok:true, dim:d.slice(), scale:_basisOfDim(d)};
+    }catch(e){}
+    return NO;
+  }
+  if(nd.t === 'B'){
+    if(nd.op === '^'){
+      const Lp = _dimScaleNode(nd.L);
+      if(!Lp.ok) return NO;
+      if(!nd.R || nd.R.t !== 'N'){
+        return Lp.dim.every(v => v === 0) ? {ok:true, dim:_DIMLESS7.slice(), scale:1} : NO;
+      }
+      const e = nd.R.v;
+      return {ok:true, dim:Lp.dim.map(d => d*e), scale:Math.pow(Lp.scale, e)};
+    }
+    const L = _dimScaleNode(nd.L), R = _dimScaleNode(nd.R);
+    if(!L.ok || !R.ok) return NO;
+    if(nd.op === '*') return {ok:true, dim:L.dim.map((d,i) => d + R.dim[i]), scale:L.scale * R.scale};
+    if(nd.op === '/') return {ok:true, dim:L.dim.map((d,i) => d - R.dim[i]), scale:L.scale / R.scale};
+    if(nd.op === '+' || nd.op === '-'){
+      if(!L.dim.every((d,i) => d === R.dim[i])) return NO;
+      // Terms on different scales cannot be fixed by one factor at this level.
+      if(Math.abs(L.scale / R.scale - 1) > 1e-9) return NO;
+      return {ok:true, dim:L.dim.slice(), scale:L.scale};
+    }
+    return NO;
+  }
+  return NO;
+}
+// Source-to-source pass: fold the correction factor into each explicit
+// assignment whose arithmetic landed off its dimension's basis.
+function _normalizeUnitScales(txt, origTxt){
+  try{
+    if(typeof parse !== 'function' || typeof _varDimCache === 'undefined') return txt;
+    try{ _seedBracketDimsFromText(origTxt || ''); }catch(e){}
+    const lines = txt.split('\n');
+    const info  = new Array(lines.length).fill(null);
+    // Three sweeps so dimensions propagate through variables defined later.
+    for(let pass = 0; pass < 3; pass++){
+      for(let i = 0; i < lines.length; i++){
+        if(info[i]) continue;
+        const clean = lines[i].replace(/\/\/.*$/, '');
+        const idx = clean.indexOf('=');
+        if(idx < 0) continue;
+        if(/[<>!=]/.test(clean.charAt(idx-1)) || clean.charAt(idx+1) === '=') continue;
+        const lhs = clean.slice(0, idx).trim();
+        const rhs = clean.slice(idx + 1).trim();
+        if(!/^[a-zA-Z_]\w*$/.test(lhs) || !rhs) continue;
+        if(/\b(free|choice)\s*\(/.test(rhs)) continue;
+        let ast;
+        try{ ast = parse(rhs); }catch(e){ continue; }
+        const r = _dimScaleNode(ast);
+        if(!r.ok) continue;
+        if(!(lhs in _varDimCache) && r.dim.some(v => v !== 0)) _varDimCache[lhs] = r.dim.slice();
+        const b = _basisOfDim(r.dim);
+        const f = r.scale / b;
+        if(!isFinite(f) || f <= 0) continue;
+        info[i] = {factor:f, lhs:lhs, dim:r.dim.slice()};
+      }
+    }
+    return lines.map((line, i) => {
+      const nfo = info[i];
+      if(!nfo || Math.abs(nfo.factor - 1) < 1e-12) return line;
+      const cidx = line.indexOf('//');
+      const body = cidx >= 0 ? line.slice(0, cidx) : line;
+      const comment = cidx >= 0 ? line.slice(cidx) : '';
+      const idx = body.indexOf('=');
+      const rhsT = body.slice(idx + 1).trim();
+      let label = '';
+      try{ label = (typeof dimToLabel === 'function' ? (dimToLabel(nfo.dim) || '') : ''); }catch(e){}
+      _unitNormNotes.push({lhs:nfo.lhs, factor:nfo.factor, unit:label});
+      return body.slice(0, idx) + '= (' + rhsT + ')*' + nfo.factor + comment;
+    }).join('\n');
+  }catch(e){ return txt; }
+}
+
 function _knownBracketUnit(unitStr){
   const u=_canonUnit(unitStr);
   if(_OP_CONSTS[u]!==undefined) return true;
@@ -6111,7 +6283,7 @@ function _replaceNumericBracketValuesInLine(line){
   const out=body.replace(re,(m,prefix,num,unitRaw)=>{
     const unit=_canonUnit(unitRaw);
     if(!_knownBracketUnit(unitRaw)) throw new Error('Unknown unit ['+unitRaw.trim()+'] in: '+line.trim());
-    const cv=_bracketConvert(parseFloat(num),unitRaw);
+    const cv=_normalizeBracketValue(_bracketConvert(parseFloat(num),unitRaw),unitRaw);
     if(cv===null||!isFinite(cv)) throw new Error('Cannot convert unit ['+unitRaw.trim()+'] in: '+line.trim());
     return prefix+cv;
   });
@@ -6345,9 +6517,10 @@ function preprocessBrackets(txt) {
   // Only reset _bracketDisplayMap on the outer (real) call that actually has brackets.
   // The inner call from solveSystem receives already-preprocessed text (no brackets) and
   // must NOT wipe the map that the outer call already populated correctly.
-  if (/\[[^\]]+\]/.test(txt)) _bracketDisplayMap = {};
+  const _hadBrackets = /\[[^\]]+\]/.test(txt);
+  if (_hadBrackets) { _bracketDisplayMap = {}; _unitNormNotes = []; }
   _rejectBareUnitSyntax(txt);
-  return txt.split('\n').map((line, lineIdx) => {
+  const _preOut = txt.split('\n').map((line, lineIdx) => {
     try {
     const clean = line.replace(/\/\/.*$/, '');
     const idx = clean.indexOf('=');
@@ -6365,7 +6538,7 @@ function preprocessBrackets(txt) {
         if (_isUnitNodeSimple(ast)) {
           const numVal = _evalUnitSISimple(ast);
           if (isFinite(numVal)) {
-            const cv = _bracketConvert(numVal, unitStrRaw);
+            const cv = _normalizeBracketValue(_bracketConvert(numVal, unitStrRaw), unitStrRaw);
             if (cv !== null && isFinite(cv)) {
               const comment = line.slice(line.indexOf(clean) + clean.length);
               return lhs + ' = ' + cv + comment;
@@ -6387,7 +6560,7 @@ function preprocessBrackets(txt) {
       if (_isUnitNodeSimple(ast)) {
         const numVal = _evalUnitSISimple(ast);
         if (isFinite(numVal)) {
-          const cv = _bracketConvert(numVal, unitStrRaw);
+          const cv = _normalizeBracketValue(_bracketConvert(numVal, unitStrRaw), unitStrRaw);
           if (cv !== null && isFinite(cv)) {
             // Record original value & unit for result display (e.g. 300 K, not 26.85 °C)
             _bracketDisplayMap[lhs] = { val: numVal, unit: _normDisplayUnit(unitStr) };
@@ -6409,6 +6582,7 @@ function preprocessBrackets(txt) {
       throw e;
     }
   }).join('\n');
+  return _hadBrackets ? _normalizeUnitScales(_preOut, txt) : _preOut;
 }
 function _isUnitNodeSimple(nd){if(!nd)return false;if(nd.t==='N')return true;if(nd.t==='V')return(nd.n in CONSTS);if(nd.t==='U')return _isUnitNodeSimple(nd.R);if(nd.t==='B')return _isUnitNodeSimple(nd.L)&&_isUnitNodeSimple(nd.R);return false;}
 function _evalUnitSISimple(nd){if(nd.t==='N')return nd.v;if(nd.t==='V'){if(nd.n in CONSTS)return CONSTS[nd.n];}if(nd.t==='U')return -_evalUnitSISimple(nd.R);if(nd.t==='B'){const l=_evalUnitSISimple(nd.L),r=_evalUnitSISimple(nd.R);if(nd.op==='*')return l*r;if(nd.op==='/')return l/r;if(nd.op==='+')return l+r;if(nd.op==='-')return l-r;return Math.pow(l,r);}return 1;}
@@ -7684,6 +7858,22 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     _walkDimCheck(lhsAst, lineNum, _dimSeen, dimErrors);
     _walkDimCheck(rhsAst, lineNum, _dimSeen, dimErrors);
   });
+
+  // V1.3.104: report every scale correction the normalizer applied, so a
+  // rescaled equation is visible rather than magic.
+  try{
+    if (typeof _unitNormNotes !== 'undefined' && _unitNormNotes.length){
+      const seen = new Set();
+      _unitNormNotes.forEach(nt => {
+        const key = nt.lhs + '|' + nt.factor;
+        if (seen.has(key)) return;
+        seen.add(key);
+        warnings.push('<code>' + nt.lhs + '</code> rescaled by &times;' + nt.factor +
+          ' to land on ' + (nt.unit ? '<code>' + nt.unit + '</code>' : 'its dimension basis') +
+          ' &mdash; its inputs were on a different scale');
+      });
+    }
+  }catch(e){}
 
   // ── Render ───────────────────────────────────────────────────────────────
   const el = document.getElementById('unit-advisory');
@@ -12955,6 +13145,12 @@ function nelderMead(f, x0, options={}) {
 
 function freeVarToSolver(val, unit) {
   if (!unit) return val;
+  // V1.3.104: ratio units go through the normalized bracket conversion so a
+  // free variable lands on exactly the basis a bracketed constant would.
+  if (_storedScaleOfBracketUnit(unit)) {
+    const _c = _normalizeBracketValue(_bracketConvert(val, unit), unit);
+    if (_c !== null && isFinite(_c)) return _c;
+  }
   const u = unit.trim().toLowerCase();
 
   // ── Temperature ──────────────────────────────────────────
@@ -13029,6 +13225,10 @@ function freeVarToSolver(val, unit) {
       // Convert result back from solver unit to annotated display unit
 function freeVarFromSolver(val, unit) {
   if (!unit) return val;
+  if (_storedScaleOfBracketUnit(unit)) {
+    const _f = _normalizeBracketValue(_bracketConvert(1, unit), unit);
+    if (_f !== null && isFinite(_f) && _f !== 0) return val / _f;
+  }
   const u = unit.trim().toLowerCase();
   const tempUnits = ['k','degc','°c','degf','°f','degr','°r'];
   if (tempUnits.includes(u)) {
@@ -13190,7 +13390,8 @@ function runMultiFluidOptimizer(txt, rawLines, direction, objExpr, fluidChoices,
 
 // Synchronous core optimizer — same logic as runOptimizer but returns result object
 function _runOptimizerSync(txt, direction) {
-  const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
+  const _oPrep = _optPrepUnits(txt); const _fvUnits = _oPrep.units; txt = _oPrep.txt;
+      const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
   // Parse objective
   let objExpr = null;
@@ -13346,6 +13547,35 @@ function _runOptimizerSync(txt, direction) {
   return {objFinal, displayVals, finalScope, freeVars, iters: result.iters};
 }
 
+
+// V1.3.104: optimizer modes used to strip every trailing [unit] with a bare
+// regex and never convert the value, so "tau_allow = 60 [MPa]" reached the
+// solver as 60 and "d = free(35,20,80) [mm]" kept its bounds in millimetres
+// while the equations wanted metres. The free-var regex below has always had an
+// optional [unit] capture group, but the strip ran first, so it never matched
+// and freeVarToSolver was dead code. Capture the tags first, then hand the text
+// to preprocessBrackets like every other mode does.
+function _optPrepUnits(txt){
+  // Each optimizer run re-derives its units from its own source. preprocessBrackets
+  // only clears these when the incoming text HAS brackets, so a sheet written
+  // without units would otherwise inherit the previous sheet's dimensions and
+  // bracket echoes -- showing "tau_allow MPa 60" on a sheet that said 60e6.
+  try{ _varDimCache = {}; }catch(e){}
+  try{ _bracketDisplayMap = {}; }catch(e){}
+  try{ _unitNormNotes = []; }catch(e){}
+  const units = {};
+  try{
+    String(txt || '').split('\n').forEach(l => {
+      const c = l.replace(/\/\/.*$/, '');
+      const m = c.match(/^\s*([a-zA-Z_]\w*)\s*=\s*(?:free\s*\([^)]*\)|free|\[[^\]:]*:[^\]]*\])\s*\[([^\]:]+)\]\s*$/);
+      if (m) units[m[1]] = m[2].trim();
+    });
+  }catch(e){}
+  let out = txt;
+  try{ out = preprocessBrackets(txt); }catch(e){ out = txt; }
+  return {txt: out, units: units};
+}
+
 function runOptimizer(txt) {
   const _t0 = performance.now();
   const $bt = document.getElementById('solve-btn');
@@ -13360,6 +13590,7 @@ function runOptimizer(txt) {
 
   setTimeout(() => {
     try {
+      const _oPrep = _optPrepUnits(txt); const _fvUnits = _oPrep.units; txt = _oPrep.txt;
       const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse minimize/maximize line ─────────────────────────
@@ -13405,14 +13636,14 @@ function runOptimizer(txt) {
           const guess = isFinite(args[0]) ? args[0] : 0;
           const lo = isFinite(args[1]) ? args[1] : -Infinity;
           const hi = isFinite(args[2]) ? args[2] : Infinity;
-          const unit = m[3] || null;
+          const unit = m[3] || (typeof _fvUnits !== 'undefined' ? (_fvUnits[m[1]] || null) : null);
           freeVars.push({name: m[1], guess, lo, hi, unit});
           freeLines.add(idx); return;
         }
         // free (bare) >> unit  OR  free
         m = l.match(/^([a-zA-Z_]\w*)\s*=\s*free\s*(?:\[([^\]]+)\])?\s*$/);
         if (m) {
-          freeVars.push({name: m[1], guess:0, lo:-Infinity, hi:Infinity, unit: m[2]||null});
+          freeVars.push({name: m[1], guess:0, lo:-Infinity, hi:Infinity, unit: m[2]||(typeof _fvUnits !== 'undefined' ? (_fvUnits[m[1]]||null) : null)});
           freeLines.add(idx); return;
         }
         // [lo:hi] >> unit  OR  [lo:hi]
@@ -13420,7 +13651,7 @@ function runOptimizer(txt) {
         if (m) {
           const lo = evalConstExpr(m[2].trim()), hi = evalConstExpr(m[3].trim());
           if (isFinite(lo) && isFinite(hi)) {
-            freeVars.push({name: m[1], guess:(lo+hi)/2, lo, hi, unit: m[4]||null});
+            freeVars.push({name: m[1], guess:(lo+hi)/2, lo, hi, unit: m[4]||(typeof _fvUnits !== 'undefined' ? (_fvUnits[m[1]]||null) : null)});
             freeLines.add(idx);
           }
         }
@@ -13577,7 +13808,7 @@ function runOptimizer(txt) {
         let val = result.x[i];
         if (isFinite(v.lo)) val = Math.max(val, v.lo);
         if (isFinite(v.hi)) val = Math.min(val, v.hi);
-        displayVals[v.name] = v.unit ? freeVarFromSolver(val, v.unit) : val;
+        displayVals[v.name] = val;   // V1.3.104: bounds are already in the annotated unit
         finalFixed[v.name] = v.unit ? freeVarToSolver(val, v.unit) : val;
       });
 
@@ -13613,9 +13844,14 @@ function runOptimizer(txt) {
         if (!isFinite(val)) return '';
         const fv = freeVars.find(fv=>fv.name===v);
         const isFree = !!fv;
-        const unitLabel = fv?.unit || _dimLabelFor(v, rhsMap);
+        // V1.3.104: a bracketed input is echoed back in the unit the user typed.
+        // Optimizer modes now run preprocessBrackets, so a value can be stored on
+        // a different scale than it was written in (500 [N*m] is held as 0.5 kJ);
+        // showing the internal number would read as if the input were misread.
+        const _bd = (typeof _bracketDisplayMap !== 'undefined') ? _bracketDisplayMap[v] : null;
+        const unitLabel = fv?.unit || (_bd && _bd.unit) || _dimLabelFor(v, rhsMap);
         const accent = isFree ? 'style="border-color:var(--purple)"' : '';
-        const displayVal = isFree ? displayVals[v] : val;
+        const displayVal = isFree ? displayVals[v] : ((_bd && isFinite(_bd.val)) ? _bd.val : val);
         return `<div class="var-card" ${accent} style="animation-delay:${i*.04}s">
           <div><span class="var-name">${v}</span>${isFree?`<div class="var-unit" style="color:var(--purple)">optimal${unitLabel?' · '+unitLabel:''}</div>`:unitLabel?`<div class="var-unit">${unitLabel}</div>`:''}
           </div><span class="var-val">${fmt(displayVal)}</span></div>`;
@@ -13711,6 +13947,7 @@ function runUncertainty(txt) {
   setTimeout(() => {
     try {
       const _bracketUnits = _extractBracketUnits(txt); // extract [unit] tags BEFORE stripping
+      const _oPrep = _optPrepUnits(txt); const _fvUnits = _oPrep.units; txt = _oPrep.txt;
       const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse unc lines ────────────────────────────────────────
@@ -14602,6 +14839,7 @@ function runSensitivity(txt) {
   setTimeout(() => {
     try {
       const _bracketUnits = _extractBracketUnits(txt); // extract [unit] tags BEFORE stripping
+      const _oPrep = _optPrepUnits(txt); const _fvUnits = _oPrep.units; txt = _oPrep.txt;
       const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse sens parameters ─────────────────────────────────
@@ -14751,6 +14989,7 @@ function runParetoSweep(txt) {
 
   setTimeout(() => {
     try {
+      const _oPrep = _optPrepUnits(txt); const _fvUnits = _oPrep.units; txt = _oPrep.txt;
       const rawLines = txt.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
 
       // ── 1. Parse objective ────────────────────────────────────────
