@@ -21,7 +21,7 @@ identifiers:
     description: "Concept DOI — always resolves to the latest release"
   - type: doi
     value: "10.5281/zenodo.22278668"
-    description: "Version DOI for release v1.3.100"
+    description: "Version DOI for release v1.3.100 — the build used for the paper"
   - type: doi
     value: "10.5281/zenodo.22661509"
     description: "Version DOI for release v1.3.104"

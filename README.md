@@ -153,7 +153,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 | | DOI |
 |---|---|
 | **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
-| **v1.3.100** specifically | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
+| **v1.3.100** — the build behind the paper | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
 | **v1.3.104** specifically | [10.5281/zenodo.22661509](https://doi.org/10.5281/zenodo.22661509) |
 
 **If you are unsure which to use, use the first one** — the all-versions (concept) DOI.
@@ -163,7 +163,9 @@ and it always resolves to the newest release. It is what the badge above, the
 
 Reach for a version DOI only in the narrower case where a published result depends on
 the exact build that produced it — then cite that build's DOI alongside the paper. Cite
-the paper itself for the method. Every release is archived on Zenodo with the complete
+the paper itself for the method. The results in the *International Journal of
+Thermodynamics* paper were computed with **v1.3.100**, so that is the build to cite when
+reproducing them. Every release is archived on Zenodo with the complete
 `Archive/` history attached, so a build without its own DOI is still recoverable from
 any archived release.
 
