@@ -154,6 +154,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 |---|---|
 | **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
 | **v1.3.100** specifically | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
+| **v1.3.104** specifically | [10.5281/zenodo.22661509](https://doi.org/10.5281/zenodo.22661509) |
 
 Cite the paper for the method, the version DOI for reproducibility. Every release is
 archived on Zenodo with the complete `Archive/` history attached.
