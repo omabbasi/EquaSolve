@@ -4,7 +4,7 @@
 
 EquaSolve is a general engineering equation solver distributed as **one self-contained
 HTML file** — no build step, no dependencies, no server. Open the release at the repo
-root (currently `EquaSolve_V1_3_109.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
+root (currently `EquaSolve_V1_3_110.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
 Bahrain. The accompanying paper was **accepted** in the *International Journal of
 Thermodynamics*, `doi:10.5541/ijot.1978096`. State it as **accepted** — the issue
 appears in **December 2026**.

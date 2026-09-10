@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.109</title>
+<title>EquaSolve V1.3.110</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.109</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.110</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.109</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.110</span></div>
       
     </div>
   </div>
@@ -968,7 +968,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.109</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.110</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1453,6 +1453,168 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         </div>
       </div>
 
+      <!-- ODE Syntax -->
+      <div class="help-card">
+        <div class="help-card-title">∂ ODE Syntax</div>
+        <div class="help-note">Write the system in the ODE tab. Supports 1st and higher-order ODEs.</div>
+        <div class="help-table">
+          <div class="help-row"><code>y' = f(t, y)</code><span>First-order derivative</span></div>
+          <div class="help-row"><code>y'' = f(t, y, y')</code><span>Second-order (auto-expanded)</span></div>
+          <div class="help-row"><code>y'''= f(...)</code><span>Third-order and beyond</span></div>
+          <div class="help-row"><code>y(0) = 1</code><span>Initial condition at t=0</span></div>
+          <div class="help-row"><code>y'(0) = 0</code><span>IC for derivative</span></div>
+          <div class="help-row"><code>t = [0, 10]</code><span>Integration span</span></div>
+          <div class="help-row"><code>k = 0.5</code><span>Constant parameter</span></div>
+          <div class="help-row"><code>Ctrl+Enter</code> / <code>F2</code><span>Solve ODE (keyboard shortcuts)</span></div>
+        </div>
+        <div class="help-section-label">DAE — Algebraic Constraints (mixed with ODEs)</div>
+        <div class="help-table">
+          <div class="help-row"><code>V = R * I</code><span>Algebraic equation (no prime) — I solved at each step</span></div>
+          <div class="help-row"><code>x^2 + y^2 = L^2</code><span>Nonlinear constraint — Newton solve at each step</span></div>
+          <div class="help-row"><code>z^2 = f(x)</code><span>Implicit algebraic variable z</span></div>
+        </div>
+      </div>
+
+      <!-- Optimization Syntax -->
+      <div class="help-card">
+        <div class="help-card-title">⊛ Optimization Syntax</div>
+        <div class="help-section-label">Objective</div>
+        <div class="help-table">
+          <div class="help-row"><code>minimize expr</code><span>Find values that minimize expression</span></div>
+          <div class="help-row"><code>maximize expr</code><span>Find values that maximize expression</span></div>
+        </div>
+        <div class="help-section-label">Free Variables</div>
+        <div class="help-table">
+          <div class="help-block">
+            <code>x = free</code>
+            <div class="hb-desc">Free, unbounded, start at 0</div>
+          </div>
+          <div class="help-block">
+            <code>x = free(guess)</code>
+            <div class="hb-desc">Free, unbounded, start at guess</div>
+          </div>
+          <div class="help-block">
+            <code>x = free(guess, lo, hi)</code>
+            <div class="hb-desc">Free with bounds [lo, hi]</div>
+          </div>
+          <div class="help-block">
+            <code>x = free(guess, lo, hi) [degC]</code>
+            <div class="hb-desc">Unit annotation — values in °C, solver receives K</div>
+            <div class="hb-eq">Add [unit] after free() to label output: <code>T = free(40, 30, 60) [degC]</code></div>
+          </div>
+          <div class="help-block">
+            <code>x = [lo : hi]</code>
+            <div class="hb-desc">Bounds only — start at midpoint</div>
+          </div>
+        </div>
+        <div class="help-section-label">Constraints</div>
+        <div class="help-table">
+          <div class="help-row"><code>g &gt;= value</code><span>Inequality constraint (penalty method)</span></div>
+          <div class="help-row"><code>g &lt;= value</code><span>Inequality constraint</span></div>
+          <div class="help-row"><code>var = value</code><span>Equality constraint (duplicate LHS auto-detected)</span></div>
+        </div>
+        <div class="help-section-label">Multi-Fluid Optimization</div>
+        <div class="help-table">
+          <div class="help-block">
+            <code>fluid = choice(R134a, R32, R1234yf)</code>
+            <div class="hb-desc">Run optimizer for each fluid — ranks results by objective</div>
+            <div class="hb-eq">Use _f suffix functions: hg_f, sg_f, Psat_f, hf_f, h_Ps_f …</div>
+          </div>
+        </div>
+        <div class="help-section-label">Pareto Front Sweep</div>
+        <div class="help-table">
+          <div class="help-block">
+            <code>constraint >= [lo : step : hi]</code>
+            <div class="hb-desc">Sweeps the constraint threshold — runs optimizer at each value</div>
+            <div class="hb-eq">Plots the trade-off curve: objective vs constraint threshold</div>
+            <div class="hb-eq">Infeasible points shown in red · best trade-off highlighted</div>
+          </div>
+        </div>
+        <div class="help-note">Algorithm: Nelder-Mead simplex — no derivatives, works with any nonlinear system including thermo functions. Settings in Solver tab.</div>
+      </div>
+
+      <!-- Uncertainty Syntax -->      <div class="help-card">
+        <div class="help-card-title">± Uncertainty Analysis Syntax</div>
+        <div class="help-section-label">Uncertain Inputs</div>
+        <div class="help-table">
+          <div class="help-block">
+            <code>unc param = value ± uncertainty</code>
+            <div class="hb-desc">Declare a measured input with its absolute uncertainty</div>
+            <div class="hb-eq">Also accepts: unc param = value +/- uncertainty &nbsp;·&nbsp; unc param = value +- uncertainty</div>
+          </div>
+        </div>
+        <div class="help-section-label">Output</div>
+        <div class="help-table">
+          <div class="help-row"><code>δy = √Σ(∂y/∂xᵢ · δxᵢ)²</code><span>GUM root-sum-of-squares propagation</span></div>
+          <div class="help-row"><code>Abs. uncertainty</code><span>Same units as output variable</span></div>
+          <div class="help-row"><code>Rel. uncertainty</code><span style="color:#56d364">Green &lt;2% · </span><span style="color:var(--accent)">Orange 2–5% · </span><span style="color:#f85149">Red &gt;5%</span></div>
+          <div class="help-row"><code>Top contributors</code><span>Which inputs drive most of the output uncertainty</span></div>
+        </div>
+        <div class="help-note">Multiple unc inputs allowed. All other equations treated as exact model equations.</div>
+      </div>
+
+      <!-- Regression / Curve Fitting -->
+      <div class="help-card">
+        <div class="help-card-title">⌇ Regression / Curve Fitting</div>
+        <div class="help-section-label">Data Input — 3 formats supported</div>
+        <div class="help-table">
+          <div class="help-row"><code>data = [(x1,y1),(x2,y2),...]</code><span>Format 1 — inline tuple list</span></div>
+          <div class="help-row"><code>x_data = [1 2 3 4 5]</code><span>Format 2 — space-separated (paste from Excel)</span></div>
+          <div class="help-row"><code>x_data = [1, 2, 3, 4, 5]</code><span>Format 3 — comma-separated arrays</span></div>
+        </div>
+        <div class="help-section-label">fit() Call</div>
+        <div class="help-table">
+          <div class="help-row"><code>fit(data, x, y)</code><span>Tuple list — 1 input variable</span></div>
+          <div class="help-row"><code>fit(y_data, y_model, x_data=x)</code><span>Named form — single input variable</span></div>
+          <div class="help-row"><code>fit(y_data, y_model, x1_data=x1, x2_data=x2)</code><span>Named form — multi-input variables</span></div>
+          <div class="help-row"><code>fit(x_data, y_data, x, y)</code><span>Separate arrays — 1 input variable</span></div>
+          <div class="help-row"><code>fit(x1_data, x2_data, y_data, x1, x2, y)</code><span>Separate arrays — multi-input (all data first, then all variables)</span></div>
+        </div>
+        <div class="help-section-label">Free Parameters — 4 forms</div>
+        <div class="help-table">
+          <div class="help-row"><code>k = free(guess, lo, hi)</code><span>Full spec — guess + bounds</span></div>
+          <div class="help-row"><code>k = free(lo, hi)</code><span>Bounds only — guess auto-computed as geometric mean</span></div>
+          <div class="help-row"><code>k = free(guess)</code><span>Guess only — no bounds</span></div>
+          <div class="help-row"><code>k = free()</code><span>No args — multi-start search across magnitudes [0.001 … 1000]</span></div>
+        </div>
+        <div class="help-section-label">Complete Example</div>
+        <div class="help-table">
+          <div class="help-row"><code>data = [(0,90),(30,75),(120,48)]</code><span>Tuple data</span></div>
+          <div class="help-row"><code>T = T_amb + (T0-T_amb)*exp(-k*t)</code><span>Model equation</span></div>
+          <div class="help-row"><code>fit(data, t, T)</code><span>Fit t→T</span></div>
+          <div class="help-row"><code>T0 = free(88, 70, 100)</code><span>Free parameter with bounds</span></div>
+          <div class="help-row"><code>k  = free(0.005, 1e-5, 0.1)</code><span>Free parameter with bounds</span></div>
+        </div>
+        <div class="help-section-label">Output</div>
+        <div class="help-table">
+          <div class="help-row"><code>param ± 95% CI</code><span>Best-fit value with 95% confidence interval</span></div>
+          <div class="help-row"><code>R²</code><span>Coefficient of determination (1.0 = perfect fit)</span></div>
+          <div class="help-row"><code>RMSE</code><span>Root mean square error in y units</span></div>
+          <div class="help-row"><code>Correlation matrix</code><span>Parameter correlations — |r|>0.9 means parameters may be redundant</span></div>
+          <div class="help-row"><code>Plot</code><span>Data points + fit curve + ±2σ prediction band</span></div>
+        </div>
+        <div class="help-note">Algorithm: Levenberg-Marquardt — robust hybrid between gradient descent (far from solution) and Gauss-Newton (near solution). Any model equation supported including thermophysical property functions.</div>
+      </div>
+
+<div class="help-card">
+        <div class="help-card-title">⊡ Sensitivity Analysis Syntax</div>
+        <div class="help-section-label">Tagged Parameters</div>
+        <div class="help-table">
+          <div class="help-block">
+            <code>sens param = value</code>
+            <div class="hb-desc">Mark parameter for sensitivity study — perturbed ±1%</div>
+            <div class="hb-eq">Regular equations below use these as fixed values</div>
+          </div>
+        </div>
+        <div class="help-section-label">Output</div>
+        <div class="help-table">
+          <div class="help-row"><code>% change per 1% change</code><span>Normalized sensitivity coefficient</span></div>
+          <div class="help-row"><code>+value</code><span style="color:#3fb950">Green — output increases with parameter</span></div>
+          <div class="help-row"><code>−value</code><span style="color:#f85149">Red — output decreases with parameter</span></div>
+        </div>
+        <div class="help-note">Multiple sens parameters allowed. All other equations treated as fixed model equations.</div>
+      </div>
+
       <!-- Water / Steam (IF97) -->
       <div class="help-card">
         <div class="help-card-title">💧 Water/Steam Property Functions (IAPWS-IF97)</div>
@@ -1576,7 +1738,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
         </div>
       </div>
 
-      <div class="help-card">
+<div class="help-card">
         <div class="help-card-title">🔥 Combustion Property Functions</div>
 
         <div class="help-section-label">Unified h_X / s_X — argument count selects the model</div>
@@ -1653,7 +1815,7 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
         <div class="help-row" style="margin-top:8px;color:var(--mute);font-size:11px"><span>Note: combustion molar properties (1 arg) and PR-EOS specific properties (2 args) have different units (kJ/kmol vs kJ/kg) — keep your energy-balance accounting consistent.</span></div>
       </div>
 
-      <div class="help-card">
+<div class="help-card">
         <div class="help-card-title">⊕ Exergy Functions</div>
 
         <div class="help-section-label">Dead State — Required for all exergy functions</div>
@@ -1731,7 +1893,6 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
         </div>
         <div class="help-note">The bar chart in the results panel shows exergy destruction for every variable whose name contains <code>ex_dest</code>. Negative values flag automatically with a ⚠ warning — check sign convention.</div>
       </div>
-
 
       <!-- Pipe Flow Functions -->
       <div class="help-card">
@@ -1918,170 +2079,6 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
           </div>
         </div>
         <div class="help-note">k [W/m·K] · mu [Pa·s] · cp [J/kg·K] · alpha [m²/s] · beta [1/K] · all lengths in [m]</div>
-      </div>
-
-      <!-- ODE Syntax -->
-      <div class="help-card">
-        <div class="help-card-title">∂ ODE Syntax</div>
-        <div class="help-note">Write the system in the ODE tab. Supports 1st and higher-order ODEs.</div>
-        <div class="help-table">
-          <div class="help-row"><code>y' = f(t, y)</code><span>First-order derivative</span></div>
-          <div class="help-row"><code>y'' = f(t, y, y')</code><span>Second-order (auto-expanded)</span></div>
-          <div class="help-row"><code>y'''= f(...)</code><span>Third-order and beyond</span></div>
-          <div class="help-row"><code>y(0) = 1</code><span>Initial condition at t=0</span></div>
-          <div class="help-row"><code>y'(0) = 0</code><span>IC for derivative</span></div>
-          <div class="help-row"><code>t = [0, 10]</code><span>Integration span</span></div>
-          <div class="help-row"><code>k = 0.5</code><span>Constant parameter</span></div>
-          <div class="help-row"><code>Ctrl+Enter</code> / <code>F2</code><span>Solve ODE (keyboard shortcuts)</span></div>
-        </div>
-        <div class="help-section-label">DAE — Algebraic Constraints (mixed with ODEs)</div>
-        <div class="help-table">
-          <div class="help-row"><code>V = R * I</code><span>Algebraic equation (no prime) — I solved at each step</span></div>
-          <div class="help-row"><code>x^2 + y^2 = L^2</code><span>Nonlinear constraint — Newton solve at each step</span></div>
-          <div class="help-row"><code>z^2 = f(x)</code><span>Implicit algebraic variable z</span></div>
-        </div>
-      </div>
-
-      <!-- Optimization Syntax -->
-      <div class="help-card">
-        <div class="help-card-title">⊛ Optimization Syntax</div>
-        <div class="help-section-label">Objective</div>
-        <div class="help-table">
-          <div class="help-row"><code>minimize expr</code><span>Find values that minimize expression</span></div>
-          <div class="help-row"><code>maximize expr</code><span>Find values that maximize expression</span></div>
-        </div>
-        <div class="help-section-label">Free Variables</div>
-        <div class="help-table">
-          <div class="help-block">
-            <code>x = free</code>
-            <div class="hb-desc">Free, unbounded, start at 0</div>
-          </div>
-          <div class="help-block">
-            <code>x = free(guess)</code>
-            <div class="hb-desc">Free, unbounded, start at guess</div>
-          </div>
-          <div class="help-block">
-            <code>x = free(guess, lo, hi)</code>
-            <div class="hb-desc">Free with bounds [lo, hi]</div>
-          </div>
-          <div class="help-block">
-            <code>x = free(guess, lo, hi) [degC]</code>
-            <div class="hb-desc">Unit annotation — values in °C, solver receives K</div>
-            <div class="hb-eq">Add [unit] after free() to label output: <code>T = free(40, 30, 60) [degC]</code></div>
-          </div>
-          <div class="help-block">
-            <code>x = [lo : hi]</code>
-            <div class="hb-desc">Bounds only — start at midpoint</div>
-          </div>
-        </div>
-        <div class="help-section-label">Constraints</div>
-        <div class="help-table">
-          <div class="help-row"><code>g &gt;= value</code><span>Inequality constraint (penalty method)</span></div>
-          <div class="help-row"><code>g &lt;= value</code><span>Inequality constraint</span></div>
-          <div class="help-row"><code>var = value</code><span>Equality constraint (duplicate LHS auto-detected)</span></div>
-        </div>
-        <div class="help-section-label">Multi-Fluid Optimization</div>
-        <div class="help-table">
-          <div class="help-block">
-            <code>fluid = choice(R134a, R32, R1234yf)</code>
-            <div class="hb-desc">Run optimizer for each fluid — ranks results by objective</div>
-            <div class="hb-eq">Use _f suffix functions: hg_f, sg_f, Psat_f, hf_f, h_Ps_f …</div>
-          </div>
-        </div>
-        <div class="help-section-label">Pareto Front Sweep</div>
-        <div class="help-table">
-          <div class="help-block">
-            <code>constraint >= [lo : step : hi]</code>
-            <div class="hb-desc">Sweeps the constraint threshold — runs optimizer at each value</div>
-            <div class="hb-eq">Plots the trade-off curve: objective vs constraint threshold</div>
-            <div class="hb-eq">Infeasible points shown in red · best trade-off highlighted</div>
-          </div>
-        </div>
-        <div class="help-note">Algorithm: Nelder-Mead simplex — no derivatives, works with any nonlinear system including thermo functions. Settings in Solver tab.</div>
-      </div>
-
-      <!-- Exergy Functions -->
-
-      <!-- Uncertainty Syntax -->      <div class="help-card">
-        <div class="help-card-title">± Uncertainty Analysis Syntax</div>
-        <div class="help-section-label">Uncertain Inputs</div>
-        <div class="help-table">
-          <div class="help-block">
-            <code>unc param = value ± uncertainty</code>
-            <div class="hb-desc">Declare a measured input with its absolute uncertainty</div>
-            <div class="hb-eq">Also accepts: unc param = value +/- uncertainty &nbsp;·&nbsp; unc param = value +- uncertainty</div>
-          </div>
-        </div>
-        <div class="help-section-label">Output</div>
-        <div class="help-table">
-          <div class="help-row"><code>δy = √Σ(∂y/∂xᵢ · δxᵢ)²</code><span>GUM root-sum-of-squares propagation</span></div>
-          <div class="help-row"><code>Abs. uncertainty</code><span>Same units as output variable</span></div>
-          <div class="help-row"><code>Rel. uncertainty</code><span style="color:#56d364">Green &lt;2% · </span><span style="color:var(--accent)">Orange 2–5% · </span><span style="color:#f85149">Red &gt;5%</span></div>
-          <div class="help-row"><code>Top contributors</code><span>Which inputs drive most of the output uncertainty</span></div>
-        </div>
-        <div class="help-note">Multiple unc inputs allowed. All other equations treated as exact model equations.</div>
-      </div>
-
-      <!-- Regression / Curve Fitting -->
-      <div class="help-card">
-        <div class="help-card-title">⌇ Regression / Curve Fitting</div>
-        <div class="help-section-label">Data Input — 3 formats supported</div>
-        <div class="help-table">
-          <div class="help-row"><code>data = [(x1,y1),(x2,y2),...]</code><span>Format 1 — inline tuple list</span></div>
-          <div class="help-row"><code>x_data = [1 2 3 4 5]</code><span>Format 2 — space-separated (paste from Excel)</span></div>
-          <div class="help-row"><code>x_data = [1, 2, 3, 4, 5]</code><span>Format 3 — comma-separated arrays</span></div>
-        </div>
-        <div class="help-section-label">fit() Call</div>
-        <div class="help-table">
-          <div class="help-row"><code>fit(data, x, y)</code><span>Tuple list — 1 input variable</span></div>
-          <div class="help-row"><code>fit(y_data, y_model, x_data=x)</code><span>Named form — single input variable</span></div>
-          <div class="help-row"><code>fit(y_data, y_model, x1_data=x1, x2_data=x2)</code><span>Named form — multi-input variables</span></div>
-          <div class="help-row"><code>fit(x_data, y_data, x, y)</code><span>Separate arrays — 1 input variable</span></div>
-          <div class="help-row"><code>fit(x1_data, x2_data, y_data, x1, x2, y)</code><span>Separate arrays — multi-input (all data first, then all variables)</span></div>
-        </div>
-        <div class="help-section-label">Free Parameters — 4 forms</div>
-        <div class="help-table">
-          <div class="help-row"><code>k = free(guess, lo, hi)</code><span>Full spec — guess + bounds</span></div>
-          <div class="help-row"><code>k = free(lo, hi)</code><span>Bounds only — guess auto-computed as geometric mean</span></div>
-          <div class="help-row"><code>k = free(guess)</code><span>Guess only — no bounds</span></div>
-          <div class="help-row"><code>k = free()</code><span>No args — multi-start search across magnitudes [0.001 … 1000]</span></div>
-        </div>
-        <div class="help-section-label">Complete Example</div>
-        <div class="help-table">
-          <div class="help-row"><code>data = [(0,90),(30,75),(120,48)]</code><span>Tuple data</span></div>
-          <div class="help-row"><code>T = T_amb + (T0-T_amb)*exp(-k*t)</code><span>Model equation</span></div>
-          <div class="help-row"><code>fit(data, t, T)</code><span>Fit t→T</span></div>
-          <div class="help-row"><code>T0 = free(88, 70, 100)</code><span>Free parameter with bounds</span></div>
-          <div class="help-row"><code>k  = free(0.005, 1e-5, 0.1)</code><span>Free parameter with bounds</span></div>
-        </div>
-        <div class="help-section-label">Output</div>
-        <div class="help-table">
-          <div class="help-row"><code>param ± 95% CI</code><span>Best-fit value with 95% confidence interval</span></div>
-          <div class="help-row"><code>R²</code><span>Coefficient of determination (1.0 = perfect fit)</span></div>
-          <div class="help-row"><code>RMSE</code><span>Root mean square error in y units</span></div>
-          <div class="help-row"><code>Correlation matrix</code><span>Parameter correlations — |r|>0.9 means parameters may be redundant</span></div>
-          <div class="help-row"><code>Plot</code><span>Data points + fit curve + ±2σ prediction band</span></div>
-        </div>
-        <div class="help-note">Algorithm: Levenberg-Marquardt — robust hybrid between gradient descent (far from solution) and Gauss-Newton (near solution). Any model equation supported including thermophysical property functions.</div>
-      </div>
-
-      <div class="help-card">
-        <div class="help-card-title">⊡ Sensitivity Analysis Syntax</div>
-        <div class="help-section-label">Tagged Parameters</div>
-        <div class="help-table">
-          <div class="help-block">
-            <code>sens param = value</code>
-            <div class="hb-desc">Mark parameter for sensitivity study — perturbed ±1%</div>
-            <div class="hb-eq">Regular equations below use these as fixed values</div>
-          </div>
-        </div>
-        <div class="help-section-label">Output</div>
-        <div class="help-table">
-          <div class="help-row"><code>% change per 1% change</code><span>Normalized sensitivity coefficient</span></div>
-          <div class="help-row"><code>+value</code><span style="color:#3fb950">Green — output increases with parameter</span></div>
-          <div class="help-row"><code>−value</code><span style="color:#f85149">Red — output decreases with parameter</span></div>
-        </div>
-        <div class="help-note">Multiple sens parameters allowed. All other equations treated as fixed model equations.</div>
       </div>
 
       <!-- Solver behaviour -->
