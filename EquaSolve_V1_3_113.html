@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.112</title>
+<title>EquaSolve V1.3.113</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.112</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.113</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.112</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.113</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.112</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.113</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -14806,11 +14806,19 @@ function runRegression(txt) {
       // V1.3.112: with more than one independent variable the plot was hardwired
       // to the first one, so the others could not be looked at at all. Offer the
       // choice; the rest are held at their means exactly as before.
+      // V1.3.113: with several inputs, a slice against one of them is the wrong
+      // default. Each point carries its own values for the inputs being held at
+      // their means, so the points scatter for reasons that have nothing to do
+      // with model error -- on the kinetics example that is a spread of 0.21x to
+      // 2.30x about the curve for a fit whose R2 is 0.996, which reads as a bad
+      // fit. Fitted-vs-observed uses every input at once and plots nothing but
+      // real measurements, so distance from the 1:1 line IS the model error.
       const xSelHtml = xVars.length > 1
-        ? `<label style="font-size:10px;color:var(--mute);margin-left:auto;display:flex;align-items:center;gap:5px">x-axis
+        ? `<label style="font-size:10px;color:var(--mute);margin-left:auto;display:flex;align-items:center;gap:5px">view
              <select id="${plotId}-x" style="background:var(--surface);color:var(--dim);border:1px solid var(--border2);
                      border-radius:5px;padding:2px 6px;font-family:inherit;font-size:10px">
-               ${xVars.map(v => `<option value="${v}">${v}</option>`).join('')}
+               <option value="__parity__">fitted vs observed</option>
+               ${xVars.map(v => `<option value="${v}">vs ${v}</option>`).join('')}
              </select></label>`
         : '';
       const plotHtml = `<div style="margin-top:12px">
@@ -14861,13 +14869,22 @@ function runRegression(txt) {
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
 
-        // Which independent variable is on the x-axis. Shadows the single-variable
-        // alias above, so everything downstream plots the chosen column.
-        const _selEl = document.getElementById(plotId + '-x');
-        let _xi = _selEl ? xVars.indexOf(_selEl.value) : 0;
+        // Which view is showing. Shadows the single-variable alias above, so
+        // everything downstream plots the chosen column.
+        const _selEl  = document.getElementById(plotId + '-x');
+        const _mode   = _selEl ? _selEl.value : xVars[0];
+        const _parity = (_mode === '__parity__');
+        let _xi = _parity ? 0 : xVars.indexOf(_mode);
         if (_xi < 0) _xi = 0;
-        const xData   = xDataArr[_xi];
         const xVarSel = xVars[_xi];
+        // In parity view the horizontal axis is the observed value itself.
+        const xData   = _parity ? yData : xDataArr[_xi];
+        // A slice holds the other inputs at their means, so a raw point sits off
+        // the curve by however far its own inputs are from those means. Move each
+        // point to where it would have been measured at the means, keeping its own
+        // residual: observed - predicted + curve. Standard partial-residual
+        // treatment, and it needs nothing of the model's form.
+        const _adjust = !_parity && xVars.length > 1;
 
         const light = document.documentElement.classList.contains('light');
         const bgCol   = light ? '#f6f8fa' : '#151820';
@@ -14900,14 +14917,26 @@ function runRegression(txt) {
             sc_pred[xvn] = mean;
           }
         });
-        const ySmooth100 = xSmooth100.map(xv => {
-          sc_pred[xVarSel] = xv;
-          try { return evalNode(modelAST, sc_pred); } catch(e) { return NaN; }
+        const ySmooth100 = _parity
+          ? xSmooth100.slice()                       // the 1:1 line
+          : xSmooth100.map(xv => {
+              sc_pred[xVarSel] = xv;
+              try { return evalNode(modelAST, sc_pred); } catch(e) { return NaN; }
+            });
+
+        // What the dots are: (observed, fitted) in parity view, otherwise the
+        // chosen input against the observation, adjusted when it is a slice.
+        const ptX = _parity ? yData : xDataArr[_xi];
+        const ptY = _parity ? yPred : yData.map((yv, i) => {
+          if (!_adjust) return yv;
+          sc_pred[xVarSel] = xDataArr[_xi][i];
+          let atMeans; try { atMeans = evalNode(modelAST, sc_pred); } catch(e) { atMeans = NaN; }
+          return (isFinite(atMeans) && isFinite(yPred[i])) ? yv - yPred[i] + atMeans : yv;
         });
 
         // Compute plot bounds in transformed space
         const txData = xData.map(T);
-        const tyData = [...yData, ...ySmooth100.filter(isFinite)].map(T);
+        const tyData = [...ptY.filter(isFinite), ...ySmooth100.filter(isFinite)].map(T);
         const txMin = Math.min(...txData), txMax = Math.max(...txData);
         let tyMin = Math.min(...tyData), tyMax = Math.max(...tyData);
         const margin = (tyMax - tyMin) * 0.08 || 0.5;
@@ -14989,9 +15018,9 @@ function runRegression(txt) {
         ctx.fillStyle = dataCol;
         ctx.strokeStyle = light ? 'rgba(0,0,0,.3)' : 'rgba(255,255,255,.3)';
         ctx.lineWidth = 1;
-        xData.forEach((xv, i) => {
-          if (!isFinite(yData[i]) || (useLog && yData[i] <= 0)) return;
-          ctx.beginPath(); ctx.arc(px(xv), py(yData[i]), 4.5, 0, Math.PI*2);
+        ptX.forEach((xv, i) => {
+          if (!isFinite(xv) || !isFinite(ptY[i]) || (useLog && (ptY[i] <= 0 || xv <= 0))) return;
+          ctx.beginPath(); ctx.arc(px(xv), py(ptY[i]), 4.5, 0, Math.PI*2);
           ctx.fill(); ctx.stroke();
         });
 
@@ -15029,19 +15058,25 @@ function runRegression(txt) {
 
         // ── Axis variable labels ───────────────────────────────────────────
         ctx.textAlign = 'center'; ctx.fillStyle = axCol; ctx.font = '9px sans-serif';
-        const xAxisLabel = xVars.length > 1 ? xVarSel + ' (others at mean)' : xVarSel;
+        const xAxisLabel = _parity ? ('observed ' + yVar)
+                         : (xVars.length > 1 ? xVarSel + ' (others at mean)' : xVarSel);
         ctx.fillText(xAxisLabel, PAD.l + pw/2, H - 5);
         ctx.save(); ctx.translate(12, PAD.t + ph/2); ctx.rotate(-Math.PI/2);
-        ctx.fillText(yVar, 0, 0); ctx.restore();
+        ctx.fillText(_parity ? ('fitted ' + yVar) : yVar, 0, 0); ctx.restore();
 
         // ── Legend & stats ─────────────────────────────────────────────────
         ctx.textAlign = 'left'; ctx.font = '9px sans-serif';
         const lx = PAD.l + pw - 120, ly = PAD.t + 10;
         ctx.fillStyle = dataCol; ctx.beginPath(); ctx.arc(lx+5, ly+5, 4, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = axCol; ctx.fillText('data', lx+13, ly+9);
+        ctx.fillStyle = axCol; ctx.fillText(_parity ? 'each point' : (_adjust ? 'data, adjusted' : 'data'), lx+13, ly+9);
         ctx.strokeStyle = fitCol; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, ly+20); ctx.lineTo(lx+12, ly+20); ctx.stroke();
-        ctx.fillStyle = axCol; ctx.fillText('fit' + (sigma2x>0?' ±2σ':''), lx+15, ly+24);
+        ctx.fillStyle = axCol; ctx.fillText((_parity ? '1:1' : 'fit') + (sigma2x>0?' ±2σ':''), lx+15, ly+24);
         if (useLog) { ctx.fillStyle='rgba(150,150,150,.8)'; ctx.font='8px sans-serif'; ctx.fillText('log-log', PAD.l+4, PAD.t+ph-4); }
+        if (_adjust) {
+          ctx.fillStyle='rgba(150,150,150,.9)'; ctx.font='8px sans-serif'; ctx.textAlign='right';
+          ctx.fillText('points adjusted to mean ' + xVars.filter((_,j)=>j!==_xi).join(', '), PAD.l+pw-4, PAD.t+ph-4);
+          ctx.textAlign='left';
+        }
 
         ctx.textAlign = 'left'; ctx.font = '9px monospace'; ctx.fillStyle = axCol;
         ctx.fillText('R²=' + R2.toFixed(4) + '  RMSE=' + fmt2(RMSE), PAD.l+4, PAD.t+12);
