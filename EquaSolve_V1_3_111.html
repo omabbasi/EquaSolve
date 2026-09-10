@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.110</title>
+<title>EquaSolve V1.3.111</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.110</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.111</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.110</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.111</span></div>
       
     </div>
   </div>
@@ -932,6 +932,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
     <button id="solve-btn" class="eq-solve-btn" style="margin:4px 6px 4px 4px;padding:4px 14px;font-size:11px;align-self:center;flex-shrink:0;">▶ Solve</button>
     <div style="width:1px;background:var(--border2);margin:6px 2px;align-self:stretch;flex-shrink:0;"></div>
     <button class="tab active" data-tab="equations">⟨/⟩ Equations</button>
+    <button class="tab" data-tab="fit">⌇ Fit</button>
     <button class="tab" data-tab="diagram">📊 Diagram</button>
     <button class="tab" data-tab="fluids">⬡ Fluids <span class="tab-badge" id="fluid-badge" style="display:none"></span></button>
     <button class="tab" data-tab="units">⊞ Units <span class="tab-badge" id="unit-badge">SI</span></button>
@@ -968,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.110</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.111</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1122,6 +1123,73 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <span class="diag-empty">Solve a system with numbered states (h1+P1, h2+P2 … for P–h; T1+s1 … for T–s) to plot state points.</span>
     </div>
   </div>
+  <!-- Fit (data-driven regression builder) -->
+  <div class="tab-content" id="tab-fit">
+    <style>
+      .fit-step{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+      .fit-step-t{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:8px;}
+      .fit-ta{width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border2);
+              border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;}
+      .fit-note{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.6;}
+      .fit-warn{font-size:11px;color:var(--accent2,#d29922);margin-top:6px;line-height:1.6;}
+      .fit-err{font-size:11px;color:var(--red,#e05252);margin-top:6px;line-height:1.6;}
+      .fit-grid-wrap{overflow:auto;max-height:190px;margin-top:8px;border:1px solid var(--border);border-radius:6px;}
+      .fit-grid{border-collapse:collapse;font-size:11px;width:100%;}
+      .fit-grid th{position:sticky;top:0;background:var(--surface);text-align:left;padding:5px 9px;
+                   border-bottom:1px solid var(--border2);color:var(--accent);font-weight:600;white-space:nowrap;}
+      .fit-grid td{padding:3px 9px;border-bottom:1px solid var(--border);color:var(--dim);white-space:nowrap;}
+      .fit-role{display:flex;gap:10px;align-items:baseline;margin:5px 0;font-size:11px;flex-wrap:wrap;}
+      .fit-role-lbl{color:var(--mute);min-width:92px;}
+      .fit-chip{border:1px solid var(--border2);border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;
+                background:var(--bg);color:var(--dim);font-family:inherit;}
+      .fit-chip.col{border-color:#3fb950;color:#3fb950;}
+      .fit-chip.par{border-color:var(--accent);color:var(--accent);}
+      .fit-chip.dep{border-color:#79c0ff;color:#79c0ff;cursor:default;}
+      .fit-ptable{width:100%;border-collapse:collapse;font-size:11px;}
+      .fit-ptable th{text-align:left;color:var(--mute);font-weight:400;padding:3px 6px;font-size:10px;}
+      .fit-ptable td{padding:3px 6px;}
+      .fit-ptable input{width:90px;background:var(--bg);color:var(--text);border:1px solid var(--border2);
+                        border-radius:4px;padding:3px 7px;font-family:inherit;font-size:11px;}
+      .fit-pname{color:var(--accent);}
+      .fit-pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;
+               font-size:11.5px;line-height:1.65;color:var(--dim);white-space:pre;overflow-x:auto;margin:0;}
+      .fit-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+    </style>
+
+    <div class="ig-info"><strong>Fit</strong> — paste columns, write the model, and this builds the sheet for you.
+      Everything it produces is ordinary EquaSolve text, shown below, so you can read it, edit it, and learn the syntax from it.</div>
+
+    <div class="fit-step">
+      <div class="fit-step-t">1 · Paste data</div>
+      <textarea id="fit-paste" class="fit-ta" rows="6" spellcheck="false"
+        placeholder="Paste straight from Excel &#8212; two or more columns, header row optional.&#10;&#10;Cs&#9;rate&#10;0.2&#9;1.08&#10;0.02&#9;0.55&#10;0.01&#9;0.38"></textarea>
+      <div id="fit-data-status" class="fit-note">Nothing pasted yet.</div>
+      <div id="fit-grid-wrap" class="fit-grid-wrap" style="display:none"><table class="fit-grid" id="fit-grid"></table></div>
+    </div>
+
+    <div class="fit-step">
+      <div class="fit-step-t">2 · Model</div>
+      <input id="fit-model" class="fit-ta" spellcheck="false" style="font-size:12.5px"
+             placeholder="rate = Vmax*Cs/(KM+Cs)">
+      <div id="fit-roles"></div>
+      <div id="fit-model-msg"></div>
+    </div>
+
+    <div class="fit-step">
+      <div class="fit-step-t">3 · Initial guesses <span style="text-transform:none;letter-spacing:0">— optional; leave blank to search automatically</span></div>
+      <div id="fit-params"><div class="fit-note">Parameters appear here once the model names something that is not a column.</div></div>
+    </div>
+
+    <div class="fit-step">
+      <div class="fit-step-t">4 · Generated sheet</div>
+      <pre class="fit-pre" id="fit-preview">Paste data and write a model to see the sheet.</pre>
+      <div class="fit-actions">
+        <button class="btn-secondary" id="fit-insert">⤓ Insert into editor</button>
+        <button class="btn-secondary" id="fit-solve">▶ Insert and solve</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Guesses -->
   <div class="tab-content" id="tab-guesses">
     <div class="ig-info"><strong>Initial Guesses</strong> — Override starting values for variables in coupled nonlinear systems.</div>
@@ -16463,6 +16531,270 @@ function _renderSweepTable({sweep, results, outputVars, cols, fmtSweep}) {
       }catch(err){ /* never let the safety net throw */ }
     }, false);
   }catch(e){}
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+//  FIT TAB (V1.3.111) — builds a regression sheet from pasted columns
+// ═══════════════════════════════════════════════════════════════════
+// This is a GENERATOR, not a second solver. Everything it does ends as
+// ordinary EquaSolve text in the editor, run by the same engine as a
+// hand-written sheet. That is deliberate: a GUI with its own fitting path
+// would be a second source of truth, and this file has already paid for
+// that mistake once, in the two argument conventions of fit() itself.
+(function(){
+  const $ = id => document.getElementById(id);
+  const elPaste = $('fit-paste'), elModel = $('fit-model');
+  if (!elPaste || !elModel) return;
+
+  const IDENT = /^[A-Za-z_]\w*$/;
+  let cols = [];                 // [{name, unit, values[]}]
+  const forcedParam = new Set(); // columns the user demoted to "fit this"
+  const guesses = {};            // name -> {g, lo, hi} as typed
+  let paramKey = '';             // rebuild the guess table only when the set changes
+
+  // ── Column parsing ────────────────────────────────────────────────
+  function cleanName(raw, i){
+    let unit = null, n = String(raw == null ? '' : raw).trim();
+    const m = n.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);   // "Cs [mol/L]"
+    if (m) { n = m[1].trim(); unit = m[2].trim(); }
+    n = n.replace(/[^\w]/g, '_').replace(/^(\d)/, 'c$1');
+    if (!IDENT.test(n)) n = 'c' + (i + 1);
+    return { name: n, unit: unit };
+  }
+  function numify(cell){
+    const t = String(cell == null ? '' : cell).replace(/[^0-9eE+\-.]/g, '');
+    return t === '' ? NaN : parseFloat(t);
+  }
+  function parseColumns(text){
+    const lines = String(text || '').split(/\r?\n/).filter(l => l.trim() !== '');
+    if (!lines.length) return [];
+    const useTab = lines.some(l => l.indexOf('\t') >= 0);
+    const useCom = !useTab && lines.some(l => l.indexOf(',') >= 0);
+    const cut = l => useTab ? l.split('\t') : useCom ? l.split(',') : l.trim().split(/\s+/);
+    const rows = lines.map(l => cut(l).map(c => c.trim()));
+    const width = rows.reduce((w, r) => Math.max(w, r.length), 0);
+    if (width < 2) return [];
+    const looksNum = v => v !== '' && isFinite(numify(v));
+    const hasHeader = rows[0].some(c => c !== '' && !looksNum(c));
+    const names = hasHeader ? rows[0] : rows[0].map((_, i) => 'c' + (i + 1));
+    const body  = hasHeader ? rows.slice(1) : rows;
+    const out = [];
+    for (let i = 0; i < width; i++){
+      const meta = cleanName(names[i], i);
+      out.push({ name: meta.name, unit: meta.unit, values: body.map(r => numify(r[i])) });
+    }
+    // A name can repeat after sanitising; make them unique so the sheet is valid.
+    const seen = {};
+    out.forEach(c => { if (seen[c.name] != null) { seen[c.name]++; c.name += '_' + seen[c.name]; } else seen[c.name] = 1; });
+    return out.filter(c => c.values.some(v => isFinite(v)));
+  }
+
+  // ── Model reading: identifiers come from the app's own parser, so the
+  //    classification can never drift from what the solver actually sees ──
+  function identsOf(expr){
+    let ast;
+    try { ast = parse(expr); } catch(e) { return null; }
+    const found = new Set();
+    (function walk(n){
+      if (!n || typeof n !== 'object') return;
+      if (n.t === 'V') { found.add(n.n); return; }
+      if (n.t === 'F') { (n.args || []).forEach(walk); return; }
+      walk(n.L); walk(n.R);
+    })(ast);
+    if (typeof CONSTS !== 'undefined') found.forEach(n => { if (n in CONSTS) found.delete(n); });
+    return found;
+  }
+
+  // True when two names differ by a single insertion, deletion or substitution.
+  function _oneApart(a, b){
+    if (a === b) return false;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    if (la === lb){
+      let d = 0;
+      for (let i = 0; i < la; i++) if (a[i] !== b[i] && ++d > 1) return false;
+      return d === 1;
+    }
+    const s1 = la < lb ? a : b, s2 = la < lb ? b : a;
+    let i = 0, j = 0, skips = 0;
+    while (i < s1.length && j < s2.length){
+      if (s1[i] === s2[j]){ i++; j++; }
+      else if (++skips > 1) return false;
+      else j++;
+    }
+    return true;
+  }
+
+  function analyze(){
+    const raw = (elModel.value || '').trim();
+    const colNames = cols.map(c => c.name);
+    const a = { ok:false, dep:null, indep:[], params:[], rhs:'', msg:'', level:'note' };
+    if (!cols.length) { a.msg = 'Paste some data first.'; return a; }
+    if (!raw)        { a.msg = 'Write the model, for example  ' + (colNames[1] || 'y') + ' = a*' + (colNames[0] || 'x') + '^b'; return a; }
+
+    let lhs = '', rhs = raw;
+    const eq = raw.indexOf('=');
+    if (eq > 0 && IDENT.test(raw.slice(0, eq).trim())) { lhs = raw.slice(0, eq).trim(); rhs = raw.slice(eq + 1).trim(); }
+    const ids = identsOf(rhs);
+    if (!ids) { a.msg = 'That expression could not be read.'; a.level = 'err'; return a; }
+
+    let dep = lhs;
+    if (!dep){
+      const unused = colNames.filter(n => !ids.has(n));
+      if (unused.length === 1){ dep = unused[0]; a.msg = 'Dependent variable taken as "' + dep + '" \u2014 the column the model does not use.'; }
+      else { a.msg = 'Start the model with the measured quantity, for example  ' + (colNames[colNames.length-1] || 'y') + ' = \u2026'; return a; }
+    }
+    if (colNames.indexOf(dep) < 0){ a.msg = '"' + dep + '" is not one of the pasted columns (' + colNames.join(', ') + ').'; a.level = 'err'; return a; }
+
+    ids.forEach(n => {
+      if (n === dep) return;
+      if (colNames.indexOf(n) >= 0 && !forcedParam.has(n)) a.indep.push(n);
+      else a.params.push(n);
+    });
+    a.indep.sort(); a.params.sort();
+    if (!a.params.length){ a.msg = 'Nothing to fit \u2014 every name in the model is a data column.'; a.level = 'warn'; return a; }
+
+    // A mistyped column name is indistinguishable from a parameter -- both are
+    // "a name with no data behind it" -- so it silently becomes something to fit
+    // and quietly eats a degree of freedom. Say so when a fitted name is one
+    // character away from a column that is going unused.
+    if (!a.msg){
+      const unusedCols = colNames.filter(n => n !== dep && a.indep.indexOf(n) < 0);
+      for (const p of a.params){
+        const hit = unusedCols.find(c => _oneApart(p, c));
+        if (hit){ a.msg = '"' + p + '" is not a column — did you mean "' + hit + '"? It is being fitted as a parameter.'; a.level = 'warn'; break; }
+      }
+    }
+    a.dep = dep; a.rhs = rhs; a.ok = true;
+    return a;
+  }
+
+  // ── Sheet generation ──────────────────────────────────────────────
+  function buildSheet(a){
+    if (!a.ok) return '';
+    const byName = {}; cols.forEach(c => byName[c.name] = c);
+    const used = a.indep.concat([a.dep]);
+    const len = used.reduce((m, n) => Math.max(m, byName[n].values.length), 0);
+    const keep = [];
+    for (let i = 0; i < len; i++) if (used.every(n => isFinite(byName[n].values[i]))) keep.push(i);
+
+    const arr = n => n + '_data';
+    const lines = [];
+    lines.push('// Built from the Fit tab \u2014 ' + keep.length + ' points, ' + a.params.length + ' parameter' + (a.params.length === 1 ? '' : 's'));
+    used.forEach(n => lines.push(arr(n) + ' = [' + keep.map(i => byName[n].values[i]).join(', ') + ']'));
+    lines.push('');
+    lines.push(a.dep + ' = ' + a.rhs);
+    // Grouped positional form: every data column first, then every variable.
+    lines.push('fit(' + a.indep.map(arr).concat([arr(a.dep)]).concat(a.indep).concat([a.dep]).join(', ') + ')');
+    a.params.forEach(p => {
+      const g = guesses[p] || {};
+      const num = v => (v == null || String(v).trim() === '') ? null : String(v).trim();
+      const G = num(g.g), LO = num(g.lo), HI = num(g.hi);
+      let call = 'free()';
+      if (G != null && LO != null && HI != null) call = 'free(' + G + ', ' + LO + ', ' + HI + ')';
+      else if (G != null)                        call = 'free(' + G + ')';
+      else if (LO != null && HI != null)         call = 'free(' + LO + ', ' + HI + ')';
+      lines.push(p + ' = ' + call);
+    });
+    return { text: lines.join('\n'), n: keep.length };
+  }
+
+  // ── Rendering ─────────────────────────────────────────────────────
+  function renderGrid(){
+    const wrap = $('fit-grid-wrap'), tbl = $('fit-grid'), st = $('fit-data-status');
+    if (!cols.length){ wrap.style.display = 'none'; st.className = 'fit-note'; st.textContent = 'Nothing pasted yet.'; return; }
+    const rows = cols.reduce((m, c) => Math.max(m, c.values.length), 0);
+    const show = Math.min(rows, 12);
+    let h = '<thead><tr>' + cols.map(c => '<th>' + c.name + (c.unit ? ' <span style="color:var(--mute);font-weight:400">[' + c.unit + ']</span>' : '') + '</th>').join('') + '</tr></thead><tbody>';
+    for (let i = 0; i < show; i++)
+      h += '<tr>' + cols.map(c => '<td>' + (isFinite(c.values[i]) ? c.values[i] : '') + '</td>').join('') + '</tr>';
+    if (rows > show) h += '<tr><td colspan="' + cols.length + '" style="color:var(--mute)">\u2026 ' + (rows - show) + ' more row' + (rows - show === 1 ? '' : 's') + '</td></tr>';
+    tbl.innerHTML = h + '</tbody>';
+    wrap.style.display = '';
+    const anyUnit = cols.some(c => c.unit);
+    st.className = 'fit-note';
+    st.innerHTML = rows + ' row' + (rows === 1 ? '' : 's') + ' \u00d7 ' + cols.length + ' column' + (cols.length === 1 ? '' : 's') +
+      ' \u00b7 ' + cols.map(c => c.name).join(', ') +
+      (anyUnit ? '<br><span style="color:var(--accent2,#d29922)">Units in the header are shown but not yet applied \u2014 convert the numbers before pasting.</span>' : '');
+  }
+
+  function renderRoles(a){
+    const roles = $('fit-roles'), msg = $('fit-model-msg');
+    msg.className = a.level === 'err' ? 'fit-err' : a.level === 'warn' ? 'fit-warn' : 'fit-note';
+    msg.textContent = a.msg || '';
+    if (!a.dep && !a.indep.length && !a.params.length){ roles.innerHTML = ''; return; }
+    const chip = (n, cls, title) => '<button class="fit-chip ' + cls + '" data-name="' + n + '" title="' + title + '">' + n + '</button>';
+    let h = '';
+    if (a.dep) h += '<div class="fit-role"><span class="fit-role-lbl">dependent</span>' + chip(a.dep, 'dep', 'the measured quantity') + '</div>';
+    if (a.indep.length) h += '<div class="fit-role"><span class="fit-role-lbl">independent</span>' +
+      a.indep.map(n => chip(n, 'col', 'a pasted column \u2014 click to fit it as a parameter instead')).join(' ') + '</div>';
+    if (a.params.length) h += '<div class="fit-role"><span class="fit-role-lbl">to fit</span>' +
+      a.params.map(n => chip(n, 'par', cols.some(c => c.name === n) ? 'click to use the pasted column instead' : 'not a column, so it is fitted')).join(' ') + '</div>';
+    roles.innerHTML = h;
+    roles.querySelectorAll('.fit-chip.col, .fit-chip.par').forEach(b => {
+      b.addEventListener('click', () => {
+        const n = b.getAttribute('data-name');
+        if (!cols.some(c => c.name === n)) return;      // no column behind it; nothing to toggle
+        if (forcedParam.has(n)) forcedParam.delete(n); else forcedParam.add(n);
+        refresh();
+      });
+    });
+  }
+
+  function renderParams(a){
+    const box = $('fit-params');
+    const key = a.params.join(',');
+    if (key !== paramKey){
+      paramKey = key;
+      if (!a.params.length){ box.innerHTML = '<div class="fit-note">Parameters appear here once the model names something that is not a column.</div>'; }
+      else {
+        box.innerHTML = '<table class="fit-ptable"><thead><tr><th style="width:120px">parameter</th><th>guess</th><th>lower</th><th>upper</th></tr></thead><tbody>' +
+          a.params.map(p => {
+            const g = guesses[p] || {};
+            const inp = (f, v) => '<input data-p="' + p + '" data-f="' + f + '" value="' + (v == null ? '' : v) + '" placeholder="auto">';
+            return '<tr><td class="fit-pname">' + p + '</td><td>' + inp('g', g.g) + '</td><td>' + inp('lo', g.lo) + '</td><td>' + inp('hi', g.hi) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+        box.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
+          const p = i.getAttribute('data-p'), f = i.getAttribute('data-f');
+          guesses[p] = guesses[p] || {}; guesses[p][f] = i.value;
+          renderPreview(analyze());          // preview only: never re-render while typing
+        }));
+      }
+    }
+  }
+
+  function renderPreview(a){
+    const pre = $('fit-preview');
+    if (!a.ok){ pre.textContent = 'Paste data and write a model to see the sheet.'; return; }
+    const built = buildSheet(a);
+    const df = built.n - a.params.length;
+    pre.textContent = built.text + (df <= 0
+      ? '\n\n// ' + built.n + ' points cannot fit ' + a.params.length + ' parameters \u2014 add data or fix a parameter.'
+      : '');
+  }
+
+  function refresh(){
+    const a = analyze();
+    renderRoles(a); renderParams(a); renderPreview(a);
+  }
+
+  // ── Wiring ────────────────────────────────────────────────────────
+  elPaste.addEventListener('input', () => { cols = parseColumns(elPaste.value); forcedParam.clear(); renderGrid(); refresh(); });
+  elModel.addEventListener('input', refresh);
+
+  function toEditor(andSolve){
+    const a = analyze();
+    if (!a.ok) return;
+    const ta = document.getElementById('eq-input');
+    if (!ta) return;
+    ta.value = buildSheet(a).text;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    const eqTab = document.querySelector('.tab[data-tab="equations"]');
+    if (eqTab) eqTab.click();
+    if (andSolve){ const b = document.getElementById('solve-btn'); if (b) b.click(); }
+  }
+  $('fit-insert').addEventListener('click', () => toEditor(false));
+  $('fit-solve').addEventListener('click',  () => toEditor(true));
 })();
 
 // V1.3.82: mark successful end-of-script so the head watchdog knows the main
