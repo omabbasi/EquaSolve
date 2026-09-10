@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.107</title>
+<title>EquaSolve V1.3.108</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.107</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.108</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.107</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.108</span></div>
       
     </div>
   </div>
@@ -968,7 +968,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.107</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.108</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -2036,7 +2036,8 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
           <div class="help-row"><code>fit(data, x, y)</code><span>Tuple list — 1 input variable</span></div>
           <div class="help-row"><code>fit(y_data, y_model, x_data=x)</code><span>Named form — single input variable</span></div>
           <div class="help-row"><code>fit(y_data, y_model, x1_data=x1, x2_data=x2)</code><span>Named form — multi-input variables</span></div>
-          <div class="help-row"><code>fit(x_data, y_data, x, y)</code><span>Legacy 4-arg form — still supported</span></div>
+          <div class="help-row"><code>fit(x_data, y_data, x, y)</code><span>Separate arrays — 1 input variable</span></div>
+          <div class="help-row"><code>fit(x1_data, x2_data, y_data, x1, x2, y)</code><span>Separate arrays — multi-input (all data first, then all variables)</span></div>
         </div>
         <div class="help-section-label">Free Parameters — 4 forms</div>
         <div class="help-table">
@@ -6905,11 +6906,12 @@ Pr_val = 3.5`},
   {text:`// Regression: Multi-input (Langmuir-Hinshelwood kinetics)
 // Fit k_CH4 and K_H2 in: r = k_CH4 * PCO * PH2^0.5 / (1 + K_H2 * PH2)
 // Two independent variables: PCO and PH2
+// fit() takes every data column first, then every model variable, in order
 PCO_data = [1, 1.8, 4.08, 1, 1, 1, 3, 2, 5, 0.5, 3, 5.5, 1.5, 2, 3.5]
 PH2_data = [1, 1, 1, 0.1, 0.5, 4, 2.5, 0.75, 5, 0.7, 2, 4.5, 1, 1, 1]
 r_data   = [0.0052, 0.0132, 0.03, 0.00495, 0.00742, 0.00525, 0.0181, 0.0147, 0.0238, 0.00369, 0.0192, 0.0273, 0.0108, 0.0145, 0.0253]
 r_CH4 = (k_CH4 * PCO * PH2^0.5) / (1 + K_H2 * PH2)
-fit(r_data, r_CH4, PCO_data=PCO, PH2_data=PH2)
+fit(PCO_data, PH2_data, r_data, PCO, PH2, r_CH4)
 k_CH4 = free(0.01, 0.001, 1)
 K_H2  = free(1.5, 0.01, 10)`},
   // ── Combustion examples ──────────────────────────────────────────────────
@@ -14252,8 +14254,15 @@ function runRegression(txt) {
       // Formats:
       //   fit(data, x, y)                                  — tuple list
       //   fit(x_data, y_data, x, y)                        — single input arrays
+      //   fit(x1_data, x2_data, y_data, x1, x2, y)         — multi-input arrays
       //   fit(y_data, y_model, x_data=x)                   — named single input
       //   fit(y_data, y_model, x1_data=x1, x2_data=x2)     — named multi-input
+      //
+      // V1.3.108: the positional form groups its arguments — every data column
+      // first, then every model variable, paired by position, the last pair being
+      // the quantity fitted. It now takes any number of inputs, so a multi-input
+      // fit no longer has to switch to the named form (which interleaves data and
+      // model instead of grouping them, and so reads by a different rule).
       const fitArgs = fitCall.split(',').map(s => s.trim());
       let xDataArr, yData, xVars, yVar;
 
@@ -14286,15 +14295,45 @@ function runRegression(txt) {
         xDataArr = [dataArr.map(r => r[0])];
         yData    = dataArr.map(r => r[1]);
         xVars    = [fitArgs[1]]; yVar = fitArgs[2];
-      } else if (fitArgs.length === 4) {
-        // fit(x_data, y_data, x_var, y_var) — separate arrays single input
-        const xd = arrays[fitArgs[0]], yd = arrays[fitArgs[1]];
-        if (!xd) throw new Error(`Array '${fitArgs[0]}' not found`);
-        if (!yd) throw new Error(`Array '${fitArgs[1]}' not found`);
-        xDataArr = [xd]; yData = yd;
-        xVars = [fitArgs[2]]; yVar = fitArgs[3];
+      } else if (fitArgs.length >= 4 && fitArgs.length % 2 === 0) {
+        // fit(x1_data, .., y_data, x1, .., y) — grouped: data half, then variable
+        // half, paired by position. The four-argument single-input form is this
+        // rule with one input, so it keeps working unchanged.
+        const half = fitArgs.length / 2;
+        const dataNames = fitArgs.slice(0, half);
+        const varNames  = fitArgs.slice(half);
+
+        // Validate the halves before using them. Previously nothing distinguished
+        // one array argument from another, so swapping the two data columns by
+        // mistake -- fit(y_data, x_data, x, y) -- fitted the wrong thing in
+        // silence. A data name that is not an array, or a variable name that IS
+        // one, means the halves are the wrong way round or of the wrong length.
+        const badData = dataNames.filter(n => !arrays[n]);
+        if (badData.length) {
+          const looksSwapped = varNames.some(n => arrays[n]);
+          throw new Error(
+            `Array '${badData[0]}' not found.\n` +
+            `fit() takes every data column first, then every model variable:\n` +
+            `  fit(${dataNames.length > 1 ? 'x1_data, x2_data, y_data, x1, x2, y' : 'x_data, y_data, x, y'})` +
+            (looksSwapped ? '\nThe data and variable halves look reversed.' : ''));
+        }
+        const varsThatAreArrays = varNames.filter(n => arrays[n]);
+        if (varsThatAreArrays.length) {
+          throw new Error(
+            `'${varsThatAreArrays[0]}' is a data array, but fit() expects a model ` +
+            `variable in that position.\nGive every data column first, then every ` +
+            `model variable: fit(x1_data, x2_data, y_data, x1, x2, y)`);
+        }
+
+        xDataArr = dataNames.slice(0, half - 1).map(n => arrays[n]);
+        yData    = arrays[dataNames[half - 1]];
+        xVars    = varNames.slice(0, half - 1);
+        yVar     = varNames[half - 1];
+
+        const lens = [...xDataArr.map(a => a.length), yData.length];
+        if (new Set(lens).size > 1) throw new Error(`All arrays must have same length (got ${lens.join(', ')})`);
       } else {
-        throw new Error('fit() formats:\n  fit(y_data, y_model, x_data=x)\n  fit(y_data, y_model, x1_data=x1, x2_data=x2)\n  fit(data, x, y)  fit(x_data, y_data, x, y)');
+        throw new Error('fit() formats:\n  fit(data, x, y)\n  fit(x_data, y_data, x, y)\n  fit(x1_data, x2_data, y_data, x1, x2, y)\n  fit(y_data, y_model, x_data=x)\n  fit(y_data, y_model, x1_data=x1, x2_data=x2)');
       }
 
       // Single-var aliases for backward compat
