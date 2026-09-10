@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.111</title>
+<title>EquaSolve V1.3.112</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.111</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.112</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.111</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.112</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.111</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.112</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -14803,8 +14803,21 @@ function runRegression(txt) {
 
       // Residuals plot canvas
       const plotId = 'fit-canvas-' + Date.now();
+      // V1.3.112: with more than one independent variable the plot was hardwired
+      // to the first one, so the others could not be looked at at all. Offer the
+      // choice; the rest are held at their means exactly as before.
+      const xSelHtml = xVars.length > 1
+        ? `<label style="font-size:10px;color:var(--mute);margin-left:auto;display:flex;align-items:center;gap:5px">x-axis
+             <select id="${plotId}-x" style="background:var(--surface);color:var(--dim);border:1px solid var(--border2);
+                     border-radius:5px;padding:2px 6px;font-family:inherit;font-size:10px">
+               ${xVars.map(v => `<option value="${v}">${v}</option>`).join('')}
+             </select></label>`
+        : '';
       const plotHtml = `<div style="margin-top:12px">
-        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Fit &amp; Residuals</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Fit &amp; Residuals</div>
+          ${xSelHtml}
+        </div>
         <canvas id="${plotId}" style="width:100%;aspect-ratio:16/7;border:1px solid var(--border);border-radius:6px;background:var(--bg)"></canvas>
       </div>`;
 
@@ -14848,6 +14861,14 @@ function runRegression(txt) {
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
 
+        // Which independent variable is on the x-axis. Shadows the single-variable
+        // alias above, so everything downstream plots the chosen column.
+        const _selEl = document.getElementById(plotId + '-x');
+        let _xi = _selEl ? xVars.indexOf(_selEl.value) : 0;
+        if (_xi < 0) _xi = 0;
+        const xData   = xDataArr[_xi];
+        const xVarSel = xVars[_xi];
+
         const light = document.documentElement.classList.contains('light');
         const bgCol   = light ? '#f6f8fa' : '#151820';
         const gridCol = light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)';
@@ -14874,13 +14895,13 @@ function runRegression(txt) {
         const xSmooth100 = Array.from({length:100}, (_, i) => iT(Txmin + i/99*(Txmax-Txmin)));
         // For multi-input: hold other x variables at their mean values for the smooth curve
         xVars.forEach((xvn, j) => {
-          if (j > 0) {
+          if (j !== _xi) {
             const mean = xDataArr[j].reduce((s,v) => s+v, 0) / xDataArr[j].length;
             sc_pred[xvn] = mean;
           }
         });
         const ySmooth100 = xSmooth100.map(xv => {
-          sc_pred[xVars[0]] = xv;
+          sc_pred[xVarSel] = xv;
           try { return evalNode(modelAST, sc_pred); } catch(e) { return NaN; }
         });
 
@@ -15008,7 +15029,7 @@ function runRegression(txt) {
 
         // ── Axis variable labels ───────────────────────────────────────────
         ctx.textAlign = 'center'; ctx.fillStyle = axCol; ctx.font = '9px sans-serif';
-        const xAxisLabel = xVars.length > 1 ? xVars[0] + ' (others at mean)' : xVars[0];
+        const xAxisLabel = xVars.length > 1 ? xVarSel + ' (others at mean)' : xVarSel;
         ctx.fillText(xAxisLabel, PAD.l + pw/2, H - 5);
         ctx.save(); ctx.translate(12, PAD.t + ph/2); ctx.rotate(-Math.PI/2);
         ctx.fillText(yVar, 0, 0); ctx.restore();
@@ -15026,6 +15047,8 @@ function runRegression(txt) {
         ctx.fillText('R²=' + R2.toFixed(4) + '  RMSE=' + fmt2(RMSE), PAD.l+4, PAD.t+12);
         return true;
       };
+      const _xSelEl = document.getElementById(plotId + '-x');
+      if (_xSelEl) _xSelEl.addEventListener('change', () => drawFitPlot());
       window._drawFitPlot = drawFitPlot;
       requestAnimationFrame(drawFitPlot);
 
