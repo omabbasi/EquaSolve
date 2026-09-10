@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.108</title>
+<title>EquaSolve V1.3.109</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.108</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.109</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.108</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.109</span></div>
       
     </div>
   </div>
@@ -968,7 +968,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.108</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.109</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4758,6 +4758,29 @@ let _bracketDisplayMap = {};
 // Previously this lived only in the algebraic card renderer; the ODE param cards
 // transcribed the raw source tag next to a scope value that had already been
 // converted to the INPUT basis, producing false cards such as "T0 56.85 K".
+
+// V1.3.109: value+unit for a declared input, as the user wrote it. Derived
+// variables have no bracket entry, so they fall back to the internal value and
+// the inferred label, unchanged.
+function _declaredUncCell(name, internalVal, internalUnc, fallbackUnit) {
+  const c = _declaredCell(name, internalVal, fallbackUnit);
+  let unc = internalUnc;
+  try {
+    const bd = _bracketDisplayMap[name];
+    if (bd && isFinite(internalUnc)) {
+      const f = _bracketConvertInterval(1, bd.unit);
+      if (f !== null && isFinite(f) && f !== 0) unc = internalUnc / f;
+    }
+  } catch(e) {}
+  return { val: c.val, unit: c.unit, unc: unc };
+}
+function _declaredCell(name, internalVal, fallbackUnit) {
+  try {
+    const bd = _bracketCardDisplay(name);
+    if (bd && isFinite(bd.dispVal)) return { val: bd.dispVal, unit: bd.unitLabel || fallbackUnit || '' };
+  } catch(e) {}
+  return { val: internalVal, unit: fallbackUnit || '' };
+}
 function _bracketCardDisplay(v) {
   const bde = _bracketDisplayMap[v];
   if (!bde) return null;
@@ -5005,7 +5028,12 @@ function _seedBracketDimsFromText(rawTxt) {
     const clean = line.replace(/\/\/.*$/, '').trim();
     const eqIdx = clean.indexOf('=');
     if (eqIdx < 0) return;
-    const lhs = clean.slice(0, eqIdx).trim();
+    let lhs = clean.slice(0, eqIdx).trim();
+    // V1.3.109: strip a leading unc/sens/guess so the declaration seeds a dimension
+    // like any other assignment. Without this an uncertain or swept input was
+    // dimension-blind and everything derived from it was mislabelled.
+    const _kwm = lhs.match(/^(?:unc|sens|guess)\s+([a-zA-Z_]\w*)$/i);
+    if (_kwm) lhs = _kwm[1];
     if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
     const bm = clean.slice(eqIdx+1).match(/\[([^\]]+)\]\s*$/);
     if (!bm) return;
@@ -5048,7 +5076,9 @@ function _seedBracketDimsFromText(rawTxt) {
       const clean = line.replace(/\/\/.*$/, '').trim();
       const eqIdx = clean.indexOf('=');
       if (eqIdx < 0) return;
-      const lhs = clean.slice(0, eqIdx).trim();
+      let lhs = clean.slice(0, eqIdx).trim();
+      const _kwm2 = lhs.match(/^(?:unc|sens|guess)\s+([a-zA-Z_]\w*)$/i);
+      if (_kwm2) lhs = _kwm2[1];
       if (!/^[a-zA-Z_]\w*$/.test(lhs)) return;
       if (_varDimCache[lhs]) return;                  // already ground truth
       const rhsRaw = clean.slice(eqIdx + 1);
@@ -6137,6 +6167,22 @@ function _normalizeBracketValue(cv, unitStr){
   if(!isFinite(f) || f <= 0 || Math.abs(f - 1) < 1e-12) return cv;
   return cv * f;
 }
+// V1.3.109: an uncertainty is an interval, not a point on the scale. Converting
+// "unc T = 25 +/- 1 [degC]" with tempIn K must give 298.15 +/- 1, not 298.15 +/-
+// 274.15, so the tag's scale is applied to the interval and its offset is not.
+// For every ratio unit this reduces to the ordinary factor.
+function _bracketConvertInterval(v, unitStr){
+  const a = _bracketConvert(0, unitStr), b = _bracketConvert(1, unitStr);
+  if (a === null || b === null || !isFinite(a) || !isFinite(b)) return null;
+  let d = (b - a) * v;
+  const sc = _storedScaleOfBracketUnit(unitStr);
+  if (sc) {
+    const bs = _basisOfDim(sc.dim);
+    const f = sc.scale / bs;
+    if (isFinite(f) && f > 0) d *= f;
+  }
+  return d;
+}
 const _DIMLESS7 = [0,0,0,0,0,0,0];
 // Walk an AST returning {ok, dim, scale} where scale is "SI units per numeric
 // unit" of the value the expression evaluates to. ok:false means "not
@@ -6567,6 +6613,38 @@ function preprocessBrackets(txt) {
         }
       } catch(e) {}
       return _replaceNumericBracketValuesInLine(lhs + ' = ' + valExpr.trim());
+    }
+    // V1.3.109: `unc F = 100 +/- 5 [N]` and `sens d = 40 [mm]` carry a keyword in
+    // front of the name, so the identifier test below rejected them and the whole
+    // declaration bypassed unit conversion, dimension seeding and scale
+    // normalisation. What was left to handle them was the generic numeric-bracket
+    // pass, which converts only the number directly preceding the tag -- in
+    // "100 +/- 5 [N]" that is the uncertainty, not the value -- and records no
+    // dimension, so anything derived from such an input was mislabelled and, once
+    // it crossed unit families, wrong by the basis ratio (F/A read 10000 where the
+    // rest of the app means 10 kPa).
+    const _kw = lhs.match(/^(unc|sens|guess)\s+([a-zA-Z_]\w*)$/i);
+    if (_kw) {
+      const _bareName = _kw[2];
+      const _kbm = rhs.match(/^([\s\S]+?)\s*\[([^\]]+)\]\s*$/);
+      if (!_kbm) return _replaceNumericBracketValuesInLine(line);
+      const _uRaw = _kbm[2].trim();
+      if (!_knownBracketUnit(_uRaw)) throw new Error('Unknown unit ['+_uRaw+'] in: '+line.trim());
+      let _isFirst = true, _allOk = true;
+      const _convExpr = _kbm[1].replace(/-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/g, (num) => {
+        const v = parseFloat(num);
+        const cv = _isFirst
+          ? _normalizeBracketValue(_bracketConvert(v, _uRaw), _uRaw)   // the value
+          : _bracketConvertInterval(v, _uRaw);                          // its uncertainty
+        _isFirst = false;
+        if (cv === null || !isFinite(cv)) { _allOk = false; return num; }
+        return String(cv);
+      });
+      if (!_allOk) return _replaceNumericBracketValuesInLine(line);
+      const _shownVal = parseFloat(_kbm[1]);
+      if (isFinite(_shownVal)) _bracketDisplayMap[_bareName] = { val: _shownVal, unit: _normDisplayUnit(_canonUnit(_uRaw)) };
+      const _kwComment = line.slice(line.indexOf(clean) + clean.length);
+      return lhs + ' = ' + _convExpr + _kwComment;
     }
     if (!/^[a-zA-Z_]\w*$/.test(lhs)) return _replaceNumericBracketValuesInLine(line);
     const bm = rhs.match(/^([\s\S]+?)\s*\[([^\]]+)\]\s*$/);
@@ -14060,19 +14138,21 @@ function runUncertainty(txt) {
 
       // Input summary
       const inputRows = uncParams.map(p => {
-        const unit = _dimLabelFor(p.name, rhsMap, _bracketUnits);
-        const relUnc = Math.abs(p.value) > 1e-10 ? (p.unc / Math.abs(p.value) * 100).toFixed(2) : '—';
+        const _ic = _declaredUncCell(p.name, p.value, p.unc, _dimLabelFor(p.name, rhsMap, _bracketUnits));
+        const unit = _ic.unit;
+        const relUnc = Math.abs(_ic.val) > 1e-10 ? (_ic.unc / Math.abs(_ic.val) * 100).toFixed(2) : '—';
         return `<div class="var-card">
           <div><span class="var-name">${p.name}</span>${unit?`<div class="var-unit">${unit}</div>`:''}</div>
-          <span class="var-val">${fmt(p.value)} <span style="color:#56d364;font-size:10px">± ${fmt(p.unc)} (${relUnc}%)</span></span>
+          <span class="var-val">${fmt(_ic.val)} <span style="color:#56d364;font-size:10px">± ${fmt(_ic.unc)} (${relUnc}%)</span></span>
         </div>`;
       }).join('');
 
       // Output uncertainty table
       const outRows = outputVars.map(v => {
-        const base = baseScope[v];
-        const du = totalUnc[v];
-        const unit = _dimLabelFor(v, rhsMap, _bracketUnits);
+        const _oc = _declaredUncCell(v, baseScope[v], totalUnc[v], _dimLabelFor(v, rhsMap, _bracketUnits));
+        const base = _oc.val;
+        const du = _oc.unc;
+        const unit = _oc.unit;
         const relUnc = Math.abs(base) > 1e-10 ? (du / Math.abs(base) * 100) : 0;
         const relStr = relUnc < 0.01 ? '<0.01%' : relUnc.toFixed(2)+'%';
 
@@ -14987,21 +15067,27 @@ function runSensitivity(txt) {
       // Base values row header
       const rhsMap = buildRHSMap(txt);
       const colHeaders = sensParams.map(p => {
-        const unit = _dimLabelFor(p.name, rhsMap, _bracketUnits);
-        return `<th>${p.name}<br><span style="font-weight:400;color:var(--mute)">${fmt(p.value)}${unit?' '+unit:''}</span></th>`;
+        const _c = _declaredCell(p.name, p.value, _dimLabelFor(p.name, rhsMap, _bracketUnits));
+        return `<th>${p.name}<br><span style="font-weight:400;color:var(--mute)">${fmt(_c.val)}${_c.unit?' '+_c.unit:''}</span></th>`;
       }).join('');
 
       const rows = outputVars.map(v => {
-        const baseVal = baseScope[v];
-        const unit = _dimLabelFor(v, rhsMap, _bracketUnits);
+        const _rc = _declaredCell(v, baseScope[v], _dimLabelFor(v, rhsMap, _bracketUnits));
+        const baseVal = _rc.val;
+        const unit = _rc.unit;
         const cells = sensParams.map((p, pi) => {
           const s = sensMatrix[pi][v];
           if (!isFinite(s)) return `<td class="sens-zero">—</td>`;
-          const pct = (s * 100).toFixed(1);
+          // V1.3.109: this is the normalized sensitivity coefficient (elasticity) --
+          // dimensionless, 1 for a linear relation and n for y = x^n. It was being
+          // multiplied by 100 and suffixed '%', so a linear relation read 100.0%
+          // where the legend beneath the table says 1% change per 1% change, and
+          // y = x^2 read 201.0% instead of 2.01. Report the coefficient itself.
+          const pct = Math.abs(s) >= 0.001 || s === 0 ? s.toFixed(3) : s.toExponential(1);
           const cls = Math.abs(s) < 0.01 ? 'sens-zero' : s > 0 ? 'sens-pos' : 'sens-neg';
           const barWidth = maxAbs > 0 ? Math.round(Math.abs(s) / maxAbs * 60) : 0;
           const barColor = s > 0 ? '#3fb950' : '#f85149';
-          return `<td class="${cls}">${pct}%`+
+          return `<td class="${cls}">${pct}`+
             `<span class="sens-bar-wrap"><span class="sens-bar" style="width:${barWidth}px;background:${barColor}"></span></span></td>`;
         }).join('');
         return `<tr>
@@ -15025,7 +15111,7 @@ function runSensitivity(txt) {
           </table>
         </div>
         <div style="font-size:10px;color:var(--mute);margin-top:4px;">
-          Values show normalized sensitivity: % change in output per ${(PERTURB*100).toFixed(1)}% change in parameter. 
+          Values show the normalized sensitivity coefficient: % change in output per ${(PERTURB*100).toFixed(1)}% change in parameter, so 1.000 means they change together and 2.000 means the output moves twice as fast. 
           <span class="sens-pos">Green = positive</span> · <span class="sens-neg">Red = negative</span> · bar length = relative magnitude.
         </div>`;
 
