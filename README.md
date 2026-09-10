@@ -2,7 +2,7 @@
 
 **A single-file, browser-based engineering equation solver.**
 
-[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-V1.3.111-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/EquaSolve_V1_3_111.html)
+[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-latest%20build-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/EquaSolve.html)
 &nbsp;
 [![Run it in your browser](https://img.shields.io/badge/%E2%96%B6%20Run%20it%20online-no%20install-f0883e?style=for-the-badge)](https://omabbasi.github.io/EquaSolve/)
 
@@ -160,7 +160,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 |---|---|
 | **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
 | **v1.3.100** — the build behind the paper | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
-| **v1.3.110** — the current release | [10.5281/zenodo.22688531](https://doi.org/10.5281/zenodo.22688531) |
+| **v1.3.111** — the current release | [10.5281/zenodo.22690381](https://doi.org/10.5281/zenodo.22690381) |
 
 **If you are unsure which to use, use the first one** — the all-versions (concept) DOI.
 It is the permanent identifier for EquaSolve as a piece of software, it never changes,
