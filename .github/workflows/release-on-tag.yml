@@ -38,14 +38,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          # The root holds exactly one build; attach it so the release is
+          # self-contained. A second copy goes up under the fixed name
+          # EquaSolve.html so that
+          #   .../releases/latest/download/EquaSolve.html
+          # is a permanent one-click download of whatever the newest build is --
+          # a versioned asset name cannot serve that purpose, because the URL
+          # would have to change every release and the README would go stale.
+          build="$(git show --name-only --format= "refs/tags/$TAG" -- 'EquaSolve_V*.html' | head -n 1)"
+          if [ -n "$build" ]; then
+            git show "refs/tags/$TAG:$build" > "$build"
+            cp "$build" EquaSolve.html
+          else
+            build=""
+          fi
+
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; nothing to do."
+            # Release already exists. Still make sure the fixed-name asset is on
+            # it, so a run dispatched by hand can backfill an older release.
+            if [ -n "$build" ]; then
+              echo "Release $TAG exists; refreshing the fixed-name asset."
+              gh release upload "$TAG" EquaSolve.html --clobber
+            else
+              echo "Release $TAG already exists and no build was found; nothing to do."
+            fi
             exit 0
           fi
-          # The root holds exactly one build; attach it so the release is self-contained.
-          build="$(git show --name-only --format= "refs/tags/$TAG" -- 'EquaSolve_V*.html' | head -n 1)"
-          [ -n "$build" ] && git show "refs/tags/$TAG:$build" > "$build" || build=""
+
           gh release create "$TAG" \
             --title "EquaSolve $TAG" \
             --generate-notes \
-            ${build:+"$build"}
+            ${build:+"$build"} ${build:+EquaSolve.html}

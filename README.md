@@ -2,6 +2,12 @@
 
 **A single-file, browser-based engineering equation solver.**
 
+[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-V1.3.110-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/EquaSolve_V1_3_110.html)
+&nbsp;
+[![Run it in your browser](https://img.shields.io/badge/%E2%96%B6%20Run%20it%20online-no%20install-f0883e?style=for-the-badge)](https://omabbasi.github.io/EquaSolve/)
+
+One file. Download it, double-click it, and it runs — no installation, no internet needed afterwards.
+
 [![Paper DOI](https://img.shields.io/badge/paper-10.5541%2Fijot.1978096-blue)](https://doi.org/10.5541/ijot.1978096)
 [![Software DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22278667.svg)](https://doi.org/10.5281/zenodo.22278667)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green)](LICENSE)
