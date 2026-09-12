@@ -40,11 +40,11 @@ jobs:
         run: |
           # The root holds exactly one build; attach it so the release is
           # self-contained. A second copy goes up under the fixed name
-          # EquaSolve.html so that
+          # EquaSolve.html, which gives a permanent URL for scripts and links
           #   .../releases/latest/download/EquaSolve.html
-          # is a permanent one-click download of whatever the newest build is --
-          # a versioned asset name cannot serve that purpose, because the URL
-          # would have to change every release and the README would go stale.
+          # at the cost of saving as a version-less filename. The README button
+          # therefore points at the VERSIONED asset, so a download arrives named
+          # for the build it is; the step below keeps that URL in step.
           build="$(git show --name-only --format= "refs/tags/$TAG" -- 'EquaSolve_V*.html' | head -n 1)"
           if [ -n "$build" ]; then
             git show "refs/tags/$TAG:$build" > "$build"
@@ -69,3 +69,39 @@ jobs:
             --title "EquaSolve $TAG" \
             --generate-notes \
             ${build:+"$build"} ${build:+EquaSolve.html}
+
+      - name: Point the README download button at this build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          # The button names the build so the downloaded file is
+          # EquaSolve_V1_3_NNN.html rather than a version-less EquaSolve.html.
+          # A versioned URL has to change every release, and a release step that
+          # depends on someone remembering is exactly what went wrong for
+          # v1.3.101 through v1.3.103 -- so it is done here instead.
+          build="$(git show --name-only --format= "refs/tags/$TAG" -- 'EquaSolve_V*.html' | head -n 1)"
+          [ -n "$build" ] || { echo "No build in $TAG; leaving the README alone."; exit 0; }
+
+          # Drop the working copies made above before moving off the tag.
+          rm -f EquaSolve.html
+          git checkout --quiet -- . 2>/dev/null || true
+          git fetch --quiet origin main
+          git checkout --quiet -B main origin/main
+
+          ver="${TAG#v}"
+          line="[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-V${ver}-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/${build})"
+          awk -v repl="$line" '/^\[!\[Download EquaSolve\]/{print repl; next} {print}' README.md > README.tmp
+          mv README.tmp README.md
+
+          if git diff --quiet -- README.md; then
+            echo "README button already points at $build."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit --quiet -m "Point the download button at $TAG"
+          git push --quiet origin main
+          echo "README button now points at $build."

@@ -43,10 +43,13 @@ When a new build is produced:
 3. Copy the same file into `Archive/` under that name.
 4. Commit with the version as the subject line (e.g. `v1.3.98`), then `git tag v1.3.98`.
 5. Bump the version strings in `README.md` and `version:` in `CITATION.cff`.
-   The **Download button** at the top of `README.md` needs no bump: since v1.3.111
-   every release also carries a copy under the fixed name `EquaSolve.html`, and the
-   button points at `.../releases/latest/download/EquaSolve.html`, which always
-   resolves to the newest build. Leave that URL alone.
+   The **Download button** at the top of `README.md` names the build, so a download
+   saves as `EquaSolve_V1_3_NNN.html` rather than a version-less `EquaSolve.html`.
+   That URL is rewritten automatically by the release workflow right after the
+   release is created, which pushes a one-line commit to `main` — so do not bump it
+   by hand, and expect that commit to appear. Every release still carries a copy
+   under the fixed name `EquaSolve.html` as well, giving
+   `.../releases/latest/download/EquaSolve.html` as a permanent link for scripts.
 6. Push `main` **and the tag** (`git push origin main --tags`).
 7. **Create a GitHub Release from the tag** — the tag alone is not a release. Without
    this the sidebar "Latest" badge stays on the previous version and, more importantly,

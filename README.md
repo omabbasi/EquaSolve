@@ -2,7 +2,7 @@
 
 **A single-file, browser-based engineering equation solver.**
 
-[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-latest%20build-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/EquaSolve.html)
+[![Download EquaSolve](https://img.shields.io/badge/%E2%AC%87%20Download%20EquaSolve-V1.3.113-2ea44f?style=for-the-badge)](https://github.com/omabbasi/EquaSolve/releases/latest/download/EquaSolve_V1_3_113.html)
 &nbsp;
 [![Run it in your browser](https://img.shields.io/badge/%E2%96%B6%20Run%20it%20online-no%20install-f0883e?style=for-the-badge)](https://omabbasi.github.io/EquaSolve/)
 
