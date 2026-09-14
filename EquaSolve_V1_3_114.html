@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.113</title>
+<title>EquaSolve V1.3.114</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.113</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.114</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.113</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.114</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.113</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.114</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -8834,8 +8834,19 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     // solution. Done here rather than at each of the fourteen show-sites so every
     // algebraic mode (sweep, 2D sweep, optimizer, Pareto, sensitivity, fit) is
     // covered by one rule.
-    if (type === 'ode') $algZone.classList.remove('visible');
-    else                $odeZone.classList.remove('visible');
+    //
+    // V1.3.114: that rule knew about two zones and there are three. The 1D sweep,
+    // the 2D sweep and Pareto all draw into #sweep-zone, which neither branch
+    // touched, so an ODE solved after a sweep appeared with the old sweep plot
+    // still beneath it -- reading as part of the new solution, the exact failure
+    // V1.3.97 set out to prevent. Extending the list to three would go stale the
+    // next time a mode or zone is added. Instead hide every zone here: each
+    // renderer adds 'visible' to its own zone when it draws, so nothing needs to
+    // know which mode owns which zone.
+    $algZone.classList.remove('visible');
+    $odeZone.classList.remove('visible');
+    const _sweepZone = document.getElementById('sweep-zone');
+    if (_sweepZone) _sweepZone.classList.remove('visible');
     if(type==='ode')    runODESolver(txt);
     else if(type==='sweep')  runParametricSweep(txt);
     else if(type==='sweep2d') run2DSweep(txt);
@@ -8962,6 +8973,12 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     if(sliderRerunTimer){clearTimeout(sliderRerunTimer);sliderRerunTimer=null;}
     window._odeSliderRerun=false;
     $in.value=''; updateLN(); updateTypeBadge(); updateValidationStatus(); resetAlgRes();
+    // V1.3.114: New kept its own hand-written reset, which hid the algebraic and
+    // ODE zones but not the sweep zone, the sliders, the unit advisory or the
+    // diagram panel -- so a sweep plot survived "Clear current equations and start
+    // fresh". clearResults() already does all of it and is what Load uses; the two
+    // resets had simply drifted apart. Call the complete one.
+    clearResults();
     autoResizeTA(); renderHighlight(); _hlErrorLine = -1; _hlErrToken = null;
     $algZone.classList.remove('visible');
     $odeZone.classList.remove('visible');
