@@ -4,10 +4,11 @@
 
 EquaSolve is a general engineering equation solver distributed as **one self-contained
 HTML file** — no build step, no dependencies, no server. Open the release at the repo
-root (currently `EquaSolve_V1_3_114.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
-Bahrain. The accompanying paper was **accepted** in the *International Journal of
-Thermodynamics*, `doi:10.5541/ijot.1978096`. State it as **accepted** — the issue
-appears in **December 2026**.
+root (currently `EquaSolve_V1_3_115.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
+Bahrain. The accompanying paper is published in the *International Journal of
+Thermodynamics*, **Vol. 29 (No. 4), pp. 325–338, 2026**, `doi:10.5541/ijot.1978096`.
+Cite it with volume, issue and pages. The issue goes online on **1 December 2026**, so the
+DOI returns not-found before that date — that is expected, not a broken link.
 
 **The paper's results were computed with `v1.3.100`** (Zenodo version DOI
 `10.5281/zenodo.22278668`) — confirmed by the author, 8 Sep 2026. That is the build to
@@ -19,12 +20,13 @@ converted. **The author confirmed on 8 Sep 2026 that none of the paper's example
 affected** — they stay inside a single unit family. The published results stand; do not
 re-open this.
 
-**Pending, December 2026:** volume, issue and page numbers do not exist yet. When the
-issue is published, add them in three places — the citation block in `README.md`
-(prose + BibTeX), `preferred-citation` in `CITATION.cff` (and drop its `notes` field),
-and the Citation card on the About page of the current build (an app change, so it ships
-as a version bump). The DOI does not resolve until the publisher registers it; check
-`https://doi.org/10.5541/ijot.1978096` before assuming metadata is available.
+**Done, 25 Sep 2026:** the final typeset article (`../Manuscript/3-1978096-Final.pdf`)
+assigned Vol. 29 (No. 4), pp. 325–338, 2026, published online 1 December 2026. Those
+details were applied in all three places — the citation block in `README.md` (prose +
+BibTeX), `preferred-citation` in `CITATION.cff` (its `notes` field dropped), and the
+Citation card on the About page, which shipped as v1.3.115. Nothing further is pending
+except the DOI itself, which stays not-found until 1 December 2026; there is no Crossref
+record before then either, so do not treat the 404 as an error.
 
 ## How development actually happens
 
