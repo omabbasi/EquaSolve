@@ -146,6 +146,16 @@ Live values, first archived 3 Sep 2026 from release `v1.3.100`:
   release. This is the one to put in README badges, `CITATION.cff`, and the app.
 - **Version DOI `10.5281/zenodo.22278668`** — release `v1.3.100` only.
 
+**Archiving stopped working on 25 Sep 2026.** Release `v1.3.115` was published normally
+(not a draft, assets attached, created by the same workflow as v1.3.113 and v1.3.114,
+which archived within seconds) and Zenodo was reachable, but no record appeared after
+38 minutes of polling. The usual cause is Zenodo's GitHub authorisation lapsing, which
+silently switches the repository toggle off at zenodo.org/account/settings/github.
+Check that toggle first. Zenodo never backfills, so any release published while it was
+off stays unarchived permanently — the same way v1.3.101–v1.3.103 were lost, for a
+different reason. After restoring it, the next release archives normally; v1.3.115 will
+not, unless it is re-released under a new version.
+
 Every future GitHub Release mints a **new version DOI**; the concept DOI never changes.
 So after each release, add the new version DOI to `identifiers` in `CITATION.cff` and to
 the README table, and leave the concept DOI alone.
