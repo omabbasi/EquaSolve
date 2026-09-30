@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.115</title>
+<title>EquaSolve V1.3.116</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.115</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.116</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.115</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.116</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.115</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.116</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4698,7 +4698,7 @@ function dimToLabel(dim) {
   if (eq([1,0,-3,0,0,0,0]))      return 'W/m²';       // heat flux
   if (eq([1,-1,-3,0,0,0,0]))     return 'W/m³';       // volumetric heat gen
   if (eq([1,-3,0,0,0,0,0]))      return 'kg/m³';      // density
-  if (eq([1,-2,-2,0,0,0,0]))     return 'N/m²';       // stress (= Pa)
+  if (eq([1,-2,-2,0,0,0,0]))     return 'N/m³';       // specific weight (rho*g); stress is [1,-1,-2]
   // ── Fallback: build label from dim vector ──────────────────────
   // V1.3.11: always build a label from the dim vector — even for "complex" dims.
   // Suppressing them (as the V1.3.5 filter did) hides useful information.
@@ -6318,48 +6318,311 @@ function _dimScaleNode(nd){
 }
 // Source-to-source pass: fold the correction factor into each explicit
 // assignment whose arithmetic landed off its dimension's basis.
+// V1.3.116: the normalizer works on whole EQUATIONS, not just assignments.
+//
+// V1.3.104 rewrote a line of the form "v = expr" by multiplying the whole
+// right-hand side by one factor. That left two holes, both of which produced
+// wrong numbers in a real sheet:
+//
+//   * A sum whose terms sit on different scales cannot be fixed by one factor
+//     at the top, so the old code gave up and left the raw arithmetic in place.
+//     "Frx = P1*A1 - m*(V2*cos(th)-V1)" then subtracted newtons from kilonewtons
+//     and returned -222.857 N where the answer is 2059.44 N -- while each term
+//     computed on its own was correct.
+//
+//   * An implicit equation has no assignment to rewrite at all, so it was
+//     skipped entirely. A pressure solved from
+//     "P1/gamma + V1^2/(2*g) + z1 = P2/gamma + V2^2/(2*g) + z2" came out on the
+//     raw pascal scale while its label used the kPa display basis: 202175.516
+//     displayed as kPa, a factor of 1000 out.
+//
+// Both follow from the same thing: the old pass could only express "this whole
+// side is off by k". What is actually needed is that EVERY subexpression sits on
+// the basis for its own dimension. _normExpr does that recursively -- a product
+// carries the factor that moves it from its inputs' bases to its own, a sum needs
+// no factor because both operands already sit on the shared basis, and a solved
+// unknown lands on its dimension's basis because every term around it does.
+//
+// For an implicit equation the unknown's dimension is not known in advance, so
+// it is inferred first: one side fixes the equation's dimension, and the term
+// holding the unknown is divided through by the parts that are known.
+//
+// Safety is unchanged: anything with an unknown dimension leaves its line
+// untouched, and a line is only rewritten when a factor is actually needed, so
+// sheets without [unit] brackets are bit-identical.
+
+function _emitNode(nd){
+  if(!nd) return '';
+  if(nd.t==='N') return (nd.v < 0 ? '('+nd.v+')' : String(nd.v));
+  if(nd.t==='V') return nd.n;
+  if(nd.t==='U') return '(-'+_emitNode(nd.R)+')';
+  if(nd.t==='F') return nd.fn+'('+(nd.args||[]).map(_emitNode).join(',')+')';
+  if(nd.t==='B') return '('+_emitNode(nd.L)+nd.op+_emitNode(nd.R)+')';
+  return '';
+}
+function _hasVarNode(nd, name){
+  if(!nd) return false;
+  if(nd.t==='V') return nd.n === name;
+  if(nd.t==='U') return _hasVarNode(nd.R, name);
+  if(nd.t==='F') return (nd.args||[]).some(a => _hasVarNode(a, name));
+  if(nd.t==='B') return _hasVarNode(nd.L, name) || _hasVarNode(nd.R, name);
+  return false;
+}
+function _collectVarNames(nd, out){
+  if(!nd) return out;
+  if(nd.t==='V'){ out.add(nd.n); return out; }
+  if(nd.t==='U') return _collectVarNames(nd.R, out);
+  if(nd.t==='F'){ (nd.args||[]).forEach(a => _collectVarNames(a, out)); return out; }
+  if(nd.t==='B'){ _collectVarNames(nd.L, out); _collectVarNames(nd.R, out); }
+  return out;
+}
+// Dimension only, ignoring scale. A sum whose terms sit on different scales
+// still has a well-defined dimension, and the inference below needs to ask that
+// question; _dimScaleNode refuses such sums, which is correct when deciding how
+// to rewrite them but wrong when merely asking "what dimension is this side?".
+function _knownDimOf(nd){
+  if(!nd) return null;
+  if(nd.t==='N') return _DIMLESS7.slice();
+  if(nd.t==='V'){
+    if(typeof _varDimCache !== 'undefined' && _varDimCache && (nd.n in _varDimCache)) return _varDimCache[nd.n].slice();
+    if(typeof CONSTS_DIMS !== 'undefined' && (nd.n in CONSTS_DIMS)) return CONSTS_DIMS[nd.n].slice();
+    if(typeof CONSTS !== 'undefined' && (nd.n in CONSTS)) return _DIMLESS7.slice();
+    return null;
+  }
+  if(nd.t==='U') return _knownDimOf(nd.R);
+  if(nd.t==='F'){
+    const fn = String(nd.fn||'').toLowerCase();
+    const ad = (nd.args||[]).map(_knownDimOf);
+    if(ad.some(d => !d)) return null;
+    if(/^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc)$/.test(fn)) return _DIMLESS7.slice();
+    if(fn==='sqrt') return ad[0].map(x => x/2);
+    if(fn==='abs' || fn==='min' || fn==='max') return ad[0].slice();
+    try{ const d = evalDimNode(nd).dim; return d ? d.slice() : null; }catch(e){ return null; }
+  }
+  if(nd.t==='B'){
+    if(nd.op==='^'){
+      const L = _knownDimOf(nd.L); if(!L) return null;
+      if(!nd.R || nd.R.t !== 'N') return L.every(v => v === 0) ? _DIMLESS7.slice() : null;
+      return L.map(x => x * nd.R.v);
+    }
+    const L = _knownDimOf(nd.L), R = _knownDimOf(nd.R);
+    if(!L || !R) return null;
+    if(nd.op==='*') return L.map((x,i) => x + R[i]);
+    if(nd.op==='/') return L.map((x,i) => x - R[i]);
+    if(nd.op==='+' || nd.op==='-') return L.every((x,i) => x === R[i]) ? L.slice() : null;
+    return null;
+  }
+  return null;
+}
+
+// Dimension of `name` such that `nd` carries dimension `want`.
+function _solveDimFor(nd, name, want){
+  if(!nd || !want) return null;
+  if(nd.t==='V') return nd.n === name ? want.slice() : null;
+  if(nd.t==='U') return _solveDimFor(nd.R, name, want);
+  if(nd.t!=='B') return null;
+  const inL = _hasVarNode(nd.L, name), inR = _hasVarNode(nd.R, name);
+  if(inL === inR) return null;                      // in both, or in neither
+  if(nd.op==='+' || nd.op==='-') return _solveDimFor(inL ? nd.L : nd.R, name, want);
+  if(nd.op==='*'){
+    const od = _knownDimOf(inL ? nd.R : nd.L);
+    if(!od) return null;
+    return _solveDimFor(inL ? nd.L : nd.R, name, want.map((w,i) => w - od[i]));
+  }
+  if(nd.op==='/'){
+    if(inL){
+      const od = _knownDimOf(nd.R); if(!od) return null;
+      return _solveDimFor(nd.L, name, want.map((w,i) => w + od[i]));
+    }
+    const od = _knownDimOf(nd.L); if(!od) return null;
+    return _solveDimFor(nd.R, name, od.map((o,i) => o - want[i]));
+  }
+  return null;
+}
+
+// Rewrite an expression so its value sits on the basis for its own dimension.
+// chg records whether any factor was actually inserted.
+function _normExpr(nd){
+  const NO = {ok:false};
+  if(!nd) return NO;
+  if(nd.t==='N') return {ok:true, chg:false, dim:_DIMLESS7.slice(), text:(nd.v < 0 ? '('+nd.v+')' : String(nd.v))};
+  if(nd.t==='V'){
+    if(typeof _varDimCache !== 'undefined' && _varDimCache && (nd.n in _varDimCache))
+      return {ok:true, chg:false, dim:_varDimCache[nd.n].slice(), text:nd.n};
+    if(typeof CONSTS_DIMS !== 'undefined' && (nd.n in CONSTS_DIMS))
+      return {ok:true, chg:false, dim:CONSTS_DIMS[nd.n].slice(), text:nd.n};
+    if(typeof CONSTS !== 'undefined' && (nd.n in CONSTS))
+      return {ok:true, chg:false, dim:_DIMLESS7.slice(), text:nd.n};
+    return NO;
+  }
+  if(nd.t==='U'){
+    const r = _normExpr(nd.R);
+    return r.ok ? {ok:true, chg:r.chg, dim:r.dim, text:'(-'+r.text+')'} : NO;
+  }
+  if(nd.t==='F'){
+    const fn = String(nd.fn||'').toLowerCase();
+    const args = (nd.args||[]).map(_normExpr);
+    if(args.some(a => !a.ok)) return NO;
+    const chg = args.some(a => a.chg);
+    const txt = nd.fn+'('+args.map(a => a.text).join(',')+')';
+    if(/^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc)$/.test(fn))
+      return {ok:true, chg:chg, dim:_DIMLESS7.slice(), text:txt};
+    if(fn==='sqrt'){
+      const d = args[0].dim.map(x => x/2);
+      const f = Math.sqrt(_basisOfDim(args[0].dim)) / _basisOfDim(d);
+      if(!isFinite(f) || f <= 0) return NO;
+      const near1 = Math.abs(f - 1) < 1e-12;
+      return {ok:true, chg:chg || !near1, dim:d, text:(near1 ? txt : '(('+txt+')*'+f+')')};
+    }
+    if(fn==='abs' || fn==='min' || fn==='max')
+      return {ok:true, chg:chg, dim:args[0].dim.slice(), text:txt};
+    // Property functions return a value already on its dimension's basis.
+    try{
+      const d = evalDimNode(nd).dim;
+      if(d) return {ok:true, chg:chg, dim:d.slice(), text:txt};
+    }catch(e){}
+    return NO;
+  }
+  if(nd.t==='B'){
+    if(nd.op==='^'){
+      const L = _normExpr(nd.L);
+      if(!L.ok) return NO;
+      if(!nd.R || nd.R.t !== 'N'){
+        return L.dim.every(v => v === 0)
+          ? {ok:true, chg:L.chg, dim:_DIMLESS7.slice(), text:'('+L.text+'^'+_emitNode(nd.R)+')'}
+          : NO;
+      }
+      const e = nd.R.v, d = L.dim.map(x => x*e);
+      const f = Math.pow(_basisOfDim(L.dim), e) / _basisOfDim(d);
+      if(!isFinite(f) || f <= 0) return NO;
+      const t = '('+L.text+'^'+e+')', near1 = Math.abs(f - 1) < 1e-12;
+      return {ok:true, chg:L.chg || !near1, dim:d, text:(near1 ? t : '(('+t+')*'+f+')')};
+    }
+    const L = _normExpr(nd.L), R = _normExpr(nd.R);
+    if(!L.ok || !R.ok) return NO;
+    if(nd.op==='+' || nd.op==='-'){
+      // Both operands are already on the shared basis, so a sum needs no factor.
+      if(!L.dim.every((d,i) => d === R.dim[i])) return NO;
+      return {ok:true, chg:L.chg || R.chg, dim:L.dim.slice(), text:'('+L.text+nd.op+R.text+')'};
+    }
+    if(nd.op==='*' || nd.op==='/'){
+      const d = nd.op==='*' ? L.dim.map((x,i) => x + R.dim[i])
+                            : L.dim.map((x,i) => x - R.dim[i]);
+      const nat = nd.op==='*' ? _basisOfDim(L.dim) * _basisOfDim(R.dim)
+                              : _basisOfDim(L.dim) / _basisOfDim(R.dim);
+      const f = nat / _basisOfDim(d);
+      if(!isFinite(f) || f <= 0) return NO;
+      const t = '('+L.text+nd.op+R.text+')', near1 = Math.abs(f - 1) < 1e-12;
+      return {ok:true, chg:L.chg || R.chg || !near1, dim:d, text:(near1 ? t : '(('+t+')*'+f+')')};
+    }
+    return NO;
+  }
+  return NO;
+}
+
 function _normalizeUnitScales(txt, origTxt){
   try{
     if(typeof parse !== 'function' || typeof _varDimCache === 'undefined') return txt;
     try{ _seedBracketDimsFromText(origTxt || ''); }catch(e){}
+    // Labels are built from _varDimCache, so this pass must not widen it: the
+    // richer inference below exists to decide how to rewrite equations, not how
+    // results are labelled. Snapshot it here and restore it at the end, keeping
+    // exactly the entries V1.3.104 recorded -- without this a sensitivity or
+    // uncertainty sheet silently lost a unit label on a derived variable.
+    const _cacheSnapshot = Object.assign({}, _varDimCache);
+    // A unit that parses to no dimension -- [deg], [rad], [%] -- states that the
+    // variable IS dimensionless, which is different from a bare "Q = 10" that
+    // merely fails to say. _seedBracketDimsFromText skips both. Record the
+    // stated ones, or a term like cos(th) stays dimension-blind and its whole
+    // equation goes unnormalised.
+    try{
+      String(origTxt || '').split('\n').forEach(l => {
+        const mm = l.replace(/\/\/.*$/, '').match(/^\s*(?:unc\s+|sens\s+|guess\s+)?([a-zA-Z_]\w*)\s*=[^=]*\[([^\]]+)\]\s*$/);
+        if(!mm) return;
+        if(mm[1] in _varDimCache) return;
+        const pu = _parseUnitToSI(mm[2].trim());
+        if(pu && pu.dim && pu.dim.every(x => x === 0)) _varDimCache[mm[1]] = _DIMLESS7.slice();
+      });
+    }catch(e){}
     const lines = txt.split('\n');
-    const info  = new Array(lines.length).fill(null);
-    // Three sweeps so dimensions propagate through variables defined later.
-    for(let pass = 0; pass < 3; pass++){
-      for(let i = 0; i < lines.length; i++){
-        if(info[i]) continue;
-        const clean = lines[i].replace(/\/\/.*$/, '');
-        const idx = clean.indexOf('=');
-        if(idx < 0) continue;
-        if(/[<>!=]/.test(clean.charAt(idx-1)) || clean.charAt(idx+1) === '=') continue;
-        const lhs = clean.slice(0, idx).trim();
-        const rhs = clean.slice(idx + 1).trim();
-        if(!/^[a-zA-Z_]\w*$/.test(lhs) || !rhs) continue;
-        if(/\b(free|choice)\s*\(/.test(rhs)) continue;
-        let ast;
-        try{ ast = parse(rhs); }catch(e){ continue; }
-        const r = _dimScaleNode(ast);
-        if(!r.ok) continue;
-        if(!(lhs in _varDimCache) && r.dim.some(v => v !== 0)) _varDimCache[lhs] = r.dim.slice();
-        const b = _basisOfDim(r.dim);
-        const f = r.scale / b;
-        if(!isFinite(f) || f <= 0) continue;
-        info[i] = {factor:f, lhs:lhs, dim:r.dim.slice()};
+
+    // Split each line into its two sides at a top-level '=' (never <=, >=, ==).
+    const eqs = lines.map(line => {
+      const clean = line.replace(/\/\/.*$/, '');
+      let idx = -1;
+      for(let k = 0; k < clean.length; k++){
+        if(clean[k] !== '=') continue;
+        const p = clean[k-1], n = clean[k+1];
+        if(p === '<' || p === '>' || p === '!' || p === '=' || n === '=') continue;
+        idx = k; break;
       }
+      if(idx < 0) return null;
+      const L = clean.slice(0, idx).trim(), R = clean.slice(idx + 1).trim();
+      if(!L || !R) return null;
+      if(/\[/.test(clean)) return null;                          // ranges, tables
+      if(/\b(free|choice)\s*\(/.test(R)) return null;
+      if(/^(minimize|maximize|sens|unc|guess)\b/i.test(L)) return null;
+      if(/'/.test(L)) return null;                               // ODE derivative form
+      let la, ra;
+      try{ la = parse(L); ra = parse(R); }catch(e){ return null; }
+      return {L:L, R:R, la:la, ra:ra};
+    });
+
+    // Infer the dimension of a lone unknown from the rest of its equation, to a
+    // fixed point: one equation's answer often unlocks the next.
+    for(let pass = 0; pass < 5; pass++){
+      let learned = false;
+      eqs.forEach(p => {
+        if(!p) return;
+        const dl = _knownDimOf(p.la), dr = _knownDimOf(p.ra);
+        if(dl && dr) return;
+        const want = dl || dr;
+        if(!want) return;
+        const side = dl ? p.ra : p.la;
+        const unknown = [..._collectVarNames(side, new Set())].filter(n =>
+          !(n in _varDimCache) &&
+          !(typeof CONSTS_DIMS !== 'undefined' && n in CONSTS_DIMS) &&
+          !(typeof CONSTS !== 'undefined' && n in CONSTS));
+        if(unknown.length !== 1) return;
+        const d = _solveDimFor(side, unknown[0], want);
+        // Only a non-trivial dimension is worth learning. A bare "Q_evap = 10"
+        // says nothing about dimension -- the number carries no unit and the
+        // sheet may well mean kW -- so recording it as dimensionless would be a
+        // guess, and it poisons every equation downstream: it turned a mass flow
+        // into [0,-2,2] and put a factor of 1000 through an exergy balance.
+        // V1.3.104 guarded assignments the same way.
+        if(d && d.every(x => isFinite(x)) && d.some(x => x !== 0)){ _varDimCache[unknown[0]] = d; learned = true; }
+      });
+      if(!learned) break;
     }
-    return lines.map((line, i) => {
-      const nfo = info[i];
-      if(!nfo || Math.abs(nfo.factor - 1) < 1e-12) return line;
+
+    const outLines = lines.map((line, i) => {
+      const p = eqs[i];
+      if(!p) return line;
+      const L = _normExpr(p.la), R = _normExpr(p.ra);
+      if(!L.ok || !R.ok) return line;
+      if(!L.dim.every((d,k) => d === R.dim[k])) return line;   // dimensions disagree
+      if(!L.chg && !R.chg) return line;                        // no factor needed
       const cidx = line.indexOf('//');
-      const body = cidx >= 0 ? line.slice(0, cidx) : line;
       const comment = cidx >= 0 ? line.slice(cidx) : '';
-      const idx = body.indexOf('=');
-      const rhsT = body.slice(idx + 1).trim();
-      let label = '';
-      try{ label = (typeof dimToLabel === 'function' ? (dimToLabel(nfo.dim) || '') : ''); }catch(e){}
-      _unitNormNotes.push({lhs:nfo.lhs, factor:nfo.factor, unit:label});
-      return body.slice(0, idx) + '= (' + rhsT + ')*' + nfo.factor + comment;
-    }).join('\n');
+      try{
+        const label = (typeof dimToLabel === 'function' ? (dimToLabel(L.dim) || '') : '');
+        _unitNormNotes.push({lhs:(p.L.length <= 24 ? p.L : p.L.slice(0,22)+'\u2026'), factor:null, unit:label});
+      }catch(e){}
+      return L.text + ' = ' + R.text + comment;
+    });
+
+    // Restore the cache as V1.3.104 left it: the dimension of an explicit
+    // assignment whose right-hand side is fully known, and nothing more.
+    _varDimCache = _cacheSnapshot;
+    for(let pass = 0; pass < 3; pass++){
+      eqs.forEach(p => {
+        if(!p || !/^[a-zA-Z_]\w*$/.test(p.L) || (p.L in _varDimCache)) return;
+        const r = _dimScaleNode(p.ra);
+        if(r.ok && r.dim.some(v => v !== 0)) _varDimCache[p.L] = r.dim.slice();
+      });
+    }
+    return outLines.join('\n');
   }catch(e){ return txt; }
 }
 
@@ -8032,9 +8295,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const key = nt.lhs + '|' + nt.factor;
         if (seen.has(key)) return;
         seen.add(key);
-        warnings.push('<code>' + nt.lhs + '</code> rescaled by &times;' + nt.factor +
+        warnings.push('<code>' + nt.lhs + '</code> rescaled' +
+          (nt.factor ? ' by &times;' + nt.factor : '') +
           ' to land on ' + (nt.unit ? '<code>' + nt.unit + '</code>' : 'its dimension basis') +
-          ' &mdash; its inputs were on a different scale');
+          ' &mdash; its terms were on different scales');
       });
     }
   }catch(e){}
