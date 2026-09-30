@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.118</title>
+<title>EquaSolve V1.3.119</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.118</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.119</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.118</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.119</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.118</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.119</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -8339,6 +8339,13 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
   // V1.3.104: report every scale correction the normalizer applied, so a
   // rescaled equation is visible rather than magic.
+  // V1.3.119: putting routine conversions in the warnings list meant a sheet
+  // that solved perfectly still raised a panel headed with a warning sign, which
+  // reads as a problem. They are kept, because silently rewriting someone's
+  // equation is how a thousand-fold error stayed hidden for three releases, but
+  // they no longer raise the panel by themselves and sit behind a toggle when it
+  // is up for a real reason.
+  const convNotes = [];
   try{
     if (typeof _unitNormNotes !== 'undefined' && _unitNormNotes.length){
       const seen = new Set();
@@ -8346,7 +8353,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const key = nt.lhs + '|' + nt.factor;
         if (seen.has(key)) return;
         seen.add(key);
-        warnings.push('<code>' + nt.lhs + '</code> rescaled' +
+        convNotes.push('<code>' + nt.lhs + '</code> rescaled' +
           (nt.factor ? ' by &times;' + nt.factor : '') +
           ' to land on ' + (nt.unit ? '<code>' + nt.unit + '</code>' : 'its dimension basis') +
           ' &mdash; its terms were on different scales');
@@ -8395,7 +8402,14 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
   if (sepEl) sepEl.style.display = (hasDimErrors && hasWarnings) ? '' : 'none';
 
   body.innerHTML = warnings.map(w =>
-    `<div class="unit-advisory-item">&#8594; ${w}</div>`).join('');
+    `<div class="unit-advisory-item">&#8594; ${w}</div>`).join('') +
+    (convNotes.length
+      ? `<details style="margin-top:7px"><summary style="cursor:pointer;color:var(--mute);font-size:10.5px;">`
+        + `&#8505; ${convNotes.length} unit conversion${convNotes.length === 1 ? '' : 's'} applied`
+        + `<span style="color:var(--mute);opacity:.7"> &mdash; terms put on a common unit before solving</span></summary>`
+        + convNotes.map(c => `<div class="unit-advisory-item" style="color:var(--mute)">&#8594; ${c}</div>`).join('')
+        + `</details>`
+      : '');
 
   el.classList.add('visible');
 }
