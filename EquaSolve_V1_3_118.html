@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.117</title>
+<title>EquaSolve V1.3.118</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.117</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.118</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.117</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.118</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.117</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.118</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6215,6 +6215,12 @@ function _dimDisplayBasisSI(dim){
 // known dimension. Sheets with no [unit] brackets seed no dimensions, so every
 // basis is 1, no factor is ever emitted, and their behaviour is unchanged.
 let _unitNormNotes = [];
+// V1.3.118: equations the pass had to leave alone, with the names that stopped
+// it. A single dimension-blind variable silently prevents an equation being put
+// on the right scale -- which is how a pressure can come out a thousand times
+// too large while its label still reads kPa -- so the advisory now says so
+// instead of leaving it to be discovered in the answer.
+let _unitNormBlind = [];
 function _basisOfDim(dim){
   if(!dim || !dim.some(v => v !== 0)) return 1;
   try{
@@ -6618,7 +6624,20 @@ function _normalizeUnitScales(txt, origTxt){
       const p = eqs[i];
       if(!p) return line;
       const L = _normExpr(p.la), R = _normExpr(p.ra);
-      if(!L.ok || !R.ok) return line;
+      if(!L.ok || !R.ok){
+        // Only worth reporting when the equation is partly dimensioned: a sheet
+        // with no [unit] tags at all is not trying to carry units anywhere.
+        try{
+          const names = [..._collectVarNames(p.la, _collectVarNames(p.ra, new Set()))];
+          const isKnown = n => (n in _varDimCache)
+            || (typeof CONSTS_DIMS !== 'undefined' && n in CONSTS_DIMS)
+            || (typeof CONSTS !== 'undefined' && n in CONSTS);
+          const blind = names.filter(n => !isKnown(n));
+          if(names.some(isKnown) && blind.length)
+            _unitNormBlind.push({line:(p.L.length <= 26 ? p.L : p.L.slice(0,24)+'\u2026'), names:blind.slice(0,4)});
+        }catch(e){}
+        return line;
+      }
       if(!L.dim.every((d,k) => d === R.dim[k])) return line;   // dimensions disagree
       if(!L.chg && !R.chg) return line;                        // no factor needed
       const cidx = line.indexOf('//');
@@ -6924,9 +6943,13 @@ function _normDisplayUnit(u) {
   // V1.3.117: the squared/cubed rules only knew about metres, so [cm^2] showed
   // as "cm2" and [mm^3] as "mm3". Handle the exponent form for any unit and the
   // bare-digit form for the length units people actually type.
+  // V1.3.118: the list of length units missed anything after a slash, so [m/s2]
+  // still displayed as "m/s2" while [cm2] became cm². Any letter followed by a
+  // trailing 2 or 3 takes the superscript; a digit followed by more word
+  // characters (H2O) is left alone.
   return u.replace(/\^3/g,'³').replace(/\^2/g,'²')
-           .replace(/\b(m|cm|mm|km|ft|in|inch|yd)3\b/g,'$1³')
-           .replace(/\b(m|cm|mm|km|ft|in|inch|yd)2\b/g,'$1²')
+           .replace(/([A-Za-z])3\b/g,'$1³')
+           .replace(/([A-Za-z])2\b/g,'$1²')
            .replace(/\bdegC\b/gi,'°C').replace(/\bdegF\b/gi,'°F').replace(/\bdegR\b/gi,'°R')
            .replace(/W\/m2/g,'W/m²').replace(/kW\/m2/g,'kW/m²')
            .replace(/[./]K\b/g,'/K').replace(/\bkg\.K\b/g,'kg·K')
@@ -6940,7 +6963,7 @@ function preprocessBrackets(txt) {
   // The inner call from solveSystem receives already-preprocessed text (no brackets) and
   // must NOT wipe the map that the outer call already populated correctly.
   const _hadBrackets = /\[[^\]]+\]/.test(txt);
-  if (_hadBrackets) { _bracketDisplayMap = {}; _unitNormNotes = []; }
+  if (_hadBrackets) { _bracketDisplayMap = {}; _unitNormNotes = []; _unitNormBlind = []; }
   _rejectBareUnitSyntax(txt);
   const _preOut = txt.split('\n').map((line, lineIdx) => {
     try {
@@ -8327,6 +8350,20 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
           (nt.factor ? ' by &times;' + nt.factor : '') +
           ' to land on ' + (nt.unit ? '<code>' + nt.unit + '</code>' : 'its dimension basis') +
           ' &mdash; its terms were on different scales');
+      });
+    }
+  }catch(e){}
+
+  try{
+    if (typeof _unitNormBlind !== 'undefined' && _unitNormBlind.length){
+      const seenB = new Set();
+      _unitNormBlind.forEach(b => {
+        const k = b.line + '|' + b.names.join(',');
+        if (seenB.has(k)) return;
+        seenB.add(k);
+        warnings.push('<code>' + b.line + '</code> could not be put on a consistent scale — no dimension known for ' +
+          b.names.map(n => '<code>' + n + '</code>').join(', ') +
+          '. Give it a [unit] tag, or its equation is solved in whatever units its inputs happened to carry.');
       });
     }
   }catch(e){}
