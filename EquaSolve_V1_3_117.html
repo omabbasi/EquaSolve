@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.116</title>
+<title>EquaSolve V1.3.117</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -704,7 +704,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.116</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.117</div>
       </div>
     </div>
 
@@ -796,7 +796,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.116</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.117</span></div>
       
     </div>
   </div>
@@ -969,7 +969,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.116</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.117</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -1274,6 +1274,13 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       </div>
     </div>
     <div class="unit-section">
+      <div class="unit-section-header">Angle</div>
+      <div class="unit-grid">
+        <div class="unit-cell"><div class="unit-label">Trig functions use</div><div class="unit-options"><button class="unit-opt active" data-group="angle" data-val="deg">deg</button><button class="unit-opt" data-group="angle" data-val="rad">rad</button></div></div>
+        <div class="unit-cell"><div class="unit-label">Applies to</div><div class="unit-options" style="font-size:10px;color:var(--mute);align-items:center;padding-top:4px">sin, cos, tan and their inverses, and [deg] / [rad] tags</div></div>
+      </div>
+    </div>
+    <div class="unit-section">
       <div class="unit-section-header">Mass</div>
       <div class="unit-grid">
         <div class="unit-cell"><div class="unit-label">Display</div><div class="unit-options"><button class="unit-opt active" data-group="mass" data-val="kg">kg</button><button class="unit-opt" data-group="mass" data-val="g">g</button><button class="unit-opt" data-group="mass" data-val="lb">lb</button><button class="unit-opt" data-group="mass" data-val="tonne">tonne</button></div></div>
@@ -1510,7 +1517,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="help-card">
         <div class="help-card-title">𝑓 Math Functions</div>
         <div class="help-table">
-          <div class="help-row"><code>sin(x)  cos(x)  tan(x)</code><span>Trig (radians)</span></div>
+          <div class="help-row"><code>sin(x)  cos(x)  tan(x)</code><span>Trig — degrees by default; switch to radians in the Units tab</span></div>
           <div class="help-row"><code>asin(x) acos(x) atan(x)</code><span>Inverse trig</span></div>
           <div class="help-row"><code>sqrt(x)  exp(x)  log(x)</code><span>sqrt, eˣ, ln</span></div>
           <div class="help-row"><code>log(x)  ln(x)</code><span>Natural log (both work)</span></div>
@@ -3459,7 +3466,9 @@ const PROP_FUNS=[
 ];
 
 const FUNS_base={
-  sin:M.sin,cos:M.cos,tan:M.tan,asin:M.asin,acos:M.acos,atan:M.atan,atan2:M.atan2,sinh:M.sinh,cosh:M.cosh,tanh:M.tanh,sqrt:M.sqrt,abs:M.abs,log:M.log,ln:M.log,log10:M.log10,log2:M.log2,exp:M.exp,pow:M.pow,ceil:M.ceil,floor:M.floor,round:M.round,sign:M.sign,min:M.min,max:M.max,
+  sin:x=>M.sin(x*_angFactor()),cos:x=>M.cos(x*_angFactor()),tan:x=>M.tan(x*_angFactor()),
+  asin:x=>M.asin(x)/_angFactor(),acos:x=>M.acos(x)/_angFactor(),atan:x=>M.atan(x)/_angFactor(),
+  atan2:(y,x)=>M.atan2(y,x)/_angFactor(),sinh:M.sinh,cosh:M.cosh,tanh:M.tanh,sqrt:M.sqrt,abs:M.abs,log:M.log,ln:M.log,log10:M.log10,log2:M.log2,exp:M.exp,pow:M.pow,ceil:M.ceil,floor:M.floor,round:M.round,sign:M.sign,min:M.min,max:M.max,
   // Unit helpers (user-callable)
   toK,fromK,toMPa,fromMPa,toKJ,fromKJ,toM3,fromM3,
   // IF97 Water — all T/P/h/v inputs converted, T/P/h/v outputs converted back
@@ -4363,7 +4372,16 @@ setActiveFunctions = function() {
 const UNITS={temp:'°C',tempIn:'°C',pres:'kPa',presIn:'kPa',enth:'kJ/kg',vol:'m³/kg',
              len:'m',lenIn:'m', mass:'kg',massIn:'kg', vel:'m/s',velIn:'m/s',
              energy:'kJ',energyIn:'kJ', force:'N',forceIn:'N',
-             power:'kW',powerIn:'kW', volAbs:'m3',volAbsIn:'m3', sigfigs:3};
+             power:'kW',powerIn:'kW', volAbs:'m3',volAbsIn:'m3', sigfigs:3,
+             // V1.3.117: trig used radians with nothing in the Units tab to say so,
+             // which catches every engineering sheet out -- "th = 30" then sin(th)
+             // silently meant 30 radians. Degrees is the default; the Units tab
+             // switches it. Presets deliberately do not carry this key, so choosing
+             // a preset leaves the angle choice alone.
+             angle:'deg'};
+
+// Radians per display angle unit.
+function _angFactor(){ return (typeof UNITS !== 'undefined' && UNITS.angle === 'rad') ? 1 : Math.PI/180; }
 const PRESETS={
   // ── SI variants ───────────────────────────────────────────────────────────
   // SI Engineering: most common for mechanical/chemical engineers
@@ -6687,6 +6705,12 @@ function _replaceNumericBracketValuesInLine(line){
 // Convert a numeric value from [unit] bracket to internal display units
 function _bracketConvert(val, unitStr) {
   const u = _canonUnit(unitStr);
+  // Angle carries no dimension, so it has no entry in the dimension-basis table;
+  // convert it straight into whichever angle unit the Units tab is set to.
+  if (u === 'deg' || u === 'rad' || u === 'grad') {
+    const toRad = u === 'deg' ? Math.PI/180 : (u === 'grad' ? Math.PI/200 : 1);
+    return val * toRad / _angFactor();
+  }
   const tIn = UNITS.tempIn || UNITS.temp;
   // Temperature — offset conversion
   if (u==='degC'||u==='°C') {
@@ -6897,8 +6921,12 @@ function newtonND(residuals,vars,x0){
 }// Apply [unit] bracket conversion to all lines before solving
 // Converts e.g. "P1 = 4.5 [MPa]" → "P1 = 4500" when display unit is kPa
 function _normDisplayUnit(u) {
-  return u.replace(/\bm3\b/g,'m³').replace(/\bm2\b/g,'m²')
-           .replace(/m\^3/g,'m³').replace(/m\^2/g,'m²')
+  // V1.3.117: the squared/cubed rules only knew about metres, so [cm^2] showed
+  // as "cm2" and [mm^3] as "mm3". Handle the exponent form for any unit and the
+  // bare-digit form for the length units people actually type.
+  return u.replace(/\^3/g,'³').replace(/\^2/g,'²')
+           .replace(/\b(m|cm|mm|km|ft|in|inch|yd)3\b/g,'$1³')
+           .replace(/\b(m|cm|mm|km|ft|in|inch|yd)2\b/g,'$1²')
            .replace(/\bdegC\b/gi,'°C').replace(/\bdegF\b/gi,'°F').replace(/\bdegR\b/gi,'°R')
            .replace(/W\/m2/g,'W/m²').replace(/kW\/m2/g,'kW/m²')
            .replace(/[./]K\b/g,'/K').replace(/\bkg\.K\b/g,'kg·K')
@@ -7538,7 +7566,7 @@ function updateUnitSummary(){document.getElementById('unit-summary-grid').innerH
   ['Velocity (disp)',UNITS.vel],['Velocity (input)',UNITS.velIn],
   ['Power (disp)',UNITS.power],['Power (input)',UNITS.powerIn],
   ['Volume (disp)',UNITS.volAbs],['Volume (input)',UNITS.volAbsIn],
-  ['Enthalpy',UNITS.enth],['Spec. Volume',UNITS.vol]
+  ['Enthalpy',UNITS.enth],['Spec. Volume',UNITS.vol],['Angle',UNITS.angle]
 ].map(([k,v])=>`<div class="unit-summary-item"><span class="unit-summary-key">${k}:</span><span class="unit-summary-val">${v}</span></div>`).join('');}
 
 // ═══════════════════════════════════════════════════════════════════
