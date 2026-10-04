@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.120</title>
+<title>EquaSolve V1.3.121</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.120</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.121</div>
       </div>
     </div>
 
@@ -808,7 +808,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.120</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.121</span></div>
       
     </div>
   </div>
@@ -981,7 +981,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.120</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.121</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6959,7 +6959,13 @@ function _normDisplayUnit(u) {
   // still displayed as "m/s2" while [cm2] became cm². Any letter followed by a
   // trailing 2 or 3 takes the superscript; a digit followed by more word
   // characters (H2O) is left alone.
-  return u.replace(/\^3/g,'³').replace(/\^2/g,'²')
+  // V1.3.121: _canonUnit renames a couple of units internally -- 'min' becomes
+  // 'min_t' so minutes never collide with anything else, and 'in' is spelled
+  // out to 'inch' -- and those internal names were reaching the result label,
+  // so [L/min] displayed as "L/min_t". Put the engineering spelling back
+  // before anything else runs; this is display only and changes no arithmetic.
+  return u.replace(/\bmin_t\b/g,'min').replace(/\binch/g,'in')
+           .replace(/\^3/g,'³').replace(/\^2/g,'²')
            .replace(/([A-Za-z])3\b/g,'$1³')
            .replace(/([A-Za-z])2\b/g,'$1²')
            .replace(/\bdegC\b/gi,'°C').replace(/\bdegF\b/gi,'°F').replace(/\bdegR\b/gi,'°R')
