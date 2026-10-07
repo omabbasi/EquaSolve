@@ -28,7 +28,7 @@ Built-in libraries provide thermophysical properties for 38 working fluids (wate
 Open **https://omabbasi.github.io/EquaSolve/** in your browser.
 
 **Option 2 — Download and run locally:**
-1. Download the highest-numbered `EquaSolve_V1_3_*.html` in this repository — currently **`EquaSolve_V1_3_121.html`**. This is the same build the live demo serves.
+1. Download the highest-numbered `EquaSolve_V1_3_*.html` in this repository — currently **`EquaSolve_V1_3_122.html`**. This is the same build the live demo serves.
 2. Double-click the file. It will open in your default browser.
 3. That's it. No setup required.
 
@@ -164,7 +164,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 | **v1.3.100** — the build behind the paper | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
 | **v1.3.115** — newest archived build | [10.5281/zenodo.22955681](https://doi.org/10.5281/zenodo.22955681) |
 
-Releases v1.3.116 through v1.3.121 are not yet on Zenodo: archiving has not run for them,
+Releases v1.3.116 through v1.3.122 are not yet on Zenodo: archiving has not run for them,
 so the concept DOI resolves to v1.3.115. Nothing published is affected — the concept DOI
 and every existing version DOI resolve as before — and the builds themselves are in
 `Archive/` and on their GitHub releases either way.
@@ -187,15 +187,15 @@ any archived release.
 ## Version archive
 
 The repository root carries only the current release. Every earlier build is preserved in
-`Archive/` — all 86 versions from V1.234 (April 2026) through V1.3.121, under their
+`Archive/` — all 87 versions from V1.234 (April 2026) through V1.3.122, under their
 original filenames. Each is also a git tag dated from its original release.
 
 ```bash
 ls Archive/                       # every build ever released
-git tag                           # v1.234 ... v1.3.121, in release order
+git tag                           # v1.234 ... v1.3.122, in release order
 
 # what changed between two releases
-git diff --no-index Archive/EquaSolve_V1_3_120.html Archive/EquaSolve_V1_3_121.html
+git diff --no-index Archive/EquaSolve_V1_3_121.html Archive/EquaSolve_V1_3_122.html
 ```
 
 Reproducing a result from an earlier paper means taking that version straight from
@@ -228,6 +228,6 @@ EquaSolve was developed as a free, lightweight alternative to commercial equatio
 ## Reporting issues and contributing
 
 Bug reports, feature requests, and pull requests are welcome via the [Issues](https://github.com/omabbasi/EquaSolve/issues) tab. When reporting a numerical issue, please include:
-1. The version number (currently V1.3.121)
+1. The version number (currently V1.3.122)
 2. The browser and operating system used
 3. A minimal example that reproduces the problem

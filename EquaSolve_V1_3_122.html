@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.121</title>
+<title>EquaSolve V1.3.122</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.121</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.122</div>
       </div>
     </div>
 
@@ -808,7 +808,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.121</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.122</span></div>
       
     </div>
   </div>
@@ -981,7 +981,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.121</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.122</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -5018,6 +5018,19 @@ function buildVarDimCache(rhsMap, fullTxt, reset=true) {
       for (const r of allRhs) {
         try {
           const ast = parse(r);
+          // V1.3.122: evalDimNode treats a variable it has never heard of as
+          // dimensionless, so "U_max = r*omega2*60/(2*pi)" with omega2 unknown
+          // came back as metres -- read off r alone -- and every later check
+          // believed it. That is a guess wearing the clothes of a fact, and it
+          // produced a dimensional error on a line that was perfectly correct.
+          // Wait instead: the loop runs eight times, so a variable whose inputs
+          // resolve later still resolves, and one whose inputs never resolve is
+          // left for _inferMissingVarDims rather than being invented here.
+          const _un = [..._collectVarNames(ast, new Set())].filter(n =>
+            !(n in _varDimCache) &&
+            !(typeof CONSTS_DIMS !== 'undefined' && n in CONSTS_DIMS) &&
+            !(typeof CONSTS !== 'undefined' && n in CONSTS));
+          if (_un.length) continue;
           const {dim} = evalDimNode(ast);
           // Cache both non-zero dims AND confirmed zero-dim (dimensionless).
           // Previously only non-zero was cached; dimensionless vars like k=1.4
@@ -5433,6 +5446,11 @@ function _inferMissingVarDims(equationLines) {
         let hasKnownTerms = false;
         let dimConflict = false;
         for (const t of knownTerms) {
+          // V1.3.122: a literal 0 balances a term of ANY dimension, so it is no
+          // evidence about the equation's dimension. Counting it as a known
+          // dimensionless term made "0 = m*r*(W*cos(th)-U_max)" claim the whole
+          // product was dimensionless, and U_max came out as s/(kg*m).
+          if (_isLiteralZero(t.node)) continue;
           hasKnownTerms = true;
           let d;
           try { d = evalDimNode(t.node).dim; } catch(e) {}
@@ -6451,6 +6469,36 @@ function _knownDimOf(nd){
   return null;
 }
 
+// V1.3.122: a bare 0 is dimensionally compatible with EVERYTHING -- 0 N*m,
+// 0 m/s, 0 of anything -- but _knownDimOf reports it as dimensionless, which is
+// a far stronger claim. Matching the other side against it concluded, from
+// "0 = m*r*(W*cos(th)-U_max)", that m*r*(...) must be dimensionless and so
+// U_max had dimension s/(kg*m). Recognise the literal and treat it as a
+// wildcard instead.
+function _isLiteralZero(nd){
+  if(!nd) return false;
+  if(nd.t==='N') return nd.v === 0;
+  if(nd.t==='U') return _isLiteralZero(nd.R);   // unary node is always negation
+  return false;
+}
+// Walk an expression and infer from its own sums: in `a - b`, if one side has a
+// known dimension and the other holds exactly one dimension-blind variable,
+// that variable's dimension follows. This is what carries the information in a
+// zero-sided equation, where there is nothing across the '=' to match against.
+function _inferWithinNode(nd, learn){
+  if(!nd) return;
+  if(nd.t==='U'){ _inferWithinNode(nd.R, learn); return; }
+  if(nd.t==='F'){ (nd.args||[]).forEach(a => _inferWithinNode(a, learn)); return; }
+  if(nd.t!=='B') return;
+  if(nd.op==='+' || nd.op==='-'){
+    const dL = _knownDimOf(nd.L), dR = _knownDimOf(nd.R);
+    if(dL && !dR) learn(nd.R, dL);
+    else if(dR && !dL) learn(nd.L, dR);
+  }
+  _inferWithinNode(nd.L, learn);
+  _inferWithinNode(nd.R, learn);
+}
+
 // Dimension of `name` such that `nd` carries dimension `want`.
 function _solveDimFor(nd, name, want){
   if(!nd || !want) return null;
@@ -6604,21 +6652,82 @@ function _normalizeUnitScales(txt, origTxt){
       return {L:L, R:R, la:la, ra:ra};
     });
 
+    // V1.3.122: a [unit] on a literal INSIDE an expression -- "r*omega2*60[s]"
+    // -- is converted to a bare number before we ever see it, so the dimension
+    // was lost and the equation taught the inference something false (U_max came
+    // out as metres, from r alone). Rebuild each such line from the original
+    // text with every bracketed literal standing in as a named stand-in of the
+    // right dimension. These ASTs are used ONLY to work out dimensions; the
+    // rewrite below still runs on the real, bracket-free text, and the stand-ins
+    // disappear with the cache snapshot at the end of the pass.
+    const _origLines = String(origTxt || '').split('\n');
+    const dimEqs = lines.map((line, i) => {
+      const oc = String(_origLines[i] || '').replace(/\/\/.*$/, '');
+      if(!/\[/.test(oc)) return null;
+      const reB = /(^|[^A-Za-z0-9_.\]])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\[([^\]]+)\]/g;
+      let n = 0;
+      const subbed = oc.replace(reB, (mm, prefix, num, unitRaw) => {
+        let d = null;
+        try{ const pu = _parseUnitToSI(String(unitRaw).trim()); d = (pu && pu.dim) ? pu.dim.slice() : null; }catch(e){}
+        if(!d) return prefix + num;
+        const nm = '__ubd' + i + '_' + (n++);
+        _varDimCache[nm] = d;
+        return prefix + nm;
+      });
+      if(!n) return null;
+      if(/\[/.test(subbed)) return null;        // a bracket we could not account for
+      let idx = -1;
+      for(let k = 0; k < subbed.length; k++){
+        if(subbed[k] !== '=') continue;
+        const p2 = subbed[k-1], n2 = subbed[k+1];
+        if(p2 === '<' || p2 === '>' || p2 === '!' || p2 === '=' || n2 === '=') continue;
+        idx = k; break;
+      }
+      if(idx < 0) return null;
+      const L2 = subbed.slice(0, idx).trim(), R2 = subbed.slice(idx + 1).trim();
+      if(!L2 || !R2) return null;
+      if(/\b(free|choice)\s*\(/.test(R2)) return null;
+      if(/^(minimize|maximize|sens|unc|guess)\b/i.test(L2)) return null;
+      if(/'/.test(L2)) return null;
+      try{ return {la: parse(L2), ra: parse(R2)}; }catch(e){ return null; }
+    });
+
     // Infer the dimension of a lone unknown from the rest of its equation, to a
     // fixed point: one equation's answer often unlocks the next.
     for(let pass = 0; pass < 5; pass++){
       let learned = false;
-      eqs.forEach(p => {
+      eqs.forEach((p, i) => {
         if(!p) return;
-        const dl = _knownDimOf(p.la), dr = _knownDimOf(p.ra);
-        if(dl && dr) return;
-        const want = dl || dr;
-        if(!want) return;
-        const side = dl ? p.ra : p.la;
-        const unknown = [..._collectVarNames(side, new Set())].filter(n =>
+        // Where the original line carried an inline [unit] on a literal, reason
+        // about the version that still knows what that unit was.
+        const dp = dimEqs[i] || p;
+        const blind = nd => [..._collectVarNames(nd, new Set())].filter(n =>
           !(n in _varDimCache) &&
           !(typeof CONSTS_DIMS !== 'undefined' && n in CONSTS_DIMS) &&
           !(typeof CONSTS !== 'undefined' && n in CONSTS));
+        const record = (nm, d) => {
+          if(d && d.every(x => isFinite(x)) && d.some(x => x !== 0) && !(nm in _varDimCache)){
+            _varDimCache[nm] = d; learned = true;
+          }
+        };
+        // "0 = ..." says nothing across the '=', so read the other side's own
+        // sums instead: whatever is subtracted from a known term shares its
+        // dimension.
+        const zl = _isLiteralZero(dp.la), zr = _isLiteralZero(dp.ra);
+        if(zl !== zr){
+          _inferWithinNode(zl ? dp.ra : dp.la, (node, want2) => {
+            const u2 = blind(node);
+            if(u2.length !== 1) return;
+            record(u2[0], _solveDimFor(node, u2[0], want2));
+          });
+          return;
+        }
+        const dl = _knownDimOf(dp.la), dr = _knownDimOf(dp.ra);
+        if(dl && dr) return;
+        const want = dl || dr;
+        if(!want) return;
+        const side = dl ? dp.ra : dp.la;
+        const unknown = blind(side);
         if(unknown.length !== 1) return;
         const d = _solveDimFor(side, unknown[0], want);
         // Only a non-trivial dimension is worth learning. A bare "Q_evap = 10"
