@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.122</title>
+<title>EquaSolve V1.3.123</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.122</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.123</div>
       </div>
     </div>
 
@@ -808,7 +808,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.122</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.123</span></div>
       
     </div>
   </div>
@@ -981,7 +981,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.122</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.123</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4932,7 +4932,14 @@ function _inheritedBracketUnit(v, rhsMapEntry) {
   // dependencies were resolved (rA ahead of CA in source order) keeps that
   // wrong value. inferUnitFromRHS already recomputes live, so match it here.
   let myDim = null;
-  try { const _d = evalDimNode(parse(rhsMapEntry)); if (_d && _d.dim) myDim = _d.dim; } catch (e) {}
+  try {
+    const _ast = parse(rhsMapEntry);
+    // Only trust the live reading if every name in the expression has a
+    // dimension; otherwise fall back to what the cache actually knows.
+    if (!_dimBlindNames(_ast).filter(n => n !== v).length) {
+      const _d = evalDimNode(_ast); if (_d && _d.dim) myDim = _d.dim;
+    }
+  } catch (e) {}
   if (!myDim && (v in _varDimCache)) myDim = _varDimCache[v];
   if (!myDim || !myDim.some(x => x !== 0)) return '';   // dimensionless: nothing to inherit
   let ids;
@@ -4971,7 +4978,13 @@ function _bestUnitLabel(v, rhsMapEntry) {
   const inherited = _inheritedBracketUnit(v, rhsMapEntry);
   if (inherited) { _derivedUnitLabel[v] = inherited; return inherited; }
   // 2. RHS dimensional inference
-  const dimUnit = rhsMapEntry ? inferUnitFromRHS(rhsMapEntry)?.unit : null;
+  let _skipRhs = false;
+  try {
+    if (rhsMapEntry && _varDimCache && (v in _varDimCache) &&
+        _varDimCache[v].some(x => x !== 0) &&
+        _dimBlindNames(parse(rhsMapEntry)).filter(n => n !== v).length) _skipRhs = true;
+  } catch (e) {}
+  const dimUnit = (!_skipRhs && rhsMapEntry) ? inferUnitFromRHS(rhsMapEntry)?.unit : null;
   if (dimUnit) return dimUnit;
   // 3. Direct _varDimCache lookup
   if (_varDimCache && v in _varDimCache) {
@@ -5577,6 +5590,42 @@ function _inferMissingVarDims(equationLines) {
               vDim = diff.map(d => d / vPows[0]);
             }
           }
+        }
+        // V1.3.123: when the equation offered no reference dimension -- the
+        // standard case being "0 = ...", where the only non-v term is a literal
+        // zero and a zero says nothing about dimension -- the answer can still be
+        // inside v's own term. In (W*cos(th) - U_max) the two addends must match,
+        // so U_max takes its dimension from its sibling. Without this the
+        // variable stays blank and the result card falls back to inheriting a
+        // unit from whatever else is in the line, which is how a velocity came to
+        // be labelled mm.
+        if (vDim === undefined && vTerms.length === 1) {
+          const _fromSibling = (node) => {
+            if (!node) return null;
+            if (node.t === 'U') return _fromSibling(node.R);
+            if (node.t !== 'B') return null;
+            if ((node.op === '+' || node.op === '-') && vAppearsIn(node, v)) {
+              const its = [];
+              collectAdditiveTerms(node, +1, its);
+              const withV = its.filter(t => vAppearsIn(t.node, v));
+              const noV   = its.filter(t => !vAppearsIn(t.node, v));
+              if (withV.length === 1 && vPowerInNode(withV[0].node, v) === 1) {
+                let ref = null, bad = false;
+                for (const t of noV) {
+                  let d; try { d = evalDimNode(t.node).dim; } catch(e) {}
+                  if (!d || d.every(x => x === 0)) continue;
+                  if (ref === null) ref = d;
+                  else if (!d.every((x,i) => x === ref[i])) { bad = true; break; }
+                }
+                if (!bad && ref) {
+                  try { return dimSub(ref, evalDimNode(withV[0].node).dim); } catch(e) {}
+                }
+              }
+            }
+            return _fromSibling(node.L) || _fromSibling(node.R);
+          };
+          const _sib = _fromSibling(vTerms[0].node);
+          if (_sib) vDim = _sib;
         }
         // If effectiveRefDim is null (no known terms at all), v is uninferable — no dim.
       } catch(e) {}
@@ -6430,6 +6479,21 @@ function _collectVarNames(nd, out){
   if(nd.t==='B'){ _collectVarNames(nd.L, out); _collectVarNames(nd.R, out); }
   return out;
 }
+// V1.3.123: evalDimNode treats a variable it has never heard of as
+// dimensionless, so ANY dimension read through such a name is a guess wearing
+// the clothes of a fact -- that is how "U_max = r*omega2*60/(2*pi)" measured as
+// metres, inherited r's [mm], and produced a confident error message about a
+// line nobody could actually read. Four places ask this question; they all ask
+// it here.
+function _dimBlindNames(nd){
+  try{
+    return [..._collectVarNames(nd, new Set())].filter(n =>
+      !(typeof _varDimCache !== 'undefined' && _varDimCache && (n in _varDimCache)) &&
+      !(typeof CONSTS_DIMS !== 'undefined' && (n in CONSTS_DIMS)) &&
+      !(typeof CONSTS !== 'undefined' && (n in CONSTS)));
+  }catch(e){ return []; }
+}
+
 // Dimension only, ignoring scale. A sum whose terms sit on different scales
 // still has a well-defined dimension, and the inference below needs to ask that
 // question; _dimScaleNode refuses such sums, which is correct when deciding how
@@ -8440,6 +8504,13 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     let lhsAst, rhsAst;
     try { lhsAst = parse(lhsStr); } catch(e) { return; }
     try { rhsAst = parse(rhsStr); } catch(e) { return; }
+
+    // One unreadable name is enough to make both sides measure as something
+    // they are not, and the report then reads as a verdict rather than the guess
+    // it is -- "U_max [m/s] != r*omega2*60/(2*pi) [m]", where omega2 was simply
+    // unknown. Say nothing about a line that cannot be read; the advisory
+    // already names the blind variable, which is the actionable part.
+    if (_dimBlindNames(lhsAst).length || _dimBlindNames(rhsAst).length) return;
 
     // Check 4: LHS dim ≠ RHS dim
     let lhsDim = null, rhsDim = null;
