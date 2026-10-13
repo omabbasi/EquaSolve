@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.123</title>
+<title>EquaSolve V1.3.124</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.123</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.124</div>
       </div>
     </div>
 
@@ -808,7 +808,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.123</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.124</span></div>
       
     </div>
   </div>
@@ -981,7 +981,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.123</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.124</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -6527,7 +6527,17 @@ function _knownDimOf(nd){
     if(!L || !R) return null;
     if(nd.op==='*') return L.map((x,i) => x + R[i]);
     if(nd.op==='/') return L.map((x,i) => x - R[i]);
-    if(nd.op==='+' || nd.op==='-') return L.every((x,i) => x === R[i]) ? L.slice() : null;
+    if(nd.op==='+' || nd.op==='-'){
+      // V1.3.124: zero is zero in every unit, so a literal 0 takes the dimension
+      // of the term it is added to. Refusing the sum made "P1/(rho*g)+0+z1"
+      // unreadable, and one unreadable side leaves the whole equation
+      // unnormalised -- the pressure heads then keep the kPa basis and come out
+      // a thousand times short. Writing "+0" for a velocity head that is zero at
+      // a reservoir surface is completely ordinary.
+      if(_isLiteralZero(nd.L)) return R.slice();
+      if(_isLiteralZero(nd.R)) return L.slice();
+      return L.every((x,i) => x === R[i]) ? L.slice() : null;
+    }
     return null;
   }
   return null;
@@ -6571,6 +6581,24 @@ function _solveDimFor(nd, name, want){
   if(nd.t!=='B') return null;
   const inL = _hasVarNode(nd.L, name), inR = _hasVarNode(nd.R, name);
   if(inL === inR) return null;                      // in both, or in neither
+  if(nd.op==='^'){
+    // V1.3.124: _solveDimFor knew how to invert +, -, * and /, but not a power,
+    // so the dimension of a variable under one could never be worked out. In
+    // "V3^2/(2*g)" that left V3 dimension-blind, which left its whole equation
+    // unnormalised -- and in a Bernoulli head balance that means the pressure
+    // terms keep the kPa basis and land a thousand times short, turning a sound
+    // equation into one with no real root. V^2/(2*g) is about as common as fluid
+    // mechanics gets.
+    if(!inL) return null;                      // name in the exponent: not invertible here
+    if(!nd.R || nd.R.t !== 'N' || !nd.R.v) return null;
+    const p = nd.R.v;
+    const inner = want.map(w => w / p);
+    // Keep only an exact inverse: a dimension that does not divide cleanly by
+    // the exponent would be a fractional power of a base unit, which says the
+    // equation is malformed rather than that we have learned something.
+    if(!inner.every((x, i) => isFinite(x) && x * p === want[i])) return null;
+    return _solveDimFor(nd.L, name, inner);
+  }
   if(nd.op==='+' || nd.op==='-') return _solveDimFor(inL ? nd.L : nd.R, name, want);
   if(nd.op==='*'){
     const od = _knownDimOf(inL ? nd.R : nd.L);
@@ -6650,6 +6678,11 @@ function _normExpr(nd){
     if(!L.ok || !R.ok) return NO;
     if(nd.op==='+' || nd.op==='-'){
       // Both operands are already on the shared basis, so a sum needs no factor.
+      // V1.3.124: and a literal 0 needs no basis at all -- it is 0 whichever one
+      // it is read on -- so it adopts its neighbour's dimension instead of
+      // blocking the rewrite.
+      if(_isLiteralZero(nd.L)) return {ok:true, chg:R.chg, dim:R.dim.slice(), text:'('+L.text+nd.op+R.text+')'};
+      if(_isLiteralZero(nd.R)) return {ok:true, chg:L.chg, dim:L.dim.slice(), text:'('+L.text+nd.op+R.text+')'};
       if(!L.dim.every((d,i) => d === R.dim[i])) return NO;
       return {ok:true, chg:L.chg || R.chg, dim:L.dim.slice(), text:'('+L.text+nd.op+R.text+')'};
     }
