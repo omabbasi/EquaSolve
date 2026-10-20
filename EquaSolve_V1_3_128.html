@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.127</title>
+<title>EquaSolve V1.3.128</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.127</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.128</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.127</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.128</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.127</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.128</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -15897,8 +15897,11 @@ function runRegression(txt) {
         // same quantity. Green for residuals. The zero line keeps the fit's
         // orange on purpose: in both plots orange is where the model says the
         // data should be -- the curve there, e = 0 here.
-        const resCol  = light ? '#1a7f37' : '#3fb950', fitCol = '#ff7043';
-        const stemCol = light ? 'rgba(26,127,55,.40)' : 'rgba(63,185,80,.45)';
+        // V1.3.128: one green at the same lightness as the data blue (#4fc3f7)
+        // in both themes, as the blue already is. The light-theme green chosen
+        // for contrast against white came out far darker than the blue beside it.
+        const resCol  = '#66bb6a', fitCol = '#ff7043';
+        const stemCol = 'rgba(102,187,106,.5)';
         // The band's EDGES carry the meaning; a solid fill flooded the plot,
         // since for a healthy fit nearly every point sits inside it.
         const bandCol = light ? 'rgba(255,112,67,.05)' : 'rgba(255,112,67,.06)';
