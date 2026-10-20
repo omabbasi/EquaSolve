@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.124</title>
+<title>EquaSolve V1.3.125</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -716,7 +716,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.124</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.125</div>
       </div>
     </div>
 
@@ -808,7 +808,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.124</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.125</span></div>
       
     </div>
   </div>
@@ -981,7 +981,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.124</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.125</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -14880,6 +14880,63 @@ function runUncertainty(txt) {
 //    param = free(lo, hi)          // bounds only, auto-guess
 //    param = free(guess, lo, hi)   // full specification
 // ══════════════════════════════════════════════════════════════════════════════
+// V1.3.125: exact Student-t critical value for a two-sided 95% interval.
+// The regression used a six-step lookup -- 1.96 from 30 df up, 2.086 from 20,
+// 2.228 from 10, 2.571 from 5 -- so most sample sizes got another one's t:
+// at df = 9 it used 2.571 where the true value is 2.262, widening every
+// confidence limit by 14%, and from df = 30 it used the normal 1.96 and
+// narrowed them. Solved here from the regularized incomplete beta function,
+// the same quantity Excel's T.INV.2T returns.
+function _fitLnGamma(z){
+  const g = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+             -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+             9.9843695780195716e-6, 1.5056327351493116e-7];
+  if(z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI*z))) - _fitLnGamma(1 - z);
+  z -= 1;
+  let x = g[0];
+  for(let i = 1; i < 9; i++) x += g[i] / (z + i);
+  const t = z + 7.5;
+  return 0.5*Math.log(2*Math.PI) + (z + 0.5)*Math.log(t) - t + Math.log(x);
+}
+function _fitBetaCF(a, b, x){
+  const FPMIN = 1e-300, qab = a + b, qap = a + 1, qam = a - 1;
+  let c = 1, d = 1 - qab*x/qap;
+  if(Math.abs(d) < FPMIN) d = FPMIN;
+  d = 1/d;
+  let h = d;
+  for(let m = 1; m <= 1000; m++){
+    const m2 = 2*m;
+    let aa = m*(b - m)*x / ((qam + m2)*(a + m2));
+    d = 1 + aa*d; if(Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa/c; if(Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1/d; h *= d*c;
+    aa = -(a + m)*(qab + m)*x / ((a + m2)*(qap + m2));
+    d = 1 + aa*d; if(Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa/c; if(Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1/d;
+    const del = d*c; h *= del;
+    if(Math.abs(del - 1) < 3e-16) break;
+  }
+  return h;
+}
+function _fitIncBeta(a, b, x){
+  if(x <= 0) return 0;
+  if(x >= 1) return 1;
+  const bt = Math.exp(_fitLnGamma(a + b) - _fitLnGamma(a) - _fitLnGamma(b) + a*Math.log(x) + b*Math.log(1 - x));
+  return (x < (a + 1)/(a + b + 2)) ? bt*_fitBetaCF(a, b, x)/a : 1 - bt*_fitBetaCF(b, a, 1 - x)/b;
+}
+function _tCrit95(df){
+  if(!(df > 0)) return NaN;
+  if(df > 1e5) return 1.959963984540054;
+  // P(|T| > t) = I_{df/(df+t^2)}(df/2, 1/2); find the t where that is 0.05.
+  let lo = 0, hi = 1000;
+  for(let i = 0; i < 200; i++){
+    const mid = 0.5*(lo + hi);
+    if(_fitIncBeta(df/2, 0.5, df/(df + mid*mid)) > 0.05) lo = mid; else hi = mid;
+  }
+  return 0.5*(lo + hi);
+}
+
 function runRegression(txt) {
   if (typeof joinContinuationLines === 'function') txt = joinContinuationLines(txt);
   else if (window.joinContinuationLines) txt = window.joinContinuationLines(txt);
@@ -15190,11 +15247,24 @@ function runRegression(txt) {
         const sse_final = r_final.reduce((s,v) => s+v*v, 0);
         const sigma2 = sse_final / (N - P); // reduced chi-squared
 
+        // V1.3.125: central differences with a step scaled to each parameter.
+        // A forward difference with a fixed step of 1e-7 is a 0.1% step on a
+        // parameter of order 1e-4, which put the confidence limits out in the
+        // third figure -- and with strongly correlated parameters (JtJ)^-1
+        // magnifies that. Checked against the analytic Jacobian on a kinetics
+        // fit with a 0.9995 correlation: agreement to eight figures.
         const J_final = Array.from({length: r_final.length}, () => new Float64Array(n));
         for (let j = 0; j < n; j++) {
-          const xh = x.slice(); xh[j] += h;
-          const rh = resFn(xh);
-          for (let i = 0; i < r_final.length; i++) J_final[i][j] = (rh[i] - r_final[i]) / h;
+          const hj = 6e-6 * Math.max(Math.abs(x[j]), 1e-6);
+          const xp = x.slice(); xp[j] += hj;
+          const xm = x.slice(); xm[j] -= hj;
+          const rp = resFn(xp), rm = resFn(xm);
+          const okP = rp.every(v => isFinite(v)), okM = rm.every(v => isFinite(v));
+          for (let i = 0; i < r_final.length; i++) {
+            J_final[i][j] = (okP && okM) ? (rp[i] - rm[i]) / (2*hj)
+                          : okP ? (rp[i] - r_final[i]) / hj
+                          : okM ? (r_final[i] - rm[i]) / hj : 0;
+          }
         }
         const JtJ_final = Array.from({length:n}, () => new Float64Array(n));
         for (let i = 0; i < r_final.length; i++)
@@ -15293,12 +15363,28 @@ function runRegression(txt) {
       const R2 = Math.max(0, 1 - fit_result.sse / ssTot);
       const RMSE = Math.sqrt(fit_result.sse / N);
 
-      // 95% CI: t-distribution approx (use 1.96 for large N, t-table for small)
-      // t critical value for 95% CI (two-tailed)
+      // 95% confidence limits: value +/- t(0.975, N-P) x standard error.
       const df = N - P;
-      const tCrit = df >= 30 ? 1.96 : df >= 20 ? 2.086 : df >= 10 ? 2.228 : df >= 5 ? 2.571 : df >= 3 ? 3.182 : df >= 2 ? 4.303 : 12.706;
-      const paramSE  = freeVars.map((_, i) => Math.sqrt(Math.max(0, cov[i][i])));
+      const tCrit = _tCrit95(df);
+      const paramSE  = freeVars.map((_, i) => df > 0 ? Math.sqrt(Math.max(0, cov[i][i])) : NaN);
       const paramCI  = paramSE.map(se => tCrit * se);
+      // V1.3.125: SSE was always computed -- R2 is built from it -- but never
+      // shown. The table reports it, with SST, adjusted R2 and the variance.
+      const SSE = fit_result.sse;
+      const R2raw = ssTot > 0 ? 1 - SSE / ssTot : NaN;
+      const R2adj = (df > 0 && N > 1 && isFinite(R2raw)) ? 1 - (1 - R2raw) * (N - 1) / df : NaN;
+      const variance = df > 0 ? SSE / df : NaN;
+      // Significant figures rather than decimal places: a rate constant of
+      // 1.077e-4 shown to four decimals reads as 0.0001.
+      const fmtSig = (v, sf) => {
+        if (v === null || v === undefined || !isFinite(v)) return '\u2014';
+        if (v === 0) return '0';
+        const a = Math.abs(v);
+        return (a >= 1e6 || a < 1e-3) ? v.toExponential(sf - 1).replace(/\.?0+e/, 'e')
+                                      : parseFloat(v.toPrecision(sf)).toString();
+      };
+      const sfV = Math.max(6, (UNITS.sigfigs || 3) + 3);
+      const sfE = Math.max(4, (UNITS.sigfigs || 3) + 1);
 
       // Correlation matrix
       const corrMatrix = cov.map((row, i) =>
@@ -15324,7 +15410,9 @@ function runRegression(txt) {
       $lb.innerHTML = `⏇ Regression · <span style="font-weight:400;color:var(--mute);font-size:9px">Levenberg-Marquardt · N=${N} · ${timeLbl}</span>`;
       $stat.style.color = 'var(--green)'; $stat.textContent = `⏇ R²=${R2.toFixed(4)} · ${timeLbl}`;
 
-      const fmt2 = n => { const dp=UNITS.sigfigs??3; return !isFinite(n)?'—':Math.abs(n)>=1e6||Math.abs(n)<1e-4&&n!==0?n.toExponential(dp):parseFloat(n.toFixed(dp+1)).toString(); };
+      // V1.3.125: values between 1e-4 and 1e-2 went through toFixed(4), so a
+      // rate constant of 1.077e-4 displayed as 0.0001. Send them exponential.
+      const fmt2 = n => { const dp=UNITS.sigfigs??3; return !isFinite(n)?'—':Math.abs(n)>=1e6||Math.abs(n)<1e-2&&n!==0?n.toExponential(dp):parseFloat(n.toFixed(dp+1)).toString(); };
 
       // Evaluate extra equations that reference fitted params
       const finalScope = Object.assign({}, fixedScope);
@@ -15350,28 +15438,55 @@ function runRegression(txt) {
         } catch(e) {}
       });
 
-      // Parameter cards
-      const paramCards = freeVars.map((v, i) => `
-        <div class="var-card" style="border-color:var(--purple)">
-          <div>
-            <span class="var-name">${v.name}</span>
-            <div class="var-unit" style="color:var(--purple)">fitted ± 95% CI</div>
-          </div>
-          <div style="text-align:right">
-            <span class="var-val">${fmt2(params[i])}</span>
-            <div style="font-size:9px;color:var(--mute);margin-top:2px">± ${fmt2(paramCI[i])}</div>
-          </div>
-        </div>`).join('');
+      // V1.3.125: a parameter table in place of the cards -- laid out like
+      // Polymath's, with Excel's lower and upper 95% limits beside the half-width.
+      const thP = 'padding:4px 10px;color:var(--mute);font-weight:500;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap';
+      const tdP = 'padding:4px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap';
+      const _esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const paramRows = freeVars.map((v, i) => {
+        const val = params[i], ci = paramCI[i];
+        return `<tr>
+          <td style="${tdP};text-align:left;color:var(--purple);font-weight:600">${v.name}</td>
+          <td style="${tdP};color:var(--mute)">${v.multiStart ? 'auto' : fmtSig(v.guess, sfV)}</td>
+          <td style="${tdP};color:var(--hi);font-weight:600">${fmtSig(val, sfV)}</td>
+          <td style="${tdP}">${fmtSig(paramSE[i], sfE)}</td>
+          <td style="${tdP}">${isFinite(ci) ? '± ' + fmtSig(ci, sfE) : '—'}</td>
+          <td style="${tdP}">${isFinite(ci) ? fmtSig(val - ci, sfV) : '—'}</td>
+          <td style="${tdP}">${isFinite(ci) ? fmtSig(val + ci, sfV) : '—'}</td>
+        </tr>`;
+      }).join('');
+      const paramTable = `<div>
+        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Regression model</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--hi);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;overflow-x:auto;white-space:nowrap">${_esc(yVar)} = ${_esc(modelExpr)}</div>
+        <div style="overflow-x:auto">
+        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
+          <tr><th style="${thP};text-align:left">Parameter</th><th style="${thP}">Initial guess</th><th style="${thP}">Value</th>
+              <th style="${thP}">Std. error</th><th style="${thP}">95% confidence</th><th style="${thP}">Lower 95%</th><th style="${thP}">Upper 95%</th></tr>
+          ${paramRows}
+        </table></div>
+        <div style="font-size:9px;color:var(--mute);margin-top:4px">${df > 0
+          ? `95% limits = value ± t × std. error, with t = ${tCrit.toFixed(4)} (Student t, two-sided, df = N − P = ${df})`
+          : `No confidence limits: ${N} data points for ${P} parameters leaves no degrees of freedom. Add data points.`}</div>
+      </div>`;
 
-      // Stats row
-      const statsHtml = `
-        <div class="stats-row" style="margin-top:10px">
-          <div class="stat"><span class="stat-l">R²: </span>${R2.toFixed(6)}</div>
-          <div class="stat"><span class="stat-l">RMSE: </span>${fmt2(RMSE)}</div>
-          <div class="stat"><span class="stat-l">σ²: </span>${fmt2(fit_result.sigma2)}</div>
-          <div class="stat"><span class="stat-l">N: </span>${N}</div>
-          <div class="stat"><span class="stat-l">df: </span>${df}</div>
-        </div>`;
+      // Goodness of fit, as a table
+      const statsHtml = `<div style="margin-top:12px">
+        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Goodness of fit</div>
+        <div style="overflow-x:auto">
+        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
+          <tr><th style="${thP}">R²</th><th style="${thP}">R²adj</th><th style="${thP}">SSE</th><th style="${thP}">SST</th>
+              <th style="${thP}">Variance σ²</th><th style="${thP}">RMSE</th><th style="${thP}">N</th><th style="${thP}">df</th></tr>
+          <tr><td style="${tdP}">${R2.toFixed(6)}</td><td style="${tdP}">${isFinite(R2adj) ? R2adj.toFixed(6) : '—'}</td>
+              <td style="${tdP}">${fmtSig(SSE, sfE + 1)}</td><td style="${tdP}">${fmtSig(ssTot, sfE + 1)}</td>
+              <td style="${tdP}">${fmtSig(variance, sfE + 1)}</td><td style="${tdP}">${fmtSig(RMSE, sfE + 1)}</td>
+              <td style="${tdP}">${N}</td><td style="${tdP}">${df}</td></tr>
+        </table></div>
+        <div style="font-size:9px;color:var(--mute);margin-top:4px;line-height:1.7">
+          SSE = Σ(y<sub>obs</sub> − y<sub>calc</sub>)² &nbsp;·&nbsp; SST = Σ(y<sub>obs</sub> − ȳ)² &nbsp;·&nbsp;
+          R² = 1 − SSE/SST &nbsp;·&nbsp; R²adj = 1 − (1 − R²)(N − 1)/(N − P) &nbsp;·&nbsp;
+          σ² = SSE/(N − P) &nbsp;·&nbsp; RMSE = √(SSE/N)
+        </div>
+      </div>`;
 
       // Correlation matrix (only if >1 parameter)
       let corrHtml = '';
@@ -15417,13 +15532,43 @@ function runRegression(txt) {
         : '';
       const plotHtml = `<div style="margin-top:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Fit &amp; Residuals</div>
+          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Fit</div>
           ${xSelHtml}
         </div>
         <canvas id="${plotId}" style="width:100%;aspect-ratio:16/7;border:1px solid var(--border);border-radius:6px;background:var(--bg)"></canvas>
       </div>`;
 
       // ── "Use Model" snippet ──────────────────────────────────────────────────
+      // V1.3.125: residuals, observed minus calculated, plotted against the
+      // observed value as Polymath does, with the numbers behind them in a table.
+      // A good fit scatters evenly about zero; a curve or a funnel here is the
+      // model talking, not the noise.
+      const residObs = yData.map((yo, i) => yo - yPred[i]);
+      const sfD = Math.max(5, (UNITS.sigfigs || 3) + 2);
+      const dataRows = yData.map((yo, i) => {
+        const pct = (yo !== 0 && isFinite(residObs[i])) ? residObs[i] / yo * 100 : NaN;
+        return `<tr><td style="${tdP};color:var(--mute)">${i + 1}</td>` +
+          xVars.map((_, j) => `<td style="${tdP}">${fmtSig(xDataArr[j][i], sfD)}</td>`).join('') +
+          `<td style="${tdP}">${fmtSig(yo, sfD)}</td><td style="${tdP}">${fmtSig(yPred[i], sfD)}</td>` +
+          `<td style="${tdP}">${fmtSig(residObs[i], sfD)}</td>` +
+          `<td style="${tdP}">${isFinite(pct) ? fmtSig(pct, 4) + '%' : '—'}</td></tr>`;
+      }).join('');
+      const residHtml = `<div style="margin-top:12px">
+        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Residuals</div>
+        <canvas id="${plotId}-res" style="width:100%;aspect-ratio:16/6;border:1px solid var(--border);border-radius:6px;background:var(--bg)"></canvas>
+      </div>
+      <details ${N <= 25 ? 'open' : ''} style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Data table · ${N} points</summary>
+        <div style="overflow-x:auto;margin-top:5px">
+        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
+          <tr><th style="${thP}">#</th>${xVars.map(v => `<th style="${thP}">${_esc(v)}</th>`).join('')}
+              <th style="${thP}">${_esc(yVar)}</th><th style="${thP}">calculated ${_esc(yVar)}</th>
+              <th style="${thP}">residual</th><th style="${thP}">residual %</th></tr>
+          ${dataRows}
+        </table></div>
+        <div style="font-size:9px;color:var(--mute);margin-top:4px">residual = observed − calculated; residual % = residual / observed × 100</div>
+      </details>`;
+
       const snippetLines = freeVars.map((v, i) => {
         const val = params[i];
         const dp = Math.max(6, (UNITS.sigfigs||3)+3);
@@ -15447,7 +15592,7 @@ function runRegression(txt) {
       </div>`;
 
       const extraHtml = extraCards.length ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Derived quantities</div><div class="var-grid">${extraCards.join('')}</div></div>` : '';
-      $body.innerHTML = `<div class="var-grid">${paramCards}</div>${extraHtml}${statsHtml}${corrHtml}${plotHtml}${useModelHtml}`;
+      $body.innerHTML = `${paramTable}${extraHtml}${statsHtml}${corrHtml}${plotHtml}${residHtml}${useModelHtml}`;
 
       // ── Draw fit plot ─────────────────────────────────────────────────────
       // V1.3.41: stash the draw function on window so the theme toggle can
@@ -15676,10 +15821,71 @@ function runRegression(txt) {
         ctx.fillText('R²=' + R2.toFixed(4) + '  RMSE=' + fmt2(RMSE), PAD.l+4, PAD.t+12);
         return true;
       };
+      const drawResidPlot = () => {
+        const canvas = document.getElementById(plotId + '-res');
+        if (!canvas) return false;
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.parentElement.clientWidth || 400;
+        const H = Math.round(W * 6/16);
+        canvas.width = W*dpr; canvas.height = H*dpr;
+        canvas.style.width = W+'px'; canvas.style.height = H+'px';
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const light = document.documentElement.classList.contains('light');
+        const bgCol   = light ? '#f6f8fa' : '#151820';
+        const gridCol = light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)';
+        const axCol   = light ? 'rgba(0,0,0,.6)'  : 'rgba(255,255,255,.6)';
+        const zeroCol = light ? 'rgba(0,0,0,.8)'  : 'rgba(255,255,255,.8)';
+        const ptCol   = '#ef5350';
+        const PAD = {l:54, r:20, t:16, b:38};
+        const pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b;
+        ctx.fillStyle = bgCol; ctx.fillRect(0, 0, W, H);
+        const pts = yData.map((yo, i) => [yo, residObs[i]]).filter(p => isFinite(p[0]) && isFinite(p[1]));
+        if (!pts.length) return true;
+        // Ticks on round values, as a person would draw them: steps of 1, 2,
+        // 2.5 or 5 times a power of ten.
+        const niceStep = (span, n) => {
+          const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+          return [1, 2, 2.5, 5, 10].map(m => m*mag).find(st => st >= raw*(1 - 1e-9));
+        };
+        let dMin = Math.min(...pts.map(p => p[0])), dMax = Math.max(...pts.map(p => p[0]));
+        if (dMax === dMin) { dMin -= 1; dMax += 1; }
+        const xStep = niceStep(dMax - dMin, 6);
+        const xPad = (dMax - dMin) * 0.04;
+        const xMin = dMin - xPad, xMax = dMax + xPad;
+        const xTicks = [];
+        for (let v = Math.ceil(xMin / xStep) * xStep; v <= xMax + 1e-9*xStep; v += xStep) xTicks.push(+v.toPrecision(12));
+        let rData = Math.max(...pts.map(p => Math.abs(p[1])));
+        if (!(rData > 0)) rData = 1;
+        const rStep = niceStep(2.2*rData, 6);
+        const rMax = Math.ceil(1.1*rData / rStep) * rStep;      // symmetric about zero, ending on a tick
+        const rTicks = [];
+        for (let v = -rMax; v <= rMax + 1e-9*rStep; v += rStep) rTicks.push(+v.toPrecision(12));
+        const px = v => PAD.l + (v - xMin) / (xMax - xMin) * pw;
+        const py = v => PAD.t + (1 - (v + rMax) / (2*rMax)) * ph;
+        ctx.strokeStyle = gridCol; ctx.lineWidth = 0.5;
+        xTicks.forEach(v => { const gx = px(v); ctx.beginPath(); ctx.moveTo(gx, PAD.t); ctx.lineTo(gx, PAD.t+ph); ctx.stroke(); });
+        rTicks.forEach(v => { const gy = py(v); ctx.beginPath(); ctx.moveTo(PAD.l, gy); ctx.lineTo(PAD.l+pw, gy); ctx.stroke(); });
+        ctx.strokeStyle = zeroCol; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(PAD.l, py(0)); ctx.lineTo(PAD.l+pw, py(0)); ctx.stroke();
+        ctx.fillStyle = ptCol; ctx.strokeStyle = light ? 'rgba(0,0,0,.3)' : 'rgba(255,255,255,.3)'; ctx.lineWidth = 1;
+        pts.forEach(p => { ctx.beginPath(); ctx.arc(px(p[0]), py(p[1]), 4.5, 0, Math.PI*2); ctx.fill(); ctx.stroke(); });
+        ctx.fillStyle = axCol; ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        xTicks.forEach(v => ctx.fillText(String(v), px(v), PAD.t+ph+14));
+        ctx.textAlign = 'right';
+        rTicks.forEach(v => ctx.fillText(String(v), PAD.l-6, py(v) + 4));
+        ctx.textAlign = 'center'; ctx.font = '9px sans-serif';
+        ctx.fillText('observed ' + yVar, PAD.l + pw/2, H - 5);
+        ctx.save(); ctx.translate(12, PAD.t + ph/2); ctx.rotate(-Math.PI/2);
+        ctx.fillText('residual (obs − calc)', 0, 0); ctx.restore();
+        return true;
+      };
       const _xSelEl = document.getElementById(plotId + '-x');
       if (_xSelEl) _xSelEl.addEventListener('change', () => drawFitPlot());
-      window._drawFitPlot = drawFitPlot;
-      requestAnimationFrame(drawFitPlot);
+      // The theme toggle calls this to repaint; both plots follow the theme.
+      window._drawFitPlot = () => { const ok = drawFitPlot(); drawResidPlot(); return ok; };
+      requestAnimationFrame(window._drawFitPlot);
 
       $bt.disabled=false; $bt.innerHTML='▶ Solve';
     } catch(e) {
