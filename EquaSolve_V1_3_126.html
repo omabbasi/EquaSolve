@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.125</title>
+<title>EquaSolve V1.3.126</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -477,6 +477,46 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 .unit-advisory-item.dim-error{color:var(--red,#e05252);font-weight:500;}
 .unit-advisory-item.dim-error code{color:var(--red,#e05252);background:rgba(220,60,60,.1);}
 .unit-advisory-sep{border:none;border-top:1px solid rgba(128,128,128,.2);margin:6px 0;}
+/* V1.3.126: regression results. One table style, one heading style, numbers
+   right-aligned in tabular figures, and nothing bold except what was fitted. */
+.fx{font-size:11px;color:var(--text)}
+.fx-model{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--dim);padding:2px 2px 4px;overflow-x:auto;white-space:nowrap}
+.fx-model b{color:var(--hi);font-weight:600}
+.fx-h{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:20px 0 6px 2px}
+.fx-scroll{overflow-x:auto}
+.fx-t{font-family:'DM Mono',monospace;font-size:10.5px;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.fx-t th{font-weight:500;color:var(--mute);text-align:right;padding:4px 14px 5px;border-bottom:1px solid var(--border2);white-space:nowrap}
+.fx-t td{text-align:right;padding:5px 14px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--dim)}
+.fx-t th:first-child,.fx-t td:first-child{text-align:left;padding-left:2px}
+.fx-t tr:last-child td{border-bottom:none}
+.fx-t .fx-name{color:var(--purple);font-weight:600}
+.fx-t .fx-val{color:var(--hi);font-weight:600}
+.fx-t .fx-mute{color:var(--mute)}
+.fx-t td.fx-hot{background:rgba(248,81,73,.13);color:var(--hi)}
+.fx-t td.fx-warm{background:rgba(210,153,34,.10)}
+.fx-t td.fx-flag{color:var(--accent2);font-weight:600}
+.fx-note{font-size:9.5px;color:var(--mute);margin:6px 0 0 2px;line-height:1.6}
+.fx-warn{margin-top:10px;padding:7px 11px;border-left:2px solid var(--accent2);background:rgba(210,153,34,.07);border-radius:0 5px 5px 0;font-size:10.5px;color:var(--dim);line-height:1.6}
+.fx-warn b{color:var(--hi);font-weight:600}
+.fx-warn i{font-style:normal;color:var(--accent2);font-weight:600}
+.fx-plots{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:20px}
+.fx-plots>div{min-width:0}
+.fx-plots canvas{display:block;width:100%;max-width:100%;border:1px solid var(--border);border-radius:6px;background:var(--bg)}
+.fx-cap{display:flex;align-items:center;gap:8px;min-height:22px;margin:0 0 4px 2px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.fx-cap label{margin-left:auto;display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-size:10px}
+.fx-cap select{background:var(--surface);color:var(--dim);border:1px solid var(--border2);border-radius:5px;padding:2px 6px;font-family:inherit;font-size:10px}
+.fx-more{margin-top:22px;border-top:1px solid var(--border)}
+.fx-more>details{border-bottom:1px solid var(--border)}
+.fx-more summary{cursor:pointer;list-style:none;padding:8px 2px;font-size:10.5px;color:var(--dim);display:flex;gap:8px;align-items:baseline}
+.fx-more summary::-webkit-details-marker{display:none}
+.fx-more summary::before{content:'\25B8';color:var(--mute);display:inline-block;width:10px}
+.fx-more details[open]>summary::before{content:'\25BE'}
+.fx-more summary:hover{color:var(--hi)}
+.fx-more summary span{color:var(--mute);font-size:9.5px}
+.fx-body{padding:0 2px 14px 20px}
+.fx-def td{border-bottom:none;padding:3px 14px 3px 2px}
+.fx-def td:first-child{color:var(--hi)}
+.fx-def td:last-child{text-align:left;color:var(--mute);font-family:inherit}
 /* V1.3.120: when the only thing to report is routine conversions, the panel
    still appears -- otherwise there is nothing to click to see them -- but
    without the warning colours or the warning heading. */
@@ -716,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.125</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.126</div>
       </div>
     </div>
 
@@ -808,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.125</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.126</span></div>
       
     </div>
   </div>
@@ -981,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.125</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.126</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -14925,6 +14965,17 @@ function _fitIncBeta(a, b, x){
   const bt = Math.exp(_fitLnGamma(a + b) - _fitLnGamma(a) - _fitLnGamma(b) + a*Math.log(x) + b*Math.log(1 - x));
   return (x < (a + 1)/(a + b + 2)) ? bt*_fitBetaCF(a, b, x)/a : 1 - bt*_fitBetaCF(b, a, 1 - x)/b;
 }
+// V1.3.126: ticks on round values -- steps of 1, 2, 2.5 or 5 times a power of
+// ten -- the way a person would draw an axis. Splitting the range into equal
+// quarters labelled the kinetics fit 17.4, 25.5, 33.7, 41.9.
+function _fitNiceTicks(lo, hi, n){
+  if(!(hi > lo)) return [lo];
+  const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m*mag).find(st => st >= raw*(1 - 1e-9));
+  const out = [];
+  for(let v = Math.ceil(lo/step - 1e-9)*step; v <= hi + 1e-9*step; v += step) out.push(+v.toPrecision(12));
+  return out;
+}
 function _tCrit95(df){
   if(!(df > 0)) return NaN;
   if(df > 1e5) return 1.959963984540054;
@@ -15376,12 +15427,16 @@ function runRegression(txt) {
       const variance = df > 0 ? SSE / df : NaN;
       // Significant figures rather than decimal places: a rate constant of
       // 1.077e-4 shown to four decimals reads as 0.0001.
-      const fmtSig = (v, sf) => {
+      // V1.3.126: `keep` holds trailing zeros, so a column of results reads at
+      // one precision -- 2.01294 above 2.07650, not above 2.0765. Off for numbers
+      // a person typed in, where 0.2 should stay 0.2.
+      const fmtSig = (v, sf, keep) => {
         if (v === null || v === undefined || !isFinite(v)) return '\u2014';
         if (v === 0) return '0';
         const a = Math.abs(v);
-        return (a >= 1e6 || a < 1e-3) ? v.toExponential(sf - 1).replace(/\.?0+e/, 'e')
-                                      : parseFloat(v.toPrecision(sf)).toString();
+        if (a >= 1e6 || a < 1e-3) { const e = v.toExponential(sf - 1); return keep ? e : e.replace(/\.?0+e/, 'e'); }
+        const p = v.toPrecision(sf);
+        return (keep && p.indexOf('e') < 0) ? p : parseFloat(p).toString();
       };
       const sfV = Math.max(6, (UNITS.sigfigs || 3) + 3);
       const sfE = Math.max(4, (UNITS.sigfigs || 3) + 1);
@@ -15438,135 +15493,134 @@ function runRegression(txt) {
         } catch(e) {}
       });
 
-      // V1.3.125: a parameter table in place of the cards -- laid out like
-      // Polymath's, with Excel's lower and upper 95% limits beside the half-width.
-      const thP = 'padding:4px 10px;color:var(--mute);font-weight:500;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap';
-      const tdP = 'padding:4px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap';
+      // V1.3.126: the results panel, rebuilt around one question at a time.
+      // Read top to bottom it says what was fitted, what came out and how sure we
+      // are, how good the fit is, and whether it looks right. Everything else --
+      // correlations, the point-by-point table, the definitions, the snippet --
+      // waits one click away instead of pushing the plots off the screen.
       const _esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const plotId = 'fit-canvas-' + Date.now();
+
+      // The strongest pairwise correlation decides whether to warn at all.
+      let corrWorst = null;
+      for (let i = 0; i < P; i++) for (let j = i + 1; j < P; j++) {
+        const r = corrMatrix[i][j];
+        if (isFinite(r) && (!corrWorst || Math.abs(r) > Math.abs(corrWorst.r))) corrWorst = {i, j, r};
+      }
+      const CORR_WARN = 0.95;
+
+      // ── Model and parameters ──────────────────────────────────────────────
       const paramRows = freeVars.map((v, i) => {
-        const val = params[i], ci = paramCI[i];
-        return `<tr>
-          <td style="${tdP};text-align:left;color:var(--purple);font-weight:600">${v.name}</td>
-          <td style="${tdP};color:var(--mute)">${v.multiStart ? 'auto' : fmtSig(v.guess, sfV)}</td>
-          <td style="${tdP};color:var(--hi);font-weight:600">${fmtSig(val, sfV)}</td>
-          <td style="${tdP}">${fmtSig(paramSE[i], sfE)}</td>
-          <td style="${tdP}">${isFinite(ci) ? '± ' + fmtSig(ci, sfE) : '—'}</td>
-          <td style="${tdP}">${isFinite(ci) ? fmtSig(val - ci, sfV) : '—'}</td>
-          <td style="${tdP}">${isFinite(ci) ? fmtSig(val + ci, sfV) : '—'}</td>
-        </tr>`;
+        const val = params[i], ci = paramCI[i], ok = isFinite(ci);
+        return `<tr><td class="fx-name">${_esc(v.name)}</td>
+          <td class="fx-mute">${v.multiStart ? 'auto' : fmtSig(v.guess, sfV)}</td>
+          <td class="fx-val">${fmtSig(val, sfV, true)}</td>
+          <td>${fmtSig(paramSE[i], sfE, true)}</td>
+          <td>${ok ? '\u00b1 ' + fmtSig(ci, sfE, true) : '\u2014'}</td>
+          <td>${ok ? fmtSig(val - ci, sfV, true) : '\u2014'}</td>
+          <td>${ok ? fmtSig(val + ci, sfV, true) : '\u2014'}</td></tr>`;
       }).join('');
-      const paramTable = `<div>
-        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Regression model</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--hi);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;overflow-x:auto;white-space:nowrap">${_esc(yVar)} = ${_esc(modelExpr)}</div>
-        <div style="overflow-x:auto">
-        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
-          <tr><th style="${thP};text-align:left">Parameter</th><th style="${thP}">Initial guess</th><th style="${thP}">Value</th>
-              <th style="${thP}">Std. error</th><th style="${thP}">95% confidence</th><th style="${thP}">Lower 95%</th><th style="${thP}">Upper 95%</th></tr>
+      const corrWarnHtml = (corrWorst && Math.abs(corrWorst.r) > CORR_WARN)
+        ? `<div class="fx-warn"><i>Strongly correlated:</i> <b>${_esc(freeVars[corrWorst.i].name)}</b> and
+           <b>${_esc(freeVars[corrWorst.j].name)}</b> (r = ${corrWorst.r.toFixed(4)}). The data cannot separate them,
+           so their individual 95% limits overstate the uncertainty of predictions made with the model.</div>`
+        : '';
+      const paramHtml = `
+        <div class="fx-model"><b>${_esc(yVar)}</b> = ${_esc(modelExpr)}</div>
+        <div class="fx-h" style="margin-top:14px">Parameters</div>
+        <div class="fx-scroll"><table class="fx-t">
+          <tr><th>Parameter</th><th>Initial guess</th><th>Value</th><th>Std. error</th>
+              <th>95% confidence</th><th>Lower 95%</th><th>Upper 95%</th></tr>
           ${paramRows}
         </table></div>
-        <div style="font-size:9px;color:var(--mute);margin-top:4px">${df > 0
-          ? `95% limits = value ± t × std. error, with t = ${tCrit.toFixed(4)} (Student t, two-sided, df = N − P = ${df})`
-          : `No confidence limits: ${N} data points for ${P} parameters leaves no degrees of freedom. Add data points.`}</div>
-      </div>`;
+        <div class="fx-note">${df > 0
+          ? `Limits = value \u00b1 t-critical \u00d7 std. error &nbsp;\u00b7&nbsp; t-critical = ${tCrit.toFixed(4)} (Student t, two-sided 95%, df = N \u2212 P = ${df})`
+          : `No confidence limits: ${N} data points for ${P} parameters leaves no degrees of freedom.`}</div>
+        ${corrWarnHtml}`;
 
-      // Goodness of fit, as a table
-      const statsHtml = `<div style="margin-top:12px">
-        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Goodness of fit</div>
-        <div style="overflow-x:auto">
-        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
-          <tr><th style="${thP}">R²</th><th style="${thP}">R²adj</th><th style="${thP}">SSE</th><th style="${thP}">SST</th>
-              <th style="${thP}">Variance σ²</th><th style="${thP}">RMSE</th><th style="${thP}">N</th><th style="${thP}">df</th></tr>
-          <tr><td style="${tdP}">${R2.toFixed(6)}</td><td style="${tdP}">${isFinite(R2adj) ? R2adj.toFixed(6) : '—'}</td>
-              <td style="${tdP}">${fmtSig(SSE, sfE + 1)}</td><td style="${tdP}">${fmtSig(ssTot, sfE + 1)}</td>
-              <td style="${tdP}">${fmtSig(variance, sfE + 1)}</td><td style="${tdP}">${fmtSig(RMSE, sfE + 1)}</td>
-              <td style="${tdP}">${N}</td><td style="${tdP}">${df}</td></tr>
-        </table></div>
-        <div style="font-size:9px;color:var(--mute);margin-top:4px;line-height:1.7">
-          SSE = Σ(y<sub>obs</sub> − y<sub>calc</sub>)² &nbsp;·&nbsp; SST = Σ(y<sub>obs</sub> − ȳ)² &nbsp;·&nbsp;
-          R² = 1 − SSE/SST &nbsp;·&nbsp; R²adj = 1 − (1 − R²)(N − 1)/(N − P) &nbsp;·&nbsp;
-          σ² = SSE/(N − P) &nbsp;·&nbsp; RMSE = √(SSE/N)
-        </div>
-      </div>`;
+      // ── Goodness of fit ───────────────────────────────────────────────────
+      const statsHtml = `
+        <div class="fx-h">Goodness of fit</div>
+        <div class="fx-scroll"><table class="fx-t">
+          <tr><th>R\u00b2</th><th>R\u00b2adj</th><th>SSE</th><th>SST</th><th>Variance \u03c3\u00b2</th><th>RMSE</th><th>N</th><th>df</th></tr>
+          <tr><td class="fx-val">${R2.toFixed(6)}</td><td>${isFinite(R2adj) ? R2adj.toFixed(6) : '\u2014'}</td>
+              <td>${fmtSig(SSE, sfE + 1)}</td><td>${fmtSig(ssTot, sfE + 1)}</td>
+              <td>${fmtSig(variance, sfE + 1)}</td><td>${fmtSig(RMSE, sfE + 1)}</td>
+              <td>${N}</td><td>${df}</td></tr>
+        </table></div>`;
 
-      // Correlation matrix (only if >1 parameter)
-      let corrHtml = '';
-      if (P > 1) {
-        const names = freeVars.map(v => v.name);
-        corrHtml = `<div style="margin-top:10px">
-          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Parameter Correlation Matrix</div>
-          <table style="font-size:10px;font-family:'DM Mono',monospace;border-collapse:collapse">
-            <tr><th></th>${names.map(n=>`<th style="padding:3px 8px;color:var(--mute)">${n}</th>`).join('')}</tr>
-            ${corrMatrix.map((row, i) => `<tr>
-              <th style="padding:3px 8px;color:var(--mute);text-align:left">${names[i]}</th>
-              ${row.map((v, j) => {
-                const bg = i===j ? 'var(--surface)' : Math.abs(v)>0.9 ? 'rgba(255,80,80,.15)' : Math.abs(v)>0.7 ? 'rgba(255,180,0,.1)' : 'transparent';
-                return `<td style="padding:3px 8px;text-align:center;background:${bg};border:1px solid var(--border)">${i===j?'1.000':v.toFixed(3)}</td>`;
-              }).join('')}
-            </tr>`).join('')}
-          </table>
-          <div style="font-size:9px;color:var(--mute);margin-top:3px">
-            <span style="color:rgba(255,80,80,.8)">■</span> |r|&gt;0.9 high correlation (parameters may be redundant)
-          </div>
-        </div>`;
-      }
-
-      // Residuals plot canvas
-      const plotId = 'fit-canvas-' + Date.now();
-      // V1.3.112: with more than one independent variable the plot was hardwired
-      // to the first one, so the others could not be looked at at all. Offer the
-      // choice; the rest are held at their means exactly as before.
-      // V1.3.113: with several inputs, a slice against one of them is the wrong
-      // default. Each point carries its own values for the inputs being held at
-      // their means, so the points scatter for reasons that have nothing to do
-      // with model error -- on the kinetics example that is a spread of 0.21x to
-      // 2.30x about the curve for a fit whose R2 is 0.996, which reads as a bad
-      // fit. Fitted-vs-observed uses every input at once and plots nothing but
-      // real measurements, so distance from the 1:1 line IS the model error.
+      // ── Plots, side by side when there is room ────────────────────────────
+      // V1.3.112/113: with several inputs, fitted-vs-observed is the default
+      // view -- a slice against one input scatters for reasons that have
+      // nothing to do with model error. The other views remain one choice away.
       const xSelHtml = xVars.length > 1
-        ? `<label style="font-size:10px;color:var(--mute);margin-left:auto;display:flex;align-items:center;gap:5px">view
-             <select id="${plotId}-x" style="background:var(--surface);color:var(--dim);border:1px solid var(--border2);
-                     border-radius:5px;padding:2px 6px;font-family:inherit;font-size:10px">
-               <option value="__parity__">fitted vs observed</option>
-               ${xVars.map(v => `<option value="${v}">vs ${v}</option>`).join('')}
-             </select></label>`
+        ? `<label>view <select id="${plotId}-x">
+             <option value="__parity__">fitted vs observed</option>
+             ${xVars.map(v => `<option value="${_esc(v)}">vs ${_esc(v)}</option>`).join('')}
+           </select></label>`
         : '';
-      const plotHtml = `<div style="margin-top:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Fit</div>
-          ${xSelHtml}
-        </div>
-        <canvas id="${plotId}" style="width:100%;aspect-ratio:16/7;border:1px solid var(--border);border-radius:6px;background:var(--bg)"></canvas>
-      </div>`;
+      const plotsHtml = `
+        <div class="fx-plots" id="${plotId}-grid">
+          <div><div class="fx-cap">Fit${xSelHtml}</div><canvas id="${plotId}" data-aspect="0.62"></canvas></div>
+          <div><div class="fx-cap">Residuals</div><canvas id="${plotId}-res" data-aspect="0.62"></canvas></div>
+        </div>`;
 
-      // ── "Use Model" snippet ──────────────────────────────────────────────────
-      // V1.3.125: residuals, observed minus calculated, plotted against the
-      // observed value as Polymath does, with the numbers behind them in a table.
-      // A good fit scatters evenly about zero; a curve or a funnel here is the
-      // model talking, not the noise.
+      // ── One click away ────────────────────────────────────────────────────
       const residObs = yData.map((yo, i) => yo - yPred[i]);
       const sfD = Math.max(5, (UNITS.sigfigs || 3) + 2);
+      // A residual beyond +/-2 sigma is ringed amber in the plot; colour its row's
+      // residual cells the same, so the plot and the table point at one thing.
+      const band2 = isFinite(variance) ? 2*Math.sqrt(variance) : NaN;
+      const isOut = r => isFinite(band2) && isFinite(r) && Math.abs(r) > band2;
+      const nOut = residObs.filter(isOut).length;
       const dataRows = yData.map((yo, i) => {
         const pct = (yo !== 0 && isFinite(residObs[i])) ? residObs[i] / yo * 100 : NaN;
-        return `<tr><td style="${tdP};color:var(--mute)">${i + 1}</td>` +
-          xVars.map((_, j) => `<td style="${tdP}">${fmtSig(xDataArr[j][i], sfD)}</td>`).join('') +
-          `<td style="${tdP}">${fmtSig(yo, sfD)}</td><td style="${tdP}">${fmtSig(yPred[i], sfD)}</td>` +
-          `<td style="${tdP}">${fmtSig(residObs[i], sfD)}</td>` +
-          `<td style="${tdP}">${isFinite(pct) ? fmtSig(pct, 4) + '%' : '—'}</td></tr>`;
+        const fl = isOut(residObs[i]) ? ' class="fx-flag"' : '';
+        return `<tr><td class="fx-mute">${i + 1}</td>` +
+          xVars.map((_, j) => `<td>${fmtSig(xDataArr[j][i], sfD)}</td>`).join('') +
+          `<td>${fmtSig(yo, sfD)}</td><td>${fmtSig(yPred[i], sfD, true)}</td>` +
+          `<td${fl}>${fmtSig(residObs[i], sfD, true)}</td>` +
+          `<td${fl}>${isFinite(pct) ? fmtSig(pct, 4) + '%' : '\u2014'}</td></tr>`;
       }).join('');
-      const residHtml = `<div style="margin-top:12px">
-        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Residuals</div>
-        <canvas id="${plotId}-res" style="width:100%;aspect-ratio:16/6;border:1px solid var(--border);border-radius:6px;background:var(--bg)"></canvas>
-      </div>
-      <details ${N <= 25 ? 'open' : ''} style="margin-top:10px">
-        <summary style="cursor:pointer;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">Data table · ${N} points</summary>
-        <div style="overflow-x:auto;margin-top:5px">
-        <table style="font-size:10.5px;font-family:'DM Mono',monospace;border-collapse:collapse">
-          <tr><th style="${thP}">#</th>${xVars.map(v => `<th style="${thP}">${_esc(v)}</th>`).join('')}
-              <th style="${thP}">${_esc(yVar)}</th><th style="${thP}">calculated ${_esc(yVar)}</th>
-              <th style="${thP}">residual</th><th style="${thP}">residual %</th></tr>
+      const dataBlock = `<details><summary>Data table <span>${N} points \u00b7 observed, calculated and residual${nOut
+          ? ` \u00b7 <b style="color:var(--accent2);font-weight:600">${nOut} outside \u00b12\u03c3</b>` : ''}</span></summary>
+        <div class="fx-body"><div class="fx-scroll"><table class="fx-t">
+          <tr><th>#</th>${xVars.map(v => `<th>${_esc(v)}</th>`).join('')}
+              <th>${_esc(yVar)}</th><th>calculated ${_esc(yVar)}</th><th>residual</th><th>residual %</th></tr>
           ${dataRows}
         </table></div>
-        <div style="font-size:9px;color:var(--mute);margin-top:4px">residual = observed − calculated; residual % = residual / observed × 100</div>
+        <div class="fx-note">residual = observed \u2212 calculated &nbsp;\u00b7&nbsp; residual % = residual / observed \u00d7 100${isFinite(band2)
+          ? ` &nbsp;\u00b7&nbsp; <span style="color:var(--accent2)">amber</span>: beyond \u00b12\u03c3 = \u00b1${fmtSig(band2, 4)}` : ''}</div></div>
+      </details>`;
+
+      let corrBlock = '';
+      if (P > 1) {
+        const names = freeVars.map(v => _esc(v.name));
+        corrBlock = `<details><summary>Parameter correlations <span>strongest |r| = ${corrWorst ? Math.abs(corrWorst.r).toFixed(4) : '\u2014'}</span></summary>
+          <div class="fx-body"><div class="fx-scroll"><table class="fx-t">
+            <tr><th></th>${names.map(n => `<th>${n}</th>`).join('')}</tr>
+            ${corrMatrix.map((row, i) => `<tr><td class="fx-name">${names[i]}</td>${row.map((v, j) => {
+              const cls = i === j ? 'fx-mute' : Math.abs(v) > 0.9 ? 'fx-hot' : Math.abs(v) > 0.7 ? 'fx-warm' : '';
+              return `<td class="${cls}">${i === j ? '1' : v.toFixed(4)}</td>`;
+            }).join('')}</tr>`).join('')}
+          </table></div>
+          <div class="fx-note">|r| &gt; 0.9: strongly correlated \u2014 the data cannot separate these parameters, so their
+            individual 95% limits overstate the uncertainty of predictions. Rewriting the model around a reference value
+            inside the data range usually reduces it.</div></div>
+        </details>`;
+      }
+
+      const defsBlock = `<details><summary>How these statistics are defined</summary>
+        <div class="fx-body"><table class="fx-t fx-def">
+          <tr><td>SSE = \u03a3(y<sub>obs</sub> \u2212 y<sub>calc</sub>)\u00b2</td><td>sum of squared errors</td></tr>
+          <tr><td>SST = \u03a3(y<sub>obs</sub> \u2212 \u0233)\u00b2</td><td>total sum of squares about the mean</td></tr>
+          <tr><td>R\u00b2 = 1 \u2212 SSE / SST</td><td>fraction of the variation the model explains</td></tr>
+          <tr><td>R\u00b2adj = 1 \u2212 (1 \u2212 R\u00b2)(N \u2212 1)/(N \u2212 P)</td><td>R\u00b2 penalised for the number of parameters P</td></tr>
+          <tr><td>\u03c3\u00b2 = SSE / (N \u2212 P)</td><td>residual variance</td></tr>
+          <tr><td>RMSE = \u221a(SSE / N)</td><td>root-mean-square error, in the units of ${_esc(yVar)}</td></tr>
+          <tr><td>std. error = \u221a(\u03c3\u00b2 [(J\u1d40J)\u207b\u00b9]<sub>ii</sub>)</td><td>J = Jacobian of the model at the fitted values</td></tr>
+          <tr><td>95% limits = value \u00b1 t-critical \u00d7 std. error</td><td>t-critical from Student t, df = N \u2212 P</td></tr>
+        </table></div>
       </details>`;
 
       const snippetLines = freeVars.map((v, i) => {
@@ -15574,25 +15628,20 @@ function runRegression(txt) {
         const dp = Math.max(6, (UNITS.sigfigs||3)+3);
         const valStr = Math.abs(val) >= 1e4 || (Math.abs(val) < 1e-3 && val !== 0)
           ? val.toExponential(dp) : parseFloat(val.toFixed(dp)).toString();
-        return `${v.name} = ${valStr}  // fitted ± ${fmt2(paramCI[i])}`;
+        return `${v.name} = ${valStr}  // fitted \u00b1 ${fmt2(paramCI[i])}`;
       }).join('\n');
       const snippetId = 'fit-snippet-' + Date.now();
-      const useModelHtml = `<div style="margin-top:12px">
-        <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">
-          Use Model — Copy fitted parameters into a new algebraic sheet
-        </div>
-        <div style="position:relative">
-          <pre id="${snippetId}" style="font-family:'DM Mono',monospace;font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin:0;overflow-x:auto;color:var(--hi);white-space:pre">${snippetLines.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>
+      const useModelBlock = `<details><summary>Use these parameters in another sheet</summary>
+        <div class="fx-body"><div style="position:relative">
+          <pre id="${snippetId}" style="font-family:'DM Mono',monospace;font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin:0;overflow-x:auto;color:var(--hi);white-space:pre">${_esc(snippetLines)}</pre>
           <button onclick="window._copyText('${snippetId}',this)" class="copy-btn-fit"
             style="position:absolute;top:6px;right:6px;font-size:9px;padding:3px 8px;background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer">Copy</button>
         </div>
-        <div style="font-size:9px;color:var(--mute);margin-top:4px">
-          Paste into a new sheet along with your model equation to evaluate predictions at any input value.
-        </div>
-      </div>`;
+        <div class="fx-note">Paste into a new sheet with your model equation to evaluate it at any input value.</div></div>
+      </details>`;
 
-      const extraHtml = extraCards.length ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:5px">Derived quantities</div><div class="var-grid">${extraCards.join('')}</div></div>` : '';
-      $body.innerHTML = `${paramTable}${extraHtml}${statsHtml}${corrHtml}${plotHtml}${residHtml}${useModelHtml}`;
+      const extraHtml = extraCards.length ? `<div class="fx-h">Derived quantities</div><div class="var-grid">${extraCards.join('')}</div>` : '';
+      $body.innerHTML = `<div class="fx">${paramHtml}${extraHtml}${statsHtml}${plotsHtml}<div class="fx-more">${dataBlock}${corrBlock}${defsBlock}${useModelBlock}</div></div>`;
 
       // ── Draw fit plot ─────────────────────────────────────────────────────
       // V1.3.41: stash the draw function on window so the theme toggle can
@@ -15602,7 +15651,7 @@ function runRegression(txt) {
         if (!canvas) return false;  // signal: stop calling, plot is gone
         const dpr = window.devicePixelRatio || 1;
         const W = canvas.parentElement.clientWidth || 400;
-        const H = Math.round(W * 7/16);
+        const H = Math.round(W * (+canvas.dataset.aspect || 7/16));
         canvas.width = W*dpr; canvas.height = H*dpr;
         canvas.style.width = W+'px'; canvas.style.height = H+'px';
         const ctx = canvas.getContext('2d');
@@ -15641,7 +15690,10 @@ function runRegression(txt) {
         const xSpan = xAllPos ? Math.max(...xData)/Math.min(...xData) : 0;
         const ySpan = yAllPos ? Math.max(...yData)/Math.min(...yData.filter(v=>v>0)) : 0;
         // Use log-log when both positive and combined span suggests power-law data
-        const useLog = xAllPos && yAllPos && (xSpan > 10 || ySpan > 10);
+        // V1.3.126: both axes must span a decade. With "either", x running from
+        // 1 to 12 was enough to draw a straight-line fit on log-log axes, where
+        // it curves. Power laws (the case log-log is for) span both.
+        const useLog = xAllPos && yAllPos && (xSpan >= 10 && ySpan >= 10);
 
         const T  = v => useLog ? Math.log10(Math.max(v, 1e-300)) : v;
         const iT = v => useLog ? Math.pow(10, v) : v;
@@ -15676,7 +15728,10 @@ function runRegression(txt) {
         // Compute plot bounds in transformed space
         const txData = xData.map(T);
         const tyData = [...ptY.filter(isFinite), ...ySmooth100.filter(isFinite)].map(T);
-        const txMin = Math.min(...txData), txMax = Math.max(...txData);
+        // A little room either side, so the end points do not sit on the frame.
+        const _txLo = Math.min(...txData), _txHi = Math.max(...txData);
+        const _txPad = (_txHi - _txLo) * 0.03;
+        const txMin = _txLo - _txPad, txMax = _txHi + _txPad;
         let tyMin = Math.min(...tyData), tyMax = Math.max(...tyData);
         const margin = (tyMax - tyMin) * 0.08 || 0.5;
         tyMin -= margin; tyMax += margin;
@@ -15713,11 +15768,9 @@ function runRegression(txt) {
             }
           }
         } else {
-          for (let i = 0; i <= 4; i++) {
-            ctx.lineWidth = 0.5;
-            const gx = PAD.l + i/4*pw; ctx.beginPath(); ctx.moveTo(gx,PAD.t); ctx.lineTo(gx,PAD.t+ph); ctx.stroke();
-            const gy = PAD.t + i/4*ph; ctx.beginPath(); ctx.moveTo(PAD.l,gy); ctx.lineTo(PAD.l+pw,gy); ctx.stroke();
-          }
+          ctx.lineWidth = 0.5;
+          _fitNiceTicks(txMin, txMax, 6).forEach(v => { const gx = px(v); ctx.beginPath(); ctx.moveTo(gx,PAD.t); ctx.lineTo(gx,PAD.t+ph); ctx.stroke(); });
+          _fitNiceTicks(tyMin, tyMax, 5).forEach(v => { const gy = py(v); ctx.beginPath(); ctx.moveTo(PAD.l,gy); ctx.lineTo(PAD.l+pw,gy); ctx.stroke(); });
         }
 
         // ── Prediction band (±2σ) ──────────────────────────────────────────
@@ -15784,15 +15837,9 @@ function runRegression(txt) {
           }
         } else {
           ctx.textAlign = 'center';
-          for (let i = 0; i <= 4; i++) {
-            const v = iT(txMin + i/4*txRange);
-            ctx.fillText(parseFloat(v.toPrecision(3)), PAD.l + i/4*pw, PAD.t+ph+14);
-          }
+          _fitNiceTicks(txMin, txMax, 6).forEach(v => ctx.fillText(String(v), px(v), PAD.t+ph+14));
           ctx.textAlign = 'right';
-          for (let i = 0; i <= 4; i++) {
-            const v = iT(tyMin + (1-i/4)*tyRange);
-            ctx.fillText(parseFloat(v.toPrecision(3)), PAD.l-6, PAD.t + i/4*ph+4);
-          }
+          _fitNiceTicks(tyMin, tyMax, 5).forEach(v => ctx.fillText(String(v), PAD.l-6, py(v)+4));
         }
 
         // ── Axis variable labels ───────────────────────────────────────────
@@ -15818,67 +15865,119 @@ function runRegression(txt) {
         }
 
         ctx.textAlign = 'left'; ctx.font = '9px monospace'; ctx.fillStyle = axCol;
-        ctx.fillText('R²=' + R2.toFixed(4) + '  RMSE=' + fmt2(RMSE), PAD.l+4, PAD.t+12);
+        // V1.3.126: no R2/RMSE printed inside the plot. It repeated the table and
+        // rounded R2 = 0.999972 up to 1.0000, which claims a perfect fit.
         return true;
       };
+      // V1.3.126: residuals in EquaSolve's own visual language rather than
+      // Polymath's red on black. Each point is the same observation as in the fit
+      // plot, so it keeps the data blue; the zero line is the fitted curve laid
+      // flat, so it keeps the fit orange; the shaded band is the same +/-2 sigma as
+      // the fit plot's. A stem joins each point to the line so its size and sign
+      // read at a glance, and a point outside the band is ringed -- the one to
+      // look at. Plotted against the CALCULATED value, the standard diagnostic:
+      // against the observed value a residual is partly correlated with its own
+      // axis (e = y_obs - y_calc), which can draw a trend that is not in the model.
       const drawResidPlot = () => {
         const canvas = document.getElementById(plotId + '-res');
         if (!canvas) return false;
         const dpr = window.devicePixelRatio || 1;
         const W = canvas.parentElement.clientWidth || 400;
-        const H = Math.round(W * 6/16);
+        const H = Math.round(W * (+canvas.dataset.aspect || 6/16));
         canvas.width = W*dpr; canvas.height = H*dpr;
         canvas.style.width = W+'px'; canvas.style.height = H+'px';
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
-        const light = document.documentElement.classList.contains('light');
+        const light   = document.documentElement.classList.contains('light');
         const bgCol   = light ? '#f6f8fa' : '#151820';
         const gridCol = light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)';
         const axCol   = light ? 'rgba(0,0,0,.6)'  : 'rgba(255,255,255,.6)';
-        const zeroCol = light ? 'rgba(0,0,0,.8)'  : 'rgba(255,255,255,.8)';
-        const ptCol   = '#ef5350';
+        const dataCol = '#4fc3f7', fitCol = '#ff7043';
+        const stemCol = light ? 'rgba(2,136,209,.45)' : 'rgba(79,195,247,.45)';
+        // The band's EDGES carry the meaning; a solid fill flooded the plot,
+        // since for a healthy fit nearly every point sits inside it.
+        const bandCol = light ? 'rgba(255,112,67,.05)' : 'rgba(255,112,67,.06)';
+        const bandEdge = 'rgba(255,112,67,.6)';
+        const ringCol = light ? '#9a6700' : '#d29922';
+        const edgeCol = light ? 'rgba(0,0,0,.3)' : 'rgba(255,255,255,.3)';
         const PAD = {l:54, r:20, t:16, b:38};
         const pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b;
         ctx.fillStyle = bgCol; ctx.fillRect(0, 0, W, H);
-        const pts = yData.map((yo, i) => [yo, residObs[i]]).filter(p => isFinite(p[0]) && isFinite(p[1]));
+
+        const pts = yPred.map((yc, i) => [yc, residObs[i]]).filter(p => isFinite(p[0]) && isFinite(p[1]));
         if (!pts.length) return true;
-        // Ticks on round values, as a person would draw them: steps of 1, 2,
-        // 2.5 or 5 times a power of ten.
+        const band = isFinite(variance) ? 2*Math.sqrt(variance) : NaN;
+
+        let dMin = Math.min(...pts.map(p => p[0])), dMax = Math.max(...pts.map(p => p[0]));
+        if (dMax === dMin) { dMin -= 1; dMax += 1; }
+        const xPad = (dMax - dMin) * 0.04;
+        const xMin = dMin - xPad, xMax = dMax + xPad;
+        let rData = Math.max(...pts.map(p => Math.abs(p[1])), isFinite(band) ? band : 0);
+        if (!(rData > 0)) rData = 1;
         const niceStep = (span, n) => {
           const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
           return [1, 2, 2.5, 5, 10].map(m => m*mag).find(st => st >= raw*(1 - 1e-9));
         };
-        let dMin = Math.min(...pts.map(p => p[0])), dMax = Math.max(...pts.map(p => p[0]));
-        if (dMax === dMin) { dMin -= 1; dMax += 1; }
-        const xStep = niceStep(dMax - dMin, 6);
-        const xPad = (dMax - dMin) * 0.04;
-        const xMin = dMin - xPad, xMax = dMax + xPad;
-        const xTicks = [];
-        for (let v = Math.ceil(xMin / xStep) * xStep; v <= xMax + 1e-9*xStep; v += xStep) xTicks.push(+v.toPrecision(12));
-        let rData = Math.max(...pts.map(p => Math.abs(p[1])));
-        if (!(rData > 0)) rData = 1;
         const rStep = niceStep(2.2*rData, 6);
         const rMax = Math.ceil(1.1*rData / rStep) * rStep;      // symmetric about zero, ending on a tick
         const rTicks = [];
         for (let v = -rMax; v <= rMax + 1e-9*rStep; v += rStep) rTicks.push(+v.toPrecision(12));
+        const xTicks = _fitNiceTicks(xMin, xMax, 6);
         const px = v => PAD.l + (v - xMin) / (xMax - xMin) * pw;
         const py = v => PAD.t + (1 - (v + rMax) / (2*rMax)) * ph;
+
+        // Grid
         ctx.strokeStyle = gridCol; ctx.lineWidth = 0.5;
         xTicks.forEach(v => { const gx = px(v); ctx.beginPath(); ctx.moveTo(gx, PAD.t); ctx.lineTo(gx, PAD.t+ph); ctx.stroke(); });
         rTicks.forEach(v => { const gy = py(v); ctx.beginPath(); ctx.moveTo(PAD.l, gy); ctx.lineTo(PAD.l+pw, gy); ctx.stroke(); });
-        ctx.strokeStyle = zeroCol; ctx.lineWidth = 2;
+
+        // +/-2 sigma band, then the fit itself as the zero line
+        if (isFinite(band)) {
+          ctx.fillStyle = bandCol; ctx.fillRect(PAD.l, py(band), pw, py(-band) - py(band));
+          ctx.strokeStyle = bandEdge; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+          [band, -band].forEach(b => { ctx.beginPath(); ctx.moveTo(PAD.l, py(b)); ctx.lineTo(PAD.l+pw, py(b)); ctx.stroke(); });
+          ctx.setLineDash([]);
+        }
+        ctx.strokeStyle = fitCol; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(PAD.l, py(0)); ctx.lineTo(PAD.l+pw, py(0)); ctx.stroke();
-        ctx.fillStyle = ptCol; ctx.strokeStyle = light ? 'rgba(0,0,0,.3)' : 'rgba(255,255,255,.3)'; ctx.lineWidth = 1;
-        pts.forEach(p => { ctx.beginPath(); ctx.arc(px(p[0]), py(p[1]), 4.5, 0, Math.PI*2); ctx.fill(); ctx.stroke(); });
+
+        // Stems, then points; a point outside the band is ringed
+        ctx.strokeStyle = stemCol; ctx.lineWidth = 1.5;
+        pts.forEach(p => { ctx.beginPath(); ctx.moveTo(px(p[0]), py(0)); ctx.lineTo(px(p[0]), py(p[1])); ctx.stroke(); });
+        pts.forEach(p => {
+          const x = px(p[0]), y = py(p[1]);
+          ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2);
+          ctx.fillStyle = dataCol; ctx.fill();
+          ctx.strokeStyle = edgeCol; ctx.lineWidth = 1; ctx.stroke();
+          if (isFinite(band) && Math.abs(p[1]) > band) {
+            ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2);
+            ctx.strokeStyle = ringCol; ctx.lineWidth = 1.5; ctx.stroke();
+          }
+        });
+
+        // Axes
         ctx.fillStyle = axCol; ctx.font = '9px monospace';
         ctx.textAlign = 'center';
         xTicks.forEach(v => ctx.fillText(String(v), px(v), PAD.t+ph+14));
         ctx.textAlign = 'right';
         rTicks.forEach(v => ctx.fillText(String(v), PAD.l-6, py(v) + 4));
         ctx.textAlign = 'center'; ctx.font = '9px sans-serif';
-        ctx.fillText('observed ' + yVar, PAD.l + pw/2, H - 5);
+        ctx.fillText('calculated ' + yVar, PAD.l + pw/2, H - 5);
         ctx.save(); ctx.translate(12, PAD.t + ph/2); ctx.rotate(-Math.PI/2);
-        ctx.fillText('residual (obs − calc)', 0, 0); ctx.restore();
+        ctx.fillText('residual (obs \u2212 calc)', 0, 0); ctx.restore();
+
+        // Legend, matching the fit plot's
+        ctx.textAlign = 'left'; ctx.font = '9px sans-serif';
+        const lx = PAD.l + pw - 84, ly = PAD.t + 8;
+        ctx.fillStyle = dataCol; ctx.beginPath(); ctx.arc(lx+5, ly+5, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = axCol; ctx.fillText('residual', lx+15, ly+9);
+        ctx.strokeStyle = fitCol; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, ly+20); ctx.lineTo(lx+11, ly+20); ctx.stroke();
+        ctx.fillStyle = axCol; ctx.fillText('fit', lx+15, ly+24);
+        if (isFinite(band)) {
+          ctx.strokeStyle = bandEdge; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(lx, ly+34); ctx.lineTo(lx+11, ly+34); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = axCol; ctx.fillText('\u00b12\u03c3', lx+15, ly+38);
+        }
         return true;
       };
       const _xSelEl = document.getElementById(plotId + '-x');
@@ -15886,6 +15985,22 @@ function runRegression(txt) {
       // The theme toggle calls this to repaint; both plots follow the theme.
       window._drawFitPlot = () => { const ok = drawFitPlot(); drawResidPlot(); return ok; };
       requestAnimationFrame(window._drawFitPlot);
+      // V1.3.126: the plots sit side by side on a wide panel and stack on a
+      // narrow one, so they must follow their column's width rather than the
+      // width they were first drawn at.
+      const _grid = document.getElementById(plotId + '-grid');
+      if (_grid && window.ResizeObserver) {
+        let _rq = 0, _lastW = _grid.clientWidth;
+        const _ro = new ResizeObserver(() => {
+          if (!document.getElementById(plotId)) { _ro.disconnect(); return; }
+          const w = _grid.clientWidth;
+          if (w === _lastW) return;
+          _lastW = w;
+          cancelAnimationFrame(_rq);
+          _rq = requestAnimationFrame(() => { if (typeof window._drawFitPlot === 'function') window._drawFitPlot(); });
+        });
+        _ro.observe(_grid);
+      }
 
       $bt.disabled=false; $bt.innerHTML='▶ Solve';
     } catch(e) {
