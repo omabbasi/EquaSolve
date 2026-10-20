@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.126</title>
+<title>EquaSolve V1.3.127</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.126</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.127</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.126</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.127</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.126</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.127</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -15870,8 +15870,8 @@ function runRegression(txt) {
         return true;
       };
       // V1.3.126: residuals in EquaSolve's own visual language rather than
-      // Polymath's red on black. Each point is the same observation as in the fit
-      // plot, so it keeps the data blue; the zero line is the fitted curve laid
+      // Polymath's red on black. Residuals are green (V1.3.127 -- blue made them
+      // read as the fit plot's data); the zero line is the fitted curve laid
       // flat, so it keeps the fit orange; the shaded band is the same +/-2 sigma as
       // the fit plot's. A stem joins each point to the line so its size and sign
       // read at a glance, and a point outside the band is ringed -- the one to
@@ -15892,8 +15892,13 @@ function runRegression(txt) {
         const bgCol   = light ? '#f6f8fa' : '#151820';
         const gridCol = light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)';
         const axCol   = light ? 'rgba(0,0,0,.6)'  : 'rgba(255,255,255,.6)';
-        const dataCol = '#4fc3f7', fitCol = '#ff7043';
-        const stemCol = light ? 'rgba(2,136,209,.45)' : 'rgba(79,195,247,.45)';
+        // V1.3.127: residuals are not data, so they no longer borrow the fit
+        // plot's data blue -- two plots side by side in one colour read as the
+        // same quantity. Green for residuals. The zero line keeps the fit's
+        // orange on purpose: in both plots orange is where the model says the
+        // data should be -- the curve there, e = 0 here.
+        const resCol  = light ? '#1a7f37' : '#3fb950', fitCol = '#ff7043';
+        const stemCol = light ? 'rgba(26,127,55,.40)' : 'rgba(63,185,80,.45)';
         // The band's EDGES carry the meaning; a solid fill flooded the plot,
         // since for a healthy fit nearly every point sits inside it.
         const bandCol = light ? 'rgba(255,112,67,.05)' : 'rgba(255,112,67,.06)';
@@ -15947,7 +15952,7 @@ function runRegression(txt) {
         pts.forEach(p => {
           const x = px(p[0]), y = py(p[1]);
           ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2);
-          ctx.fillStyle = dataCol; ctx.fill();
+          ctx.fillStyle = resCol; ctx.fill();
           ctx.strokeStyle = edgeCol; ctx.lineWidth = 1; ctx.stroke();
           if (isFinite(band) && Math.abs(p[1]) > band) {
             ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2);
@@ -15968,11 +15973,12 @@ function runRegression(txt) {
 
         // Legend, matching the fit plot's
         ctx.textAlign = 'left'; ctx.font = '9px sans-serif';
-        const lx = PAD.l + pw - 84, ly = PAD.t + 8;
-        ctx.fillStyle = dataCol; ctx.beginPath(); ctx.arc(lx+5, ly+5, 4, 0, Math.PI*2); ctx.fill();
+        const lx = PAD.l + pw - 122, ly = PAD.t + 8;
+        ctx.fillStyle = resCol; ctx.beginPath(); ctx.arc(lx+5, ly+5, 4, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = axCol; ctx.fillText('residual', lx+15, ly+9);
         ctx.strokeStyle = fitCol; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, ly+20); ctx.lineTo(lx+11, ly+20); ctx.stroke();
-        ctx.fillStyle = axCol; ctx.fillText('fit', lx+15, ly+24);
+        // The reference line at zero, in the residual-plot literature's terms.
+        ctx.fillStyle = axCol; ctx.fillText('zero residual (e = 0)', lx+15, ly+24);
         if (isFinite(band)) {
           ctx.strokeStyle = bandEdge; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
           ctx.beginPath(); ctx.moveTo(lx, ly+34); ctx.lineTo(lx+11, ly+34); ctx.stroke(); ctx.setLineDash([]);
