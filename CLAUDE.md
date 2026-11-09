@@ -38,6 +38,15 @@ this repo is.**
 **The repository root holds exactly one build: the current release.** Every earlier
 version lives in `Archive/` and nowhere else. Do not leave old releases at the root.
 
+**Bug fixes are released end to end without asking at each step** (the author's standing
+instruction, 9 Nov 2026). When the author asks for a bug fix: fix it, build the new
+version, run the checks, update the release files, and push to GitHub, then report what
+shipped. The checks are to reproduce the bug on the old build, confirm the fix on the new
+one, and compare every built-in example between the two. Stop and ask instead of pushing
+if a check fails, if results change in a way the fix did not intend, or if local work has
+diverged from GitHub. This covers bug fixes the author asked for, not unrequested changes,
+and never force-pushing or rewriting history.
+
 When a new build is produced:
 
 1. `git rm` the previous release from the root.
