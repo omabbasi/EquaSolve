@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.130</title>
+<title>EquaSolve V1.3.131</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.130</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.131</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.130</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.131</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.130</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.131</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -2071,7 +2071,7 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
         <div class="help-table">
           <div class="help-block">
             <code>Pr_num(mu, cp_J, k)</code>
-            <div class="hb-desc">Prandtl number</div>
+            <div class="hb-desc">Prandtl number. Tag the inputs in any unit, or give bare values in SI (cp in J/kg·K)</div>
             <div class="hb-eq">Pr = μ · cp / k</div>
           </div>
           <div class="help-block">
@@ -2201,7 +2201,7 @@ N_CO2*h_CO2(T_prod) + N_H2O*h_H2O(T_prod) + N_N2*h_N2(T_prod) = h_CH4(T_react)</
           </div>
           <div class="help-block">
             <code>Q_hx(U, A, LMTD_val)</code>
-            <div class="hb-desc">Heat transfer rate [W]</div>
+            <div class="hb-desc">Heat transfer rate, in your Units-tab power unit</div>
             <div class="hb-eq">Q = U · A · LMTD</div>
           </div>
         </div>
@@ -3782,8 +3782,9 @@ const FUNS_base={
     const r=M.sqrt(1+Cr*Cr);
     return 2/(1+Cr+r*(1+M.exp(-NTU*r))/(1-M.exp(-NTU*r)));
   },
-  // Q_hx(U, A, LMTD) → heat transfer rate [W]  [U W/m²K, A m²]
-  Q_hx:(U,A,LMTD_val)=>U*A*LMTD_val,
+  // Q_hx(U, A, LMTD) → heat transfer rate, in the Units tab's power unit  [U W/m²K, A m²]
+  // V1.3.131: it returned raw W, so W + Q_hx(...) added watts to kilowatts.
+  Q_hx:(U,A,LMTD_val)=>U*A*LMTD_val/(POWER_TO_W[UNITS.power]||1e3),
   // ── Unit conversion helper ──────────────────────────────────────
   // to(value, unit) → value expressed in that unit  e.g. to(P_Pa, kPa) → P in kPa
   to:(val,unit)=>val/unit,
@@ -4662,6 +4663,12 @@ function evalDimNode(nd) {
     if (fn === 'v_darcy')  return {val:1,   dim:[0,1,-1,0,0,0,0]};
     if (fn === 'dp_darcy') return {val:1e3, dim:[1,-1,-2,0,0,0,0]};
     if (fn === 're_pipe')  return {val:1,   dim:_D.none.slice()};
+    if (/^(pr_num|ra_num|gr_num|ntu)$/.test(fn)) return {val:1, dim:_D.none.slice()};
+    if (fn === 'q_hx')     return {val:1e3, dim:[1,2,-3,0,0,0,0]};
+    // V1.3.131: cp_PT and its fluid aliases fell through to "no units", so a result
+    // showed no label and m*cp*dT read kg*K/s.
+    if (/^cp_/.test(fn))   return {val:1e3, dim:[0,2,-2,0,-1,0,0]};
+    if (fn === 'h_conv')   return {val:1,   dim:[1,0,-3,0,-1,0,0]};
 
     // V1.3.51: Combustion ideal-gas h_X(T) / s_X(T) → molar dims (kJ/kmol).
     // Must come BEFORE the generic ^h_ / ^s_ regex below, which would otherwise
@@ -6575,7 +6582,7 @@ function _knownDimOf(nd){
     // when what is inside it is not known yet, which is the whole of what
     // "1/sqrt(f) = -2*log10(eD/3.7 + 2.51/Re/sqrt(f))" says about f.
     if(_DIMLESS_RESULT_FN.test(fn)) return _DIMLESS7.slice();
-    if(_FIXED_DIM_FN.test(fn)){ try{ return evalDimNode(nd).dim.slice(); }catch(e){ return null; } }
+    if(_SI_ARG_FN.test(fn)){ try{ return evalDimNode(nd).dim.slice(); }catch(e){ return null; } }
     const ad = (nd.args||[]).map(_knownDimOf);
     if(ad.some(d => !d)) return null;
     if(fn==='sqrt') return ad[0].map(x => x/2);
@@ -6642,11 +6649,22 @@ function _inferWithinNode(nd, learn){
 // The first list returns a pure number whatever is passed in; the second requires
 // pure numbers as arguments (atan2 and sign are not in it: atan2 takes a matching
 // pair and sign takes anything).
-const _DIMLESS_RESULT_FN = /^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc|f_moody|f_moody_approx|re_pipe)$/;
-// V1.3.130: functions that take SI inputs and return a fixed quantity already on
-// its dimension's basis. A bare friction factor among the arguments says nothing
-// about the result, so it must not stop the equation being read.
-const _FIXED_DIM_FN = /^(hf_darcy|dp_darcy|v_darcy|re_pipe)$/;
+const _DIMLESS_RESULT_FN = /^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc|f_moody|f_moody_approx|re_pipe|pr_num|ra_num|gr_num|ntu)$/;
+// V1.3.130/131: functions documented as taking SI inputs and returning a fixed
+// quantity on its dimension's basis. A bare friction factor among the arguments
+// says nothing about the result, so it must not stop the equation being read.
+// V1.3.131: a tagged input is stored in the sheet's unit, not SI -- viscosity in
+// kPa*s, specific heat in kJ/(kg*K) -- so Pr_num(mu, cp, k) came out a million
+// times too small. _normExpr now converts each input to SI on the way in.
+const _SI_ARG_FN = /^(hf_darcy|dp_darcy|v_darcy|re_pipe|pr_num|ra_num|gr_num|h_conv|ntu|q_hx)$/;
+function _hasNumericLiteral(nd){
+  if(!nd) return false;
+  if(nd.t==='N') return true;
+  if(nd.t==='U') return _hasNumericLiteral(nd.R);
+  if(nd.t==='F') return (nd.args||[]).some(_hasNumericLiteral);
+  if(nd.t==='B') return _hasNumericLiteral(nd.L) || _hasNumericLiteral(nd.R);
+  return false;
+}
 const _DIMLESS_ARG_FN    = /^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|erf|erfc|f_moody|f_moody_approx)$/;
 // Was this expression's dimension worked out, or merely assumed? "Re = rho*V*d/mu"
 // is dimensionless because its dimensions cancel, and "1/sqrt(f) = -2*log10(...)"
@@ -6751,8 +6769,22 @@ function _normExpr(nd){
   }
   if(nd.t==='F'){
     const fn = String(nd.fn||'').toLowerCase();
-    if(_FIXED_DIM_FN.test(fn)){
-      try{ return {ok:true, chg:false, dim:evalDimNode(nd).dim.slice(), text:_emitNode(nd)}; }catch(e){ return NO; }
+    if(_SI_ARG_FN.test(fn)){
+      try{
+        let chg = false;
+        const txts = (nd.args||[]).map(a => {
+          const r = _normExpr(a);
+          if(!r.ok) return _emitNode(a);       // a bare input: SI, as documented
+          if(r.chg) chg = true;
+          const b = _basisOfDim(r.dim);
+          // A literal in the argument means the sheet did its own conversion, as
+          // in Pr_num(mu, cp*1000, k), so it is already SI and is left alone.
+          if(Math.abs(b - 1) < 1e-12 || _hasNumericLiteral(a)) return r.text;
+          chg = true;
+          return '(('+r.text+')*'+b+')';
+        });
+        return {ok:true, chg:chg, dim:evalDimNode(nd).dim.slice(), text:nd.fn+'('+txts.join(',')+')'};
+      }catch(e){ return NO; }
     }
     const args = (nd.args||[]).map(_normExpr);
     if(args.some(a => !a.ok)) return NO;
