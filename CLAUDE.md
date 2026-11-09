@@ -4,7 +4,7 @@
 
 EquaSolve is a general engineering equation solver distributed as **one self-contained
 HTML file** — no build step, no dependencies, no server. Open the release at the repo
-root (currently `EquaSolve_V1_3_119.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
+root (currently `EquaSolve_V1_3_133.html`) in a browser and it runs. Author: Dr. Omar Al-Abbasi, Mechanical Engineering, University of
 Bahrain. The accompanying paper is published in the *International Journal of
 Thermodynamics*, **Vol. 29 (No. 4), pp. 325–338, 2026**, `doi:10.5541/ijot.1978096`.
 Cite it with volume, issue and pages. The issue goes online on **1 December 2026**, so the
@@ -146,15 +146,13 @@ Live values, first archived 3 Sep 2026 from release `v1.3.100`:
   release. This is the one to put in README badges, `CITATION.cff`, and the app.
 - **Version DOI `10.5281/zenodo.22278668`** — release `v1.3.100` only.
 
-**Archiving stopped working on 25 Sep 2026.** Release `v1.3.115` was published normally
-(not a draft, assets attached, created by the same workflow as v1.3.113 and v1.3.114,
-which archived within seconds) and Zenodo was reachable, but no record appeared after
-38 minutes of polling. The usual cause is Zenodo's GitHub authorisation lapsing, which
-silently switches the repository toggle off at zenodo.org/account/settings/github.
-Check that toggle first. Zenodo never backfills, so any release published while it was
-off stays unarchived permanently — the same way v1.3.101–v1.3.103 were lost, for a
-different reason. After restoring it, the next release archives normally; v1.3.115 will
-not, unless it is re-released under a new version.
+**Zenodo can take a while, and that is not a failure.** Records have appeared up to
+about 90 minutes after a release. On 25 Sep 2026 a timed-out poll for v1.3.115 was
+recorded here as archiving having stopped; it had not, and every release from v1.3.103
+on was archived normally. To check, list the records rather than polling for one:
+`https://zenodo.org/api/records?q=parent.id:22278667&allversions=true&sort=newest&size=25`.
+The repository switch is at zenodo.org/account/settings/github. Zenodo never backfills
+releases made while it is off or never published, which is how v1.3.101 and v1.3.102 were missed.
 
 Every future GitHub Release mints a **new version DOI**; the concept DOI never changes.
 So after each release, add the new version DOI to `identifiers` in `CITATION.cff` and to
