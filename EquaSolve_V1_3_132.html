@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.131</title>
+<title>EquaSolve V1.3.132</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.131</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.132</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.131</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.132</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.131</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.132</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4934,19 +4934,80 @@ function _declaredCell(name, internalVal, fallbackUnit) {
   } catch(e) {}
   return { val: internalVal, unit: fallbackUnit || '' };
 }
+// V1.3.132: how a temperature tag is shown. [K] and [°R] cannot say whether they
+// mean a temperature or a difference, and pushing "dT = 10 [K]" through the display
+// unit showed -263.15 °C. Shown as written they are true either way, as every other
+// tagged unit already is. °C and °F follow the Units tab as before. Returns null for
+// a tag that is not a temperature.
+function _tempTagDisplay(bde) {
+  const ou = bde.unit;
+  if (ou==='K') return { val: bde.val, unit: 'K' };
+  if (ou==='°R'||ou==='degR') return { val: bde.val, unit: '°R' };
+  if (ou==='°C'||ou==='degC') return { val: fromK(bde.val + 273.15), unit: UNITS.temp };
+  if (ou==='°F'||ou==='degF') return { val: fromK((bde.val-32)*5/9 + 273.15), unit: UNITS.temp };
+  return null;
+}
+// V1.3.132: is this quantity a temperature DIFFERENCE? A difference has no zero
+// offset, so it must never be shifted by 273.15 on its way to the display: with
+// [K] inputs, dT = T2 - T1 = 100 came out as -173.15. T1 + dT and (T1+T2)/2 remain
+// temperatures. A tagged variable cannot be read structurally, so its name decides.
+const _TEMP_DIFF_NAME = /^(d_?T|delta_?T|lmtd|T_?diff)/i;
+function _tempDiffNode(nd, rhsMap, seen) {
+  const KD = [0,0,0,0,1,0,0];
+  const isK = n => { try { return evalDimNode(n).dim.every((x,i) => x === KD[i]); } catch(e) { return false; } };
+  const none = n => { try { return evalDimNode(n).dim.every(x => x === 0); } catch(e) { return false; } };
+  if (!nd) return false;
+  if (nd.t === 'U') return _tempDiffNode(nd.R, rhsMap, seen);
+  if (nd.t === 'V') {
+    if (_TEMP_DIFF_NAME.test(nd.n)) return true;
+    const e = rhsMap && rhsMap[nd.n];
+    if (typeof e !== 'string' || seen.has(nd.n)) return false;
+    seen.add(nd.n);
+    try { return _tempDiffNode(parse(e), rhsMap, seen); } catch(err) { return false; }
+  }
+  if (nd.t === 'F') {
+    const fn = String(nd.fn||'').toLowerCase();
+    if (fn === 'lmtd' || fn === 'lmtd_pf') return true;
+    if (fn === 'abs' || fn === 'min' || fn === 'max') return (nd.args||[]).every(a => _tempDiffNode(a, rhsMap, seen));
+    return false;
+  }
+  if (nd.t !== 'B') return false;
+  if (nd.op === '-') return isK(nd.L) && isK(nd.R) && _tempDiffNode(nd.L, rhsMap, seen) === _tempDiffNode(nd.R, rhsMap, seen);
+  if (nd.op === '+') return _tempDiffNode(nd.L, rhsMap, seen) && _tempDiffNode(nd.R, rhsMap, seen);
+  if (nd.op === '*' || nd.op === '/') {
+    if (isK(nd.L) && none(nd.R)) return _tempDiffNode(nd.L, rhsMap, seen);
+    if (nd.op === '*' && isK(nd.R) && none(nd.L)) return _tempDiffNode(nd.R, rhsMap, seen);
+    return !isK(nd.L) && !isK(nd.R);    // Q/(m*cp): kelvin from no temperature at all
+  }
+  return false;
+}
+function _isTempDifference(v, rhsMap) {
+  if (_TEMP_DIFF_NAME.test(v)) return true;
+  const e = rhsMap && rhsMap[v];
+  if (typeof e !== 'string') return false;
+  try { return _tempDiffNode(parse(e), rhsMap, new Set([v])); } catch(err) { return false; }
+}
+// A computed temperature, from the unit it was solved in to the display unit.
+function _tempShownValue(v, raw, solveTempIn, rhsMap) {
+  if (_isTempDifference(v, rhsMap)) {
+    const toK = (solveTempIn==='°F'||solveTempIn==='°R') ? 5/9 : 1;
+    const fromKd = (UNITS.temp==='°F'||UNITS.temp==='°R') ? 9/5 : 1;
+    return raw * toK * fromKd;
+  }
+  let kVal;
+  switch (solveTempIn) {
+    case '°C':  kVal = raw + 273.15; break;
+    case '°F':  kVal = (raw - 32) * 5/9 + 273.15; break;
+    case '°R':  kVal = raw * 5/9; break;
+    default:    kVal = raw; // 'K'
+  }
+  return fromK(kVal);
+}
 function _bracketCardDisplay(v) {
   const bde = _bracketDisplayMap[v];
   if (!bde) return null;
-  const ou = bde.unit;
-  const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
-  if (_tempSet[ou]) {
-    let T_K;
-    if      (ou==='K')               T_K = bde.val;
-    else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
-    else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
-    else                             T_K = bde.val * 5/9; // °R
-    return { dispVal: fromK(T_K), unitLabel: UNITS.temp };
-  }
+  const _td = _tempTagDisplay(bde);
+  if (_td) return { dispVal: _td.val, unitLabel: _td.unit };
   return { dispVal: bde.val, unitLabel: bde.unit };
 }
 
@@ -5000,6 +5061,9 @@ function _inheritedBracketUnit(v, rhsMapEntry) {
   } catch (e) {}
   if (!myDim && (v in _varDimCache)) myDim = _varDimCache[v];
   if (!myDim || !myDim.some(x => x !== 0)) return '';   // dimensionless: nothing to inherit
+  // V1.3.132: a computed temperature is converted to the display unit, so taking
+  // the label from a tag put the wrong name on the number: 35 °C read as 35 °F.
+  if (myDim[4] === 1 && myDim.every((x, i) => i === 4 || x === 0)) return '';
   let ids;
   try { ids = exprIds(rhsMapEntry); } catch (e) { return ''; }
   for (const id of ids) {
@@ -9079,16 +9143,9 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
                             _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
             let rawShown = raw;
             if (_isTemp && isFinite(raw)) {
-              // First: scope value → K, using the temperature unit that was in effect at solve time.
+              // From the temperature unit in effect at solve time to the display unit.
               const solveTempIn = r.scope.__solveTempIn || UNITS.tempIn || UNITS.temp;
-              let kVal;
-              switch (solveTempIn) {
-                case '°C':  kVal = raw + 273.15; break;
-                case '°F':  kVal = (raw - 32) * 5/9 + 273.15; break;
-                case '°R':  kVal = raw * 5/9; break;
-                default:    kVal = raw; // 'K'
-              }
-              rawShown = fromK(kVal);  // K → current display unit (UNITS.temp)
+              rawShown = _tempShownValue(v, raw, solveTempIn, rhsMap);
               if (!unitLabel) unitLabel = UNITS.temp;
             }
             const tagUnit = varUnitOverrides[v] || '';
@@ -9514,12 +9571,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         // Apply bracket display map if available
         if (_bracketDisplayMap[v]) {
           const bde = _bracketDisplayMap[v];
-          const ou = bde.unit;
-          const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
-          if (_tempSet[ou]) {
-            let T_K = ou==='K' ? bde.val : ou==='°C'||ou==='degC' ? bde.val+273.15 : ou==='°F'||ou==='degF' ? (bde.val-32)*5/9+273.15 : bde.val*5/9;
-            val = fromK(T_K);
-          } else { val = bde.val; }
+          const _td = _tempTagDisplay(bde);
+          val = _td ? _td.val : bde.val;
         }
         return `<td>${fmt(val)}</td>`;
       }
@@ -9528,9 +9581,8 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       function unitLabel(v) {
         if (_bracketDisplayMap[v]) {
           const bde = _bracketDisplayMap[v];
-          const ou = bde.unit;
-          const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
-          return _tempSet[ou] ? UNITS.temp : ou;
+          const _td = _tempTagDisplay(bde);
+          return _td ? _td.unit : bde.unit;
         }
         return _bestUnitLabel(v, rhsMap[v]) || '';
       }
@@ -9676,14 +9728,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const _isTemp = _varDimCache[v] && _varDimCache[v].every((x,i)=>x===_dimK[i]);
         if (_isTemp && isFinite(raw)) {
           const solveTempIn = snap.scope.__solveTempIn || UNITS.tempIn || UNITS.temp;
-          let kVal;
-          switch (solveTempIn) {
-            case '°C':  kVal = raw + 273.15; break;
-            case '°F':  kVal = (raw - 32) * 5/9 + 273.15; break;
-            case '°R':  kVal = raw * 5/9; break;
-            default:    kVal = raw;
-          }
-          dispVal = fromK(kVal);
+          dispVal = _tempShownValue(v, raw, solveTempIn, snap.rhsMap);
         } else {
           dispVal = raw;
         }
@@ -10240,16 +10285,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
       if (!isFinite(raw)) return;
       if (_bracketDisplayMap[v]) {
         const bde = _bracketDisplayMap[v];
-        const ou = bde.unit;
-        const _tempSet = {'K':1,'°C':1,'degC':1,'°F':1,'degF':1,'°R':1,'degR':1};
-        if (_tempSet[ou]) {
-          let T_K;
-          if      (ou==='K')             T_K = bde.val;
-          else if (ou==='°C'||ou==='degC') T_K = bde.val + 273.15;
-          else if (ou==='°F'||ou==='degF') T_K = (bde.val-32)*5/9 + 273.15;
-          else                             T_K = bde.val * 5/9;
-          scope[v] = fromK(T_K);
-          units[v] = UNITS.temp;
+        const _td = _tempTagDisplay(bde);
+        if (_td) {
+          scope[v] = _td.val;
+          units[v] = _td.unit;
         } else {
           scope[v] = bde.val;
           units[v] = bde.unit;
