@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.128</title>
+<title>EquaSolve V1.3.129</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.128</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.129</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.128</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.129</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.128</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.129</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -5104,6 +5104,11 @@ function buildVarDimCache(rhsMap, fullTxt, reset=true) {
 //   Multiplicative: P1*V = m1*R*T1  → dim(m1) = dim(lhs) - dim(rhs_without_m1)
 //   Additive:       -W + m*h1 = m*h2 → dim(W) = dim(rhs) = dim(m*h)
 function _seedBracketDimsFromText(rawTxt) {
+  // V1.3.129: names proved dimensionless by this solve's normaliser. A sheet with
+  // no [unit] tags never reaches the normaliser, so it must not inherit any.
+  if (/\[[^\]]+\]/.test(String(rawTxt||'')) && typeof _dimlessLearned !== 'undefined') {
+    Object.keys(_dimlessLearned).forEach(n => { if (!(n in _varDimCache)) _varDimCache[n] = [0,0,0,0,0,0,0]; });
+  }
   const bracketDimMap = {
     // ── Temperature (K dim regardless of input unit) ──────────
     K:[0,0,0,0,1,0,0], degC:[0,0,0,0,1,0,0], '°C':[0,0,0,0,1,0,0],
@@ -6340,6 +6345,11 @@ let _unitNormNotes = [];
 // too large while its label still reads kPa -- so the advisory now says so
 // instead of leaving it to be discovered in the answer.
 let _unitNormBlind = [];
+// V1.3.129: names the normaliser proved dimensionless this solve (Re, f, eD).
+// Its wider inference is otherwise discarded so that labels are unaffected, but
+// without these a friction factor stays unknown and hL, dP and Wp after it lose
+// their units.
+let _dimlessLearned = {};
 function _basisOfDim(dim){
   if(!dim || !dim.some(v => v !== 0)) return 1;
   try{
@@ -6550,9 +6560,12 @@ function _knownDimOf(nd){
   if(nd.t==='U') return _knownDimOf(nd.R);
   if(nd.t==='F'){
     const fn = String(nd.fn||'').toLowerCase();
+    // V1.3.129: checked before the arguments. A logarithm is a pure number even
+    // when what is inside it is not known yet, which is the whole of what
+    // "1/sqrt(f) = -2*log10(eD/3.7 + 2.51/Re/sqrt(f))" says about f.
+    if(_DIMLESS_RESULT_FN.test(fn)) return _DIMLESS7.slice();
     const ad = (nd.args||[]).map(_knownDimOf);
     if(ad.some(d => !d)) return null;
-    if(/^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc)$/.test(fn)) return _DIMLESS7.slice();
     if(fn==='sqrt') return ad[0].map(x => x/2);
     if(fn==='abs' || fn==='min' || fn==='max') return ad[0].slice();
     try{ const d = evalDimNode(nd).dim; return d ? d.slice() : null; }catch(e){ return null; }
@@ -6613,11 +6626,56 @@ function _inferWithinNode(nd, learn){
   _inferWithinNode(nd.R, learn);
 }
 
+// V1.3.129: functions that are dimensionless by mathematics or by definition.
+// The first list returns a pure number whatever is passed in; the second requires
+// pure numbers as arguments (atan2 and sign are not in it: atan2 takes a matching
+// pair and sign takes anything).
+const _DIMLESS_RESULT_FN = /^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|sign|erf|erfc|f_moody|f_moody_approx)$/;
+const _DIMLESS_ARG_FN    = /^(exp|ln|log|log10|log2|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|erf|erfc|f_moody|f_moody_approx)$/;
+// Was this expression's dimension worked out, or merely assumed? "Re = rho*V*d/mu"
+// is dimensionless because its dimensions cancel, and "1/sqrt(f) = -2*log10(...)"
+// because a logarithm is a pure number. A bare "Q_evap = 10" only fails to say,
+// which is why recording it as dimensionless would be a guess.
+function _dimEvidence(nd){
+  if(!nd) return false;
+  if(nd.t==='V') return (typeof _varDimCache !== 'undefined' && _varDimCache && (nd.n in _varDimCache))
+                     || (typeof CONSTS_DIMS !== 'undefined' && (nd.n in CONSTS_DIMS));
+  if(nd.t==='U') return _dimEvidence(nd.R);
+  if(nd.t==='F') return _DIMLESS_RESULT_FN.test(String(nd.fn||'').toLowerCase()) || (nd.args||[]).some(_dimEvidence);
+  if(nd.t==='B') return _dimEvidence(nd.L) || _dimEvidence(nd.R);
+  return false;
+}
+// A literal can hide a unit: in f_moody(Re, 0.000046/D) the 0.000046 is a roughness
+// in metres, so the term being a pure number says nothing about D. eD/3.7 is safe
+// to read; anything divided INTO a number is not.
+function _inNumeratorOnly(nd, name){
+  if(!nd) return true;
+  if(nd.t==='U') return _inNumeratorOnly(nd.R, name);
+  if(nd.t==='F') return (nd.args||[]).every(a => _inNumeratorOnly(a, name));
+  if(nd.t!=='B') return true;
+  if(nd.op==='/') return !_hasVarNode(nd.R, name) && _inNumeratorOnly(nd.L, name);
+  if(nd.op==='^' && nd.R && nd.R.t==='N' && nd.R.v < 0) return !_hasVarNode(nd.L, name);
+  return _inNumeratorOnly(nd.L, name) && _inNumeratorOnly(nd.R, name);
+}
+function _additiveTerms(nd, out){
+  if(nd && nd.t==='B' && (nd.op==='+' || nd.op==='-')){ _additiveTerms(nd.L, out); _additiveTerms(nd.R, out); }
+  else if(nd && nd.t==='U') _additiveTerms(nd.R, out);
+  else if(nd) out.push(nd);
+  return out;
+}
+
 // Dimension of `name` such that `nd` carries dimension `want`.
 function _solveDimFor(nd, name, want){
   if(!nd || !want) return null;
   if(nd.t==='V') return nd.n === name ? want.slice() : null;
   if(nd.t==='U') return _solveDimFor(nd.R, name, want);
+  if(nd.t==='F'){
+    // V1.3.129: see through sqrt and abs, so 1/sqrt(f) can be solved for f.
+    const _fn = String(nd.fn||'').toLowerCase(), _a0 = (nd.args||[])[0];
+    if(_fn==='sqrt' && (nd.args||[]).length===1) return _solveDimFor(_a0, name, want.map(w => w*2));
+    if(_fn==='abs'  && (nd.args||[]).length===1) return _solveDimFor(_a0, name, want);
+    return null;
+  }
   if(nd.t!=='B') return null;
   const inL = _hasVarNode(nd.L, name), inR = _hasVarNode(nd.R, name);
   if(inL === inR) return null;                      // in both, or in neither
@@ -6742,8 +6800,17 @@ function _normExpr(nd){
 }
 
 function _normalizeUnitScales(txt, origTxt){
+  let _priorDims = null;
   try{
     if(typeof parse !== 'function' || typeof _varDimCache === 'undefined') return txt;
+    // V1.3.129: reason from nothing. What the previous solve left behind was being
+    // read as knowledge, so pressing Solve twice gave two different answers, and a
+    // sheet's result could depend on whichever sheet ran before it. The shared
+    // cache itself is put back afterwards: this function runs more than once per
+    // solve, and wiping it outright lost units in the middle of one.
+    _priorDims = _varDimCache;
+    _varDimCache = {};
+    _dimlessLearned = {};
     try{ _seedBracketDimsFromText(origTxt || ''); }catch(e){}
     // Labels are built from _varDimCache, so this pass must not widen it: the
     // richer inference below exists to decide how to rewrite equations, not how
@@ -6847,6 +6914,25 @@ function _normalizeUnitScales(txt, origTxt){
             _varDimCache[nm] = d; learned = true;
           }
         };
+        // V1.3.129: what goes inside a logarithm must be a pure number, so a lone
+        // unknown in one of its terms takes its dimension from that requirement:
+        // eD in log10(eD/3.7 + ...), or eD in f_moody(Re, eD).
+        const scanArgs = nd => {
+          if(!nd) return;
+          if(nd.t==='U'){ scanArgs(nd.R); return; }
+          if(nd.t==='B'){ scanArgs(nd.L); scanArgs(nd.R); return; }
+          if(nd.t!=='F') return;
+          if(_DIMLESS_ARG_FN.test(String(nd.fn||'').toLowerCase())){
+            (nd.args||[]).forEach(a => _additiveTerms(a, []).forEach(t => {
+              const u = blind(t);
+              if(u.length !== 1 || !_inNumeratorOnly(t, u[0])) return;
+              const z = _solveDimFor(t, u[0], _DIMLESS7);
+              if(z && z.every(x => x === 0)){ _varDimCache[u[0]] = z; learned = true; }
+            }));
+          }
+          (nd.args||[]).forEach(scanArgs);
+        };
+        scanArgs(dp.la); scanArgs(dp.ra);
         // "0 = ..." says nothing across the '=', so read the other side's own
         // sums instead: whatever is subtracted from a known term shares its
         // dimension.
@@ -6873,7 +6959,11 @@ function _normalizeUnitScales(txt, origTxt){
         // guess, and it poisons every equation downstream: it turned a mass flow
         // into [0,-2,2] and put a factor of 1000 through an exergy balance.
         // V1.3.104 guarded assignments the same way.
-        if(d && d.every(x => isFinite(x)) && d.some(x => x !== 0)){ _varDimCache[unknown[0]] = d; learned = true; }
+        // V1.3.129: but that refused everything dimensionless, including what was
+        // worked out to be: Re = rho*V*d/mu. Re then stayed unknown, its line went
+        // unnormalised and mu stayed in kPa*s, so Re came out 1000 times too large
+        // and f, hL, dP and Wp with it. Accept zero when the known side shows it.
+        if(d && d.every(x => isFinite(x)) && (d.some(x => x !== 0) || _dimEvidence(dl ? dp.la : dp.ra))){ _varDimCache[unknown[0]] = d; learned = true; }
       });
       if(!learned) break;
     }
@@ -6909,7 +6999,11 @@ function _normalizeUnitScales(txt, origTxt){
 
     // Restore the cache as V1.3.104 left it: the dimension of an explicit
     // assignment whose right-hand side is fully known, and nothing more.
+    Object.keys(_varDimCache).forEach(n => {
+      if(!(n in _cacheSnapshot) && n.indexOf('__ubd') !== 0 && _varDimCache[n].every(x => x === 0)) _dimlessLearned[n] = true;
+    });
     _varDimCache = _cacheSnapshot;
+    Object.keys(_dimlessLearned).forEach(n => { _varDimCache[n] = _DIMLESS7.slice(); });
     for(let pass = 0; pass < 3; pass++){
       eqs.forEach(p => {
         if(!p || !/^[a-zA-Z_]\w*$/.test(p.L) || (p.L in _varDimCache)) return;
@@ -6917,8 +7011,12 @@ function _normalizeUnitScales(txt, origTxt){
         if(r.ok && r.dim.some(v => v !== 0)) _varDimCache[p.L] = r.dim.slice();
       });
     }
+    _varDimCache = Object.assign({}, _priorDims, _varDimCache);
     return outLines.join('\n');
-  }catch(e){ return txt; }
+  }catch(e){
+    if(_priorDims) _varDimCache = Object.assign({}, _priorDims, _varDimCache);
+    return txt;
+  }
 }
 
 function _knownBracketUnit(unitStr){
@@ -7221,12 +7319,16 @@ function _normDisplayUnit(u) {
            .replace(/\bJ\/kg[./]K\b/g,'J/(kg·K)').replace(/\bW\/m[./]K\b/g,'W/(m·K)');
 }
 
-function preprocessBrackets(txt) {
+function preprocessBrackets(txt, _innerCall) {
   txt = _normalizeSource(txt);
   // Only reset _bracketDisplayMap on the outer (real) call that actually has brackets.
   // The inner call from solveSystem receives already-preprocessed text (no brackets) and
   // must NOT wipe the map that the outer call already populated correctly.
-  const _hadBrackets = /\[[^\]]+\]/.test(txt);
+  // V1.3.129: on the solver's own repeat call, look at the equations only. A
+  // comment such as "// [notes]" made already-converted text look unconverted, so
+  // it went through the whole pass a second time and was rescaled twice: P1 came
+  // out as 0.202 kPa instead of 202 on a sheet that differed by that comment alone.
+  const _hadBrackets = /\[[^\]]+\]/.test(_innerCall ? txt.replace(/\/\/.*$/gm, '') : txt);
   if (_hadBrackets) { _bracketDisplayMap = {}; _unitNormNotes = []; _unitNormBlind = []; }
   _rejectBareUnitSyntax(txt);
   const _preOut = txt.split('\n').map((line, lineIdx) => {
@@ -7372,7 +7474,7 @@ function solveSystem(raw,userGuesses,fixedScope={}){
     _userFunNames = _prep.userFunNames;
     userFunDefs = _prep.userFunDefs;
   } else {
-    raw = preprocessBrackets(raw); // convert [unit] brackets to display-unit values
+    raw = preprocessBrackets(raw, true); // convert [unit] brackets to display-unit values
     const allLines=raw.split('\n').map(l=>l.replace(/\/\/.*$/,'').replace(/([\w)])\s*\[[^\]:]*\]\s*$/,'$1').trim()).filter(l=>l);
     if(!allLines.length)throw new Error('No equations found.');
 
@@ -8719,6 +8821,10 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         // Apply absolute-temperature override and convert bracket units
         // Done inside try-catch so unit errors (unknown unit, etc.) show in the error panel
         if (/\[\s*(K|°R|degR)\s*\]/i.test(_origTxt)) UNITS.tempIn = 'K';
+        // V1.3.129: the start of a solve, so nothing from the last sheet survives.
+        // The preprocessor only clears these when it finds brackets, which left a
+        // sheet with no tags showing the previous sheet's values and units.
+        _bracketDisplayMap = {}; _unitNormNotes = []; _unitNormBlind = []; _dimlessLearned = {};
         txt = preprocessBrackets(txt);
 
         // Check degrees of freedom
