@@ -162,7 +162,7 @@ result depends on the exact build you ran — use the Zenodo archive:
 |---|---|
 | **All versions** (resolves to the latest) | [10.5281/zenodo.22278667](https://doi.org/10.5281/zenodo.22278667) |
 | **v1.3.100** — the build behind the paper | [10.5281/zenodo.22278668](https://doi.org/10.5281/zenodo.22278668) |
-| **v1.3.133** — newest archived build, with the corrected IF97 water tables | [10.5281/zenodo.24074346](https://doi.org/10.5281/zenodo.24074346) |
+| **v1.3.134** — newest archived build, with the corrected IF97 water tables | [10.5281/zenodo.24080333](https://doi.org/10.5281/zenodo.24080333) |
 
 **If you are unsure which to use, use the first one** — the all-versions (concept) DOI.
 It is the permanent identifier for EquaSolve as a piece of software, it never changes,
