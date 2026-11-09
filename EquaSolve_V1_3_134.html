@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.133</title>
+<title>EquaSolve V1.3.134</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.133</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.134</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.133</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.134</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.133</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.134</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -4960,6 +4960,12 @@ function _declaredCell(name, internalVal, fallbackUnit) {
     if (bd && isFinite(bd.dispVal)) return { val: bd.dispVal, unit: bd.unitLabel || fallbackUnit || '' };
   } catch(e) {}
   return { val: internalVal, unit: fallbackUnit || '' };
+}
+// V1.3.134: does this sheet tag a value in an absolute temperature? Only the
+// equations count. A comment such as "// LMTD in [K]" tags nothing, yet it switched
+// the whole sheet to kelvin, so "T = 30" beneath it was read as 30 K.
+function _hasAbsTempTag(txt){
+  return /\[\s*(K|°R|degR)\s*\]/i.test(String(txt||'').replace(/\/\/.*$/gm, ''));
 }
 // V1.3.132: how a temperature tag is shown. [K] and [°R] cannot say whether they
 // mean a temperature or a difference, and pushing "dT = 10 [K]" through the display
@@ -8962,7 +8968,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
 
         // Apply absolute-temperature override and convert bracket units
         // Done inside try-catch so unit errors (unknown unit, etc.) show in the error panel
-        if (/\[\s*(K|°R|degR)\s*\]/i.test(_origTxt)) UNITS.tempIn = 'K';
+        if (_hasAbsTempTag(_origTxt)) UNITS.tempIn = 'K';
         // V1.3.129: the start of a solve, so nothing from the last sheet survives.
         // The preprocessor only clears these when it finds brackets, which left a
         // sheet with no tags showing the previous sheet's values and units.
@@ -9411,6 +9417,11 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         $bd.innerHTML=`<div class="err-box">${cleanMsg}${lineHint}</div>`;
         $algZone.classList.add('visible');
         $stat.style.color='var(--red)'; $stat.textContent='Error';
+      } finally {
+        // V1.3.134: every way out, not only success. Stopping at the parameter dialog
+        // or failing with an error left a [K] sheet's override in place, and every
+        // later sheet then read its bare temperatures as kelvin until a reload.
+        UNITS.tempIn = _savedTempIn;
       }
       $bt.disabled=false; $bt.innerHTML='▶ Solve';
     },60);
@@ -9462,7 +9473,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
     // evaluation. V1.3.2: seed brackets BEFORE RHS propagation.
     {
       const _savedTempInSeed = UNITS.tempIn;
-      if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
+      if (_hasAbsTempTag(filteredTxt)) UNITS.tempIn = 'K';
       try {
         const _rhsMapSeed = buildRHSMap(filteredTxt);
         buildVarDimCache(_rhsMapSeed, filteredTxt);
@@ -9516,7 +9527,7 @@ function runUnitAdvisory(txt, scope, rhsMap, varUnitOverrides) {
         const _savedTempIn2 = UNITS.tempIn;
         try {
           // Apply tempIn='K' override exactly as runAlgSolver does
-          if (/\[\s*(K|°R|degR)\s*\]/i.test(filteredTxt)) UNITS.tempIn = 'K';
+          if (_hasAbsTempTag(filteredTxt)) UNITS.tempIn = 'K';
           const _processedTxt = preprocessBrackets(filteredTxt);
           const _r = solveSystem(_processedTxt, {}, {});
           // V1.3.11: tag scope with absolute-temperature flag — true if UNITS.tempIn
