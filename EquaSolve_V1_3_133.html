@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.132</title>
+<title>EquaSolve V1.3.133</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.132</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.133</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.132</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.133</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.132</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.133</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -2400,14 +2400,23 @@ const IF97 = (() => {
   function Tsat_P(P){if(P<6.1e-4||P>Pc)throw new Error('Tsat: P='+P+' MPa out of range');let T=M.min(M.max(373.15*M.pow(P/0.101325,0.25),274),646.9);for(let i=0;i<80;i++){const d=T*1e-6,f=Psat_T(T)-P,df=(Psat_T(T+d)-Psat_T(T-d))/(2*d);if(M.abs(df)<1e-20)break;T=M.min(M.max(T-f/df,273.16),647);if(M.abs(f/df)<1e-8)break;}return T;}
   const r1I=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,3,3,3,4,4,4,5,8,8,21,23,29,30,31,32];
   const r1J=[-2,-1,0,1,2,3,4,5,-9,-7,-1,0,1,3,-3,0,1,3,17,-4,0,6,-5,-2,10,-8,-11,-6,-29,-31,-38,-39,-40,-41];
-  const r1n=[1.4632971213167e-1,-8.4548187169114e-1,-3.756360367204,3.3855169168385,-9.5791963387872e-1,1.5772038513228e-1,-1.6616417199501e-2,8.1214629983568e-4,2.8319080123804e-4,-6.0706301565874e-4,-1.8990068218419e-2,-3.2529748770505e-2,-2.1841717175414e-2,-5.2838357960615e-5,-4.7184321073267e-5,-3.0001780793026e-4,4.7661393906987e-5,-4.4141845330846e-6,-7.2694996297594e-16,-3.1679644845054e-5,-2.8270797985312e-6,-8.5205128120103e-10,-2.2425281908e-6,-6.5171222895601e-7,-1.4341729937924e-13,-4.0516996860117e-7,-1.2734301741641e-9,-1.7424871230634e-10,-6.8762131295531e-19,1.4478307828521e-20,2.6335781662795e-23,-1.1947622640071e-23,1.8228094581404e-24,-9.3537087292458e-26];
+  const r1n=[1.4632971213167e-1,-8.4548187169114e-1,-3.756360367204,3.3855169168385,-9.5791963387872e-1,1.5772038513228e-1,-1.6616417199501e-2,8.1214629983568e-4,2.8319080123804e-4,-6.0706301565874e-4,-1.8990068218419e-2,-3.2529748770505e-2,-2.1841717175414e-2,-5.2838357960615e-5,-4.7184321073267e-4,-3.0001780793026e-4,4.7661393906987e-5,-4.4141845330846e-6,-7.2694996297594e-16,-3.1679644845054e-5,-2.8270797985312e-6,-8.5205128120103e-10,-2.2425281908e-6,-6.5171222895601e-7,-1.4341729937924e-13,-4.0516996860117e-7,-1.2734301741641e-9,-1.7424871230634e-10,-6.8762131295531e-19,1.4478307828521e-20,2.6335781662795e-23,-1.1947622640071e-23,1.8228094581404e-24,-9.3537087292458e-26];
+  // V1.3.133: four coefficients in the Region 1 and Region 2 tables had slipped by a
+  // power of ten or more. The Region 2 ones multiply high powers of pressure, so low
+  // pressures were unaffected while h(10 MPa, 311 C) came out at -683047 kJ/kg. Both
+  // regions now reproduce the IAPWS-IF97 verification tables (Tables 5 and 15).
   function r1(T,P){const pi=P/16.53,tau=1386/T;let g=0,gp=0,gt=0,gtt=0;for(let k=0;k<34;k++){const n=r1n[k],I=r1I[k],J=r1J[k],A=7.1-pi,B=tau-1.222,pA=M.pow(A,I),pB=M.pow(B,J);g+=n*pA*pB;gp+=-n*(I>0?I*M.pow(A,I-1):0)*pB;gt+=n*pA*(J!==0?J*M.pow(B,J-1):0);gtt+=n*pA*(J!==0?J*(J-1)*M.pow(B,J-2):0);}return{v:R*T/(P*1e3)*pi*gp,h:R*T*tau*gt,s:R*(tau*gt-g),u:R*T*(tau*gt-pi*gp),cp:-R*tau*tau*gtt};}
   const r2J0=[0,1,-5,-4,-3,-2,-1,2,3],r2n0=[-9.6927686500217,10.086655968018,-5.6087911283e-3,7.1452738081455e-2,-4.0710498223928e-1,1.4240819171444,-4.3839511319450,-2.8408632460772e-1,2.1268463753307e-2];
   const r2I=[1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,5,6,6,6,7,7,7,8,8,9,10,10,10,16,16,18,20,20,20,21,22,23,24,24,24];
   const r2J=[0,1,2,3,6,1,2,4,7,36,0,1,3,6,35,1,2,3,7,3,16,35,0,11,25,8,36,13,4,10,14,29,50,57,20,35,48,21,53,39,26,40,58];
-  const r2n=[-1.7731742473213e-3,-1.7834862292358e-2,-4.5996013696365e-2,-5.7581259083432e-2,-5.0325278727930e-2,-3.3032641670203e-5,-1.8948987516315e-4,-3.9392777243355e-3,-4.3797295650573e-2,-2.6674547914087e-5,2.0481737692309e-8,4.3870667284435e-7,-3.2277677238570e-5,-1.5033924542148e-3,-4.0668253562099e-2,-7.8847309559367e-10,1.2790717852285e-8,4.8225372718507e-7,2.2922076337661e-6,-1.6714766451061e-11,-2.1171472321355e-3,-2.3895741934104e2,-5.9059564324270e-18,-1.2621808899101e-6,-3.8946842435739e-2,1.1256211360459e-11,-8.2311340897998e1,1.9809712802088e-8,1.0406965210174e-19,-1.0234747095929e-13,-1.0018179379511e-9,-8.0882908646985e-11,1.0693031879409e-1,-3.3662250574171e4,8.9185845355421e-25,3.0629316876232e-13,-4.2002467698208e-6,-5.9056029685639e-26,3.7826947613457e-6,-1.2768608934681e-15,7.3087610595061e-29,5.5414715350778e-17,-9.4369707241210e-7];
+  const r2n=[-1.7731742473213e-3,-1.7834862292358e-2,-4.5996013696365e-2,-5.7581259083432e-2,-5.0325278727930e-2,-3.3032641670203e-5,-1.8948987516315e-4,-3.9392777243355e-3,-4.3797295650573e-2,-2.6674547914087e-5,2.0481737692309e-8,4.3870667284435e-7,-3.2277677238570e-5,-1.5033924542148e-3,-4.0668253562099e-2,-7.8847309559367e-10,1.2790717852285e-8,4.8225372718507e-7,2.2922076337661e-6,-1.6714766451061e-11,-2.1171472321355e-3,-2.3895741934104e1,-5.9059564324270e-18,-1.2621808899101e-6,-3.8946842435739e-2,1.1256211360459e-11,-8.2311340897998,1.9809712802088e-8,1.0406965210174e-19,-1.0234747095929e-13,-1.0018179379511e-9,-8.0882908646985e-11,1.0693031879409e-1,-3.3662250574171e-1,8.9185845355421e-25,3.0629316876232e-13,-4.2002467698208e-6,-5.9056029685639e-26,3.7826947613457e-6,-1.2768608934681e-15,7.3087610595061e-29,5.5414715350778e-17,-9.4369707241210e-7];
   function r2(T,P){const pi=P,tau=540/T;let g0=M.log(pi),g0t=0,g0tt=0;for(let k=0;k<9;k++){const J=r2J0[k],n=r2n0[k];g0+=n*M.pow(tau,J);if(J!==0)g0t+=n*J*M.pow(tau,J-1);if(J!==0)g0tt+=n*J*(J-1)*M.pow(tau,J-2);}let gr=0,grp=0,grt=0,grtt=0;for(let k=0;k<43;k++){const I=r2I[k],J=r2J[k],n=r2n[k],pI=M.pow(pi,I),tJ=M.pow(tau-0.5,J),dpI=I>0?I*M.pow(pi,I-1):0,dtJ=J>0?J*M.pow(tau-0.5,J-1):0;gr+=n*pI*tJ;grp+=n*dpI*tJ;grt+=n*pI*dtJ;grtt+=n*pI*(J>1?J*(J-1)*M.pow(tau-0.5,J-2):0);}const gp=1/pi+grp,gt=g0t+grt,gtt_=g0tt+grtt,g_=g0+gr;return{v:R*T/(P*1e3)*pi*gp,h:R*T*tau*gt,s:R*(tau*gt-g_),u:R*T*(tau*gt-pi*gp),cp:-R*tau*tau*gtt_};}
-  function gp(T,P){if(T<273.15||T>1073.15)throw new Error('T='+T.toFixed(2)+' K out of IF97 range');if(P<=0||P>100)throw new Error('P='+P+' MPa out of range');if(T<=623.15){const ps=Psat_T(T);if(P>ps*1.00001)return r1(T,P);}return r2(T,P);}
+  function gp(T,P){if(T<273.15||T>1073.15)throw new Error('T='+T.toFixed(2)+' K out of IF97 range');if(P<=0||P>100)throw new Error('P='+P+' MPa out of range');if(T<=623.15){const ps=Psat_T(T);if(P>ps*1.00001)return r1(T,P);}
+    // V1.3.133: above the IF97 B23 boundary lies Region 3, which is not implemented.
+    // Region 2 extrapolated into it gave h(30 MPa, 370 C) = -2302959 kJ/kg, so stop.
+    if(T>623.15&&T<863.15&&P>348.05185628969+T*(-1.1671859879975+T*1.0192970039326e-3))
+      throw new Error('Water at '+P.toFixed(2)+' MPa, '+T.toFixed(2)+' K is in the near-critical region (IF97 Region 3), which EquaSolve does not cover');
+    return r2(T,P);}
 
   // ── Saturation properties — Cengel Table A-4 (exact match via lookup) ──
   const _ST=[273.16,278.15,283.15,288.15,293.15,298.15,303.15,308.15,313.15,318.15,323.15,328.15,333.15,338.15,343.15,348.15,353.15,358.15,363.15,368.15,373.15,378.15,383.15,388.15,393.15,398.15,403.15,408.15,413.15,418.15,423.15,428.15,433.15,438.15,443.15,448.15,453.15,458.15,463.15,468.15,473.15,478.15,483.15,488.15,493.15,498.15,503.15,508.15,513.15,518.15,523.15,528.15,533.15,538.15,543.15,548.15,553.15,563.15,573.15,578.15,583.15,588.15,593.15,598.15,603.15,608.15,613.15,618.15,623.15,628.15,633.15,647.096];
@@ -2427,14 +2436,32 @@ const IF97 = (() => {
     const f=(x-xa[lo])/(xa[hi]-xa[lo]);
     return ya[lo]*(1-f)+ya[hi]*f;
   }
+  // V1.3.133: above 300 C every saturation property was clamped to its 300 C value,
+  // so hf_P(15000) returned 1344.9 instead of 1610.3. The clamp was there because
+  // Region 2 looked wrong near saturation at high pressure, which was the coefficient
+  // error above. Now: IF97 itself up to 350 C. Above that the two phases meet in
+  // Region 3, which is not implemented, so use Cengel Table A-4 values and interpolate.
+  const _NCS=[[623.15,16.529,1670.9,2563.9,3.7784,5.2130,0.001740,0.008806],
+              [633.15,18.666,1761.7,2481.8,3.9167,5.0536,0.001895,0.006950],
+              [643.15,21.044,1890.7,2332.9,4.1113,4.7996,0.002222,0.004941],
+              [647.096,22.064,2084.3,2084.3,4.4070,4.4070,0.003106,0.003106]];
   function satByT(T){
-    T=M.max(273.16,M.min(T,573.15));
+    if(T>573.15&&T<=623.15){
+      const P=Psat_T(T),l=r1(T,P),g=r2(T,P);
+      return{P,hf:l.h,hg:g.h,hfg:g.h-l.h,sf:l.s,sg:g.s,sfg:g.s-l.s,vf:l.v,vg:g.v};
+    }
+    if(T>623.15){
+      const col=c=>_lerp(_NCS.map(r=>r[0]),_NCS.map(r=>r[c]),T),hf=col(2),hg=col(3),sf=col(4),sg=col(5);
+      return{P:col(1),hf,hg,hfg:hg-hf,sf,sg,sfg:sg-sf,vf:col(6),vg:col(7)};
+    }
+    T=M.max(273.16,T);
     const hf=_lerp(_ST,_SHF,T),hfg=_lerp(_ST,_SHFG,T);
     return{P:_lerp(_ST,_SP,T)/1000,hf,hg:hf+hfg,hfg,
            sf:_lerp(_ST,_SSF,T),sg:_lerp(_ST,_SSG,T),sfg:_lerp(_ST,_SSG,T)-_lerp(_ST,_SSF,T),
            vf:_lerp(_ST,_SVF,T),vg:_lerp(_ST,_SVG,T)};
   }
   function satByP(P){
+    if(P>8.5927)return satByT(Tsat_P(P));   // above 300 C: see satByT
     const Pa=_SP,n=Pa.length,Pmpa=P*1000;
     if(Pmpa<=Pa[0])return satByT(_ST[0]);
     if(Pmpa>=Pa[n-1])return satByT(_ST[n-1]);
@@ -7771,7 +7798,7 @@ const EX=[
   {text:'// Complete Rankine Cycle (water)\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// Turbine inlet (P,T)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nv1 = v_PT(P_high, T_high)\nu1 = u_PT(P_high, T_high)\n// Turbine exit: isentropic — find from (P,s)\nT2 = T_Ps(P_low, s1)\nh2 = h_Ps(P_low, s1)\nv2 = v_Ps(P_low, s1)\nu2 = u_Ps(P_low, s1)\nx2 = x_Ps(P_low, s1)\n// Pump inlet — sat liquid\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\n// Pump outlet (kPa·m³/kg = kJ/kg)\nh4 = h3 + v3*(P_high - P_low)\n// Performance\nw_turb = h1 - h2\nw_pump = h4 - h3\nq_in   = h1 - h4\neta    = (w_turb - w_pump) / q_in'},
   // ── Diagram examples (states numbered for P-h / T-s auto-plot) ──
   {text:'// R134a VCC — states for P-h diagram\n// Select R134a in Fluids tab, then go to Diagram tab\nT_evap = -10 [degC]\nT_cond = 40 [degC]\n// Pressures at each state\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nP3 = P2\nP4 = P1\n// State 1: sat. vapour at evaporator exit\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\n// State 2: after isentropic compression\nh2 = h_Ps_R134a(P2, s1)\nT2 = T_Ph_R134a(P2, h2)\n// State 3: sat. liquid at condenser exit\nh3 = hf_R134a(T_cond)\n// State 4: throttle (isenthalpic)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
-  {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T3 + v3*(P_high - P_low) / 4.18\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
+  {text:'// Rankine Cycle (water) — states for T-s diagram\n// Water is default fluid — go to Diagram tab after solving\nP_high = 10000 [kPa]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// State 1: turbine inlet (superheated)\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\nT1 = T_high\n// State 2: turbine exit (isentropic, wet steam)\nT2 = Tsat(P_low)\nh2 = h_Ps(P_low, s1)\ns2 = s1\nx2 = x_Ps(P_low, s1)\n// State 3: condenser exit (saturated liquid)\nT3 = Tsat(P_low)\nh3 = hf(T3)\ns3 = sf(T3)\n// State 4: pump exit (isentropic, liquid)\nv3  = vf(T3)\nh4  = h3 + v3*(P_high - P_low)\ns4  = s3\nT4  = T_Ps(P_high, s4)\n// Performance\nw_turb = h1 - h2\neta    = (w_turb - (h4-h3)) / (h1-h4)'},
   // ── Parametric sweep examples ──
   {text:'// VCC COP vs condensing temperature\n// Syntax: var = [start : step : end]\nT_cond = [30:5:60]\nT_evap = -10 [degC]\nP1 = Psat_R134a(T_evap)\nP2 = Psat_R134a(T_cond)\nh1 = hg_R134a(T_evap)\ns1 = sg_R134a(T_evap)\nh2 = h_Ps_R134a(P2, s1)\nh3 = hf_R134a(T_cond)\nh4 = h3\nCOP = (h1 - h4) / (h2 - h1)'},
   {text:'// Rankine: 1st- and 2nd-law efficiency vs boiler pressure\n// Syntax: var = [start : step : end]\nT0 = 25 [degC]              // dead state for exergy\nP0 = 101.325 [kPa]\nP_high = [3000:500:15000]\nT_high = 550 [degC]\nP_low  = 50 [kPa]\n// Turbine inlet\nh1 = h_PT(P_high, T_high)\ns1 = s_PT(P_high, T_high)\n// Turbine exit \u2014 isentropic\nh2 = h_Ps(P_low, s1)\n// Condenser exit (sat. liquid) and pump\nh3 = hf(T_Ps(P_low, s1))\nv3 = vf(T_Ps(P_low, s1))\nh4 = h3 + v3*(P_high - P_low)\n// First law\nw_net  = (h1 - h2) - (h4 - h3)\nq_in   = h1 - h4\neta_th = w_net / q_in\n// Second law \u2014 exergy of the boiler heat supplied at T_high\nex_q_in = exheat(q_in, T_high)\neta_ex  = w_net / ex_q_in'},
@@ -12967,9 +12994,10 @@ function computeDome(fluidKey) {
   // Returns arrays of dome points in SI units (K, MPa, kJ/kg, kJ/kg·K)
   const pts = [];
   if (!fluidKey || fluidKey === 'water') {
-    // 0–300°C: use IF97 lookup table (accurate)
-    const Tmin = 274, T300 = 573.15;
-    const n1 = 80;
+    // V1.3.133: one source of truth, so state points land on the dome: the same
+    // saturation data the solver uses, all the way to the critical point.
+    const Tmin = 274, T300 = 647.09;
+    const n1 = 150;
     for (let i = 0; i <= n1; i++) {
       const T = Tmin + (T300 - Tmin) * i / n1;
       try {
@@ -12981,29 +13009,6 @@ function computeDome(fluidKey) {
         } : null;
         if (d && isFinite(d.hf) && isFinite(d.hg) && d.P > 0) pts.push(d);
       } catch(e) {}
-    }
-    // 305–374°C: near-critical extension using r1 (liquid) + NIST vapor reference
-    // r2 (IF97 vapor equation) is inaccurate right at saturation above 300°C
-    const NC = [
-      [578.15,9209.40,1354.79,1387.21,3.2656,5.6562,0.001370,0.019880],
-      [583.15,9865.01,1382.62,1345.28,3.3120,5.6158,0.001389,0.018000],
-      [588.15,10556.14,1411.10,1304.40,3.3589,5.5650,0.001411,0.016480],
-      [593.15,11284.28,1440.31,1262.79,3.4066,5.5136,0.001434,0.014960],
-      [598.15,12051.02,1470.37,1218.43,3.4552,5.4601,0.001459,0.013630],
-      [603.15,12858.08,1501.43,1172.47,3.5050,5.4056,0.001488,0.012330],
-      [608.15,13707.30,1533.67,1122.93,3.5561,5.3480,0.001520,0.011140],
-      [613.15,14600.71,1567.36,1070.14,3.6090,5.2876,0.001557,0.009980],
-      [618.15,15540.55,1602.89,1013.21,3.6643,5.2230,0.001600,0.008910],
-      [623.15,16529.34,1640.80, 949.60,3.7228,5.1538,0.001651,0.007860],
-      [628.15,17569.99,1681.87, 879.03,3.7856,5.0771,0.001713,0.006880],
-      [633.15,18666.00,1727.14, 798.36,3.8544,4.9953,0.001790,0.005880],
-      [638.15,19821.79,1777.89, 701.41,3.9309,4.8977,0.001889,0.004910],
-      [643.15,21043.82,1835.42, 583.08,4.0169,4.7749,0.002013,0.003930],
-      [646.15,21813.82,1873.51, 460.89,4.0736,4.6517,0.002102,0.003050],
-      [647.10,22063.73,1886.01, 200.99,4.0921,4.4120,0.002132,0.003106]
-    ];
-    for (const [T,Pkpa,hf,hfg,sf,sg,vf,vg] of NC) {
-      pts.push({T, P:Pkpa/1000, hf, hg:hf+hfg, hfg, sf, sg, sfg:sg-sf, vf, vg});
     }
   } else {
     const fl = FLUIDS[fluidKey];
