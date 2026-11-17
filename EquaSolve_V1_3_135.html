@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:; style-src * 'unsafe-inline'; font-src data:;">
-<title>EquaSolve V1.3.134</title>
+<title>EquaSolve V1.3.135</title>
 <script>
 // V1.3.82 boot watchdog (separate <head> script — survives a parse error in
 // the main <body> script block, which would otherwise fail silently on iOS).
@@ -756,7 +756,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
       <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px;">&#8721;</div>
       <div>
         <div style="font-size:18px;font-weight:700;color:var(--hi);">Equa<span style="color:var(--accent)">Solve</span></div>
-        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.134</div>
+        <div style="font-size:10px;color:var(--mute);margin-top:4px;letter-spacing:.08em;">V1.3.135</div>
       </div>
     </div>
 
@@ -848,7 +848,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
   <div class="logo">
     <div class="logo-icon">∑</div>
     <div>
-      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.134</span></div>
+      <div class="logo-title">Equa<span>Solve</span> <span style="font-size:10px;color:var(--mute);font-weight:400">V1.3.135</span></div>
       
     </div>
   </div>
@@ -1021,7 +1021,7 @@ textarea.eq-ta::placeholder{color:var(--mute);-webkit-text-fill-color:var(--mute
 
     <!-- Print header (visible only when printing) -->
     <div class="print-header" id="print-header">
-      <strong>EquaSolve V1.3.134</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
+      <strong>EquaSolve V1.3.135</strong> &nbsp;·&nbsp; <span id="print-sheet-name"></span>
       &nbsp;·&nbsp; <span id="print-date"></span>
     </div>
     <div class="print-report" id="print-report" style="display:none;">
@@ -7433,7 +7433,21 @@ function newtonND(residuals,vars,x0){
     if(norm<tol)return{x,iter:it+1,res:norm,condNum:_condEst(J,n)};
     const A=J.map((row,i)=>[...row,-F[i]]);
     for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(M.abs(A[r][c])>M.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];if(M.abs(A[c][c])<1e-14)continue;for(let r=0;r<n;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<=n;k++)A[r][k]-=f*A[c][k];}}
-    for(let i=0;i<n;i++)if(M.abs(A[i][i])>1e-14)x[i]+=A[i][n]/A[i][i];
+    // V1.3.135: a damped step. The full Newton step was always taken, so one step
+    // into a region where an equation is undefined -- a friction factor below zero
+    // under a square root -- turned every residual into NaN and the run was lost.
+    // Halve the step until the residual is finite and smaller; when the full step
+    // already does that, which is the usual case, nothing changes.
+    const dx=new Array(n).fill(0);
+    for(let i=0;i<n;i++)if(M.abs(A[i][i])>1e-14)dx[i]=A[i][n]/A[i][i];
+    let lam=1,stepped=false;
+    for(let k=0;k<30;k++){
+      const xs=x.map((v,i)=>v+lam*dx[i]),s3={};vars.forEach((v,i)=>s3[v]=xs[i]);
+      let nn;try{nn=M.sqrt(residuals.map(r=>r(s3)).reduce((a,v)=>a+v*v,0));}catch(e){nn=NaN;}
+      if(isFinite(nn)&&(!isFinite(norm)||nn<norm*(1-1e-4*lam))){for(let i=0;i<n;i++)x[i]=xs[i];stepped=true;break;}
+      lam*=0.5;
+    }
+    if(!stepped)for(let i=0;i<n;i++)x[i]+=dx[i];   // no better point found: as before
   }
   const sc2={};vars.forEach((v,i)=>sc2[v]=x[i]);
   const F2=residuals.map(r=>r(sc2));
@@ -7750,25 +7764,31 @@ while(progress&&solved.size<allVars.length){progress=false;for(const ei of[...un
       const d=JSON.parse(diagM[1]);
       const varLines=d.vars.map((v,i)=>{
         const rv=d.vals[i],ri=d.res[i];
-        return v+'='+rv.toExponential(3)+' (eq residual: '+Math.abs(ri).toExponential(2)+')';
+        // V1.3.135: a NaN arrives here as null and .toExponential threw, which sent the
+        // raw internal message, JSON and all, to the user instead of this explanation.
+        const _e=(q,p)=>(typeof q==='number'&&isFinite(q))?q.toExponential(p):'undefined (NaN)';
+        return v+'='+_e(rv,3)+' (eq residual: '+_e(typeof ri==='number'?Math.abs(ri):ri,2)+')';
       }).join('\n  ');
       // Identify worst equations
-      const worstIdx=d.res.map((r,i)=>({i,a:Math.abs(r)})).sort((a,b)=>b.a-a.a).slice(0,3).map(x=>x.i);
+      const worstIdx=d.res.map((r,i)=>({i,a:(typeof r==='number'&&isFinite(r))?Math.abs(r):Infinity})).sort((a,b)=>b.a-a.a).slice(0,3).map(x=>x.i);
       // Find source lines for worst equations
       const remEqSrc=pairs.filter((_,i)=>unsolved.has(i));
       const worstLines=worstIdx.map(i=>remEqSrc[i]?.line||'').filter(Boolean);
       // Classify likely cause
       let hint='';
       if(d.condNum>1e10)hint='\n\u2022 Ill-conditioned Jacobian (cond\u2248'+d.condNum.toExponential(2)+'): likely near-singular equations or extreme variable magnitudes.';
-      if(d.vars.some((_,i)=>Math.abs(d.vals[i])>1e8||Math.abs(d.vals[i])<1e-8))hint+='\n\u2022 Some variables have extreme values \u2014 add guess(var,value) hints or check units.';
+      if(d.vars.some((_,i)=>Math.abs(d.vals[i])>1e8||Math.abs(d.vals[i])<1e-8))hint+='\n\u2022 Some variables have extreme values \u2014 set starting values in the Guesses tab, or check units.';
       if(_lastPropErr)hint+='\n\u2022 Property function error during iteration: '+_lastPropErr.message;
-      const guessLines=d.vars.map(v=>'// guess: '+v+' = ?').join('\n');
+      // V1.3.135: the advice used to be "// guess: x = ?" lines, which are comments
+      // and were never read. Point at the Guesses tab, which is what the solver uses.
+      const guessLines='Open the \u2299 Guesses tab, press \u21bb Refresh, and give starting values for:\n  '+d.vars.join(', ')+
+        (d.vars.some(v=>/^f\d*$|^f_/i.test(v))?'\n(a Darcy friction factor usually lies between 0.01 and 0.05)':'');
       throw new Error(
         'Solver could not converge. Unsolved variables:\n  '+d.vars.join(', ')+
         '\n\nLast iterate residuals:\n  '+varLines+
         (worstLines.length?'\n\nWorst-residual equations:\n  '+worstLines.join('\n  '):'')+
         (hint?'\n\nLikely causes:'+hint:'')+
-        '\n\nTry adding initial guesses above your equations:\n'+guessLines
+        '\n\n'+guessLines
       );
     }catch(pe){if(pe.message.startsWith('Solver could not converge'))throw pe;}
   }
